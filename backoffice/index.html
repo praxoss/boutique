@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Backoffice Implacables</title>
+<style>
+  :root{
+    --navy:#0B1F3D;
+    --red:#C8102E;
+    --ink:#15171B;
+    --sub:#6E7278;
+    --line:#E3E3E1;
+    --surface:#F4F3F1;
+    --surface-2:#ECEBE8;
+    --bg:#FFFFFF;
+    --white-swatch-border:#D6D5D2;
+    --green:#1E7B4D;
+    --green-bg:#E6F4EB;
+    --amber:#B4550A;
+    --amber-bg:#FBEEE1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    font-size:14px;
+  }
+  h1,h2,h3,.display{
+    font-family:"Anton","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-weight:400;
+    text-transform:uppercase;
+    letter-spacing:0.01em;
+    text-wrap:balance;
+    margin:0;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;}
+  input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink);}
+  [hidden]{display:none!important;}
+  ::selection{background:var(--navy);color:#fff;}
+
+  /* ---------- header (matches the boutique) ---------- */
+  .site-header{
+    position:sticky;top:env(safe-area-inset-top,0px);z-index:30;
+    background:var(--bg);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;gap:16px;
+  }
+  .wordmark{display:flex;align-items:center;gap:10px;background:none;border:none;cursor:default;padding:0;}
+  .wordmark .tag{
+    font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--bg);background:var(--navy);padding:3px 8px;border-radius:3px;
+  }
+  .header-env{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:8px;}
+  .header-env b{color:var(--ink);}
+
+  /* ---------- page shell ---------- */
+  .bo-page{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+  .bo-pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:6px;}
+  .bo-pagehead h1{font-size:clamp(26px,4vw,36px);}
+  .bo-sub{color:var(--sub);margin-top:6px;max-width:52ch;}
+
+  .bo-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:24px;}
+  .bo-tab{
+    background:none;border:none;cursor:pointer;padding:12px 4px;margin-right:22px;
+    font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--sub);
+    border-bottom:2px solid transparent;
+  }
+  .bo-tab[aria-selected="true"]{color:var(--ink);border-color:var(--navy);}
+
+  /* ---------- catalogue layout ---------- */
+  .bo-layout{display:grid;grid-template-columns:216px 1fr;gap:28px;align-items:start;}
+  .bo-sidebar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 78px);display:flex;flex-direction:column;gap:2px;}
+  .bo-sidebar-title{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin-bottom:8px;}
+  .typ-btn{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    background:none;border:none;cursor:pointer;padding:9px 10px;border-radius:6px;color:var(--ink);
+  }
+  .typ-btn svg{width:18px;height:18px;color:var(--sub);flex:none;}
+  .typ-btn span.name{flex:1;font-size:14px;}
+  .typ-btn span.count{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;}
+  .typ-btn:hover{background:var(--surface);}
+  .typ-btn[aria-current="true"]{background:var(--navy);color:#fff;}
+  .typ-btn[aria-current="true"] svg{color:#fff;}
+  .typ-btn[aria-current="true"] span.count{color:rgba(255,255,255,.7);}
+
+  .bo-toolbar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+  .bo-search{
+    flex:1;min-width:180px;display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);border-radius:6px;padding:9px 12px;background:var(--surface);
+  }
+  .bo-search svg{width:16px;height:16px;color:var(--sub);flex:none;}
+  .bo-search input{background:none;border:none;outline:none;width:100%;color:var(--ink);}
+  .btn-navy{
+    display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:none;
+    padding:10px 16px;border-radius:6px;font-size:13px;font-weight:700;letter-spacing:.02em;cursor:pointer;
+  }
+  .btn-navy svg{width:15px;height:15px;}
+  .btn-navy:hover{background:#0e2a52;}
+  .btn-ghost{
+    background:none;border:1px solid var(--line);color:var(--ink);padding:9px 14px;border-radius:6px;
+    font-size:13px;font-weight:600;cursor:pointer;
+  }
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  .bo-count{color:var(--sub);font-size:13px;margin-bottom:10px;}
+
+  /* ---------- table ---------- */
+  .sku-table{width:100%;border-collapse:collapse;}
+  .sku-table thead th{
+    text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--sub);border-bottom:1px solid var(--line);padding:0 10px 10px;
+  }
+  .sku-table td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  .sku-table tbody tr:hover{background:var(--surface);cursor:pointer;}
+  .sku-thumb{
+    width:44px;height:44px;border-radius:6px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;
+  }
+  .sku-thumb img{width:100%;height:100%;object-fit:cover;}
+  .sku-thumb svg{width:60%;height:60%;}
+  .sku-name-cell{display:flex;align-items:center;gap:12px;}
+  .sku-name b{display:block;font-size:14px;}
+  .sku-name .ref{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;}
+  .sku-colors{display:flex;gap:5px;}
+  .sku-colors span{width:15px;height:15px;border-radius:50%;border:1px solid var(--white-swatch-border);display:block;}
+  .sku-sizes{color:var(--sub);font-size:12.5px;}
+  .sku-price{font-variant-numeric:tabular-nums;font-weight:700;}
+  .status-pill{
+    display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
+    letter-spacing:.02em;text-transform:uppercase;padding:4px 9px;border-radius:20px;
+  }
+  .status-pill.actif{color:var(--green);background:var(--green-bg);}
+  .status-pill.rupture{color:var(--amber);background:var(--amber-bg);}
+  .status-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .row-actions{display:flex;gap:4px;justify-content:flex-end;}
+  .icon-btn-sm{
+    background:none;border:none;color:var(--sub);cursor:pointer;padding:6px;border-radius:5px;
+  }
+  .icon-btn-sm svg{width:16px;height:16px;display:block;}
+  .icon-btn-sm:hover{background:var(--surface-2);color:var(--ink);}
+  .icon-btn-sm.danger:hover{color:var(--red);}
+
+  .bo-empty{padding:40px 10px;text-align:center;color:var(--sub);}
+
+  /* ---------- panel (create/edit SKU) ---------- */
+  .panel-overlay{
+    position:fixed;inset:0;background:rgba(11,15,20,.4);z-index:40;
+  }
+  .sku-panel{
+    position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:41;
+    background:var(--bg);box-shadow:-8px 0 30px rgba(0,0,0,.12);
+    display:flex;flex-direction:column;
+    transform:translateX(100%);transition:transform .25s ease;
+    padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .sku-panel.open{transform:translateX(0);}
+  .panel-head{
+    display:flex;align-items:center;justify-content:space-between;padding:18px 20px;
+    border-bottom:1px solid var(--line);flex:none;
+  }
+  .panel-head h2{font-size:20px;}
+  .panel-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;}
+  .panel-foot{padding:16px 20px;border-top:1px solid var(--line);display:flex;gap:10px;flex:none;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--sub);}
+  .field input[type="text"],.field input[type="number"],.field select,.field textarea{
+    border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--bg);outline:none;
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy);}
+  .field textarea{resize:vertical;min-height:76px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .hint{font-size:12px;color:var(--sub);}
+
+  .photo-drop{
+    border:1.5px dashed var(--line);border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px;
+    cursor:pointer;background:var(--surface);
+  }
+  .photo-drop:hover{border-color:var(--navy);}
+  .photo-drop .preview{width:52px;height:52px;border-radius:6px;background:var(--surface-2);flex:none;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+  .photo-drop .preview img{width:100%;height:100%;object-fit:cover;}
+  .photo-drop .preview svg{width:22px;height:22px;color:var(--sub);}
+  .photo-drop .copy b{display:block;font-size:13px;}
+  .photo-drop .copy span{font-size:12px;color:var(--sub);}
+
+  .chips-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .color-chip{
+    display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;
+    padding:5px 6px 5px 10px;font-size:13px;
+  }
+  .color-chip .dot{width:14px;height:14px;border-radius:50%;border:1px solid var(--white-swatch-border);flex:none;}
+  .color-chip button{background:none;border:none;color:var(--sub);cursor:pointer;padding:2px;display:flex;}
+  .color-chip button svg{width:12px;height:12px;}
+  .color-add{display:flex;gap:8px;align-items:center;}
+  .color-add input[type="text"]{flex:1;border:1px solid var(--line);border-radius:6px;padding:8px 10px;}
+  .color-add input[type="color"]{width:36px;height:36px;border:1px solid var(--line);border-radius:6px;padding:2px;background:var(--bg);cursor:pointer;flex:none;}
+
+  .size-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .size-check{
+    border:1px solid var(--line);border-radius:6px;padding:8px 4px;min-width:46px;text-align:center;
+    font-size:13px;font-weight:600;cursor:pointer;background:var(--bg);user-select:none;
+  }
+  .size-check.on{border-color:var(--ink);background:var(--ink);color:#fff;}
+
+  .status-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;width:max-content;}
+  .status-toggle button{
+    border:none;background:var(--bg);padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;color:var(--sub);
+  }
+  .status-toggle button.on[data-status="actif"]{background:var(--green-bg);color:var(--green);}
+  .status-toggle button.on[data-status="rupture"]{background:var(--amber-bg);color:var(--amber);}
+
+  /* ---------- commandes tab ---------- */
+  .reappro-card{
+    border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;
+    grid-template-columns:1fr auto;gap:20px 32px;margin-bottom:28px;background:var(--surface);
+  }
+  .reappro-main{grid-column:1/2;}
+  .reappro-title{font-size:13px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--sub);margin-bottom:10px;}
+  .reappro-count{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;}
+  .reappro-count .big{font-family:"Anton","Helvetica Neue",sans-serif;font-size:34px;line-height:1;}
+  .reappro-count .of{color:var(--sub);font-size:15px;}
+  .progress-track{height:10px;background:var(--surface-2);border-radius:6px;overflow:hidden;margin-bottom:10px;}
+  .progress-fill{height:100%;background:var(--navy);border-radius:6px;transition:width .3s ease;}
+  .reappro-meta{font-size:12.5px;color:var(--sub);}
+  .reappro-side{grid-column:2/3;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:10px;}
+  .threshold-field{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);}
+  .threshold-field input{width:60px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;text-align:center;}
+  @media (max-width:640px){
+    .reappro-card{grid-template-columns:1fr;}
+    .reappro-side{grid-column:1/2;align-items:flex-start;}
+  }
+
+  .gsheet-note{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:24px;
+  }
+  .gsheet-note .copy b{display:block;font-size:14px;margin-bottom:2px;}
+  .gsheet-note .copy span{font-size:12.5px;color:var(--sub);}
+
+  .orders-table{width:100%;border-collapse:collapse;}
+  .orders-table thead th{
+    text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--sub);border-bottom:1px solid var(--line);padding:0 10px 10px;
+  }
+  .orders-table td{padding:11px 10px;border-bottom:1px solid var(--line);}
+  .order-status{
+    display:inline-flex;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;
+    padding:4px 9px;border-radius:20px;
+  }
+  .order-status.confirmee{color:var(--green);background:var(--green-bg);}
+  .order-status.attente{color:var(--amber);background:var(--amber-bg);}
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:12px 20px;border-radius:24px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:60;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (prefers-reduced-motion:reduce){
+    .sku-panel,.progress-fill,.toast{transition:none;}
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .bo-layout{grid-template-columns:1fr;}
+    .bo-sidebar{
+      position:static;flex-direction:row;overflow-x:auto;gap:8px;padding-bottom:4px;
+      -webkit-overflow-scrolling:touch;
+    }
+    .bo-sidebar-title{display:none;}
+    .typ-btn{width:auto;white-space:nowrap;flex:none;border:1px solid var(--line);}
+    .typ-btn[aria-current="true"]{border-color:var(--navy);}
+  }
+  @media (max-width:700px){
+    .sku-table thead{display:none;}
+    .sku-table,.sku-table tbody,.sku-table tr,.sku-table td{display:block;width:100%;}
+    .sku-table tr{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:10px 12px;}
+    .sku-table td{border:none;padding:6px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .sku-table td[data-label]::before{content:attr(data-label);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--sub);}
+    .sku-table td.sku-name-td::before{display:none;}
+    .row-actions{justify-content:flex-end;width:100%;}
+
+    .orders-table thead{display:none;}
+    .orders-table,.orders-table tbody,.orders-table tr,.orders-table td{display:block;width:100%;}
+    .orders-table tr{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;padding:10px 12px;}
+    .orders-table td{border:none;padding:5px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+    .orders-table td[data-label]::before{content:attr(data-label);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--sub);}
+  }
+  @media (max-width:420px){
+    .bo-page{padding:20px 14px 70px;}
+    .field-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+
+<!-- garment icon set, shared with the boutique -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-shirt" viewBox="0 0 120 120">
+    <polygon points="42,8 78,8 78,18 100,26 92,44 78,36 78,112 42,112 42,36 28,44 20,26 42,18" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <ellipse cx="60" cy="9" rx="11" ry="4" fill="var(--surface)" />
+  </symbol>
+  <symbol id="icon-hoodie" viewBox="0 0 120 120">
+    <path d="M42,22 C42,9 49,4 60,4 C71,4 78,9 78,22 L78,18 100,26 92,44 78,36 78,112 42,112 42,36 28,44 20,26 42,18 Z" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <ellipse cx="60" cy="13" rx="9" ry="3.2" fill="var(--surface)" />
+  </symbol>
+  <symbol id="icon-shorts" viewBox="0 0 120 120">
+    <polygon points="25,14 95,14 95,110 70,110 70,47 50,47 50,110 25,110" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+  </symbol>
+  <symbol id="icon-cap" viewBox="0 0 120 120">
+    <path d="M20,78 C20,40 36,16 60,16 C84,16 100,40 100,78 L100,90 20,90 Z" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <circle cx="60" cy="12" r="5" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" />
+  </symbol>
+  <symbol id="icon-bag" viewBox="0 0 120 120">
+    <path d="M32,40 C32,16 42,8 60,8 C78,8 88,16 88,40" fill="none" stroke="currentColor" stroke-width="7" />
+    <rect x="14" y="38" width="92" height="66" rx="12" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" />
+    <rect x="52" y="58" width="16" height="10" fill="var(--surface)" />
+  </symbol>
+</svg>
+
+<header class="site-header">
+  <div class="wordmark">
+    <img src="assets/logo.png" alt="Les Implacables" style="height:30px;width:auto;">
+    <span class="tag">Backoffice</span>
+  </div>
+  <div class="header-env">Connecte en tant que <b>Baptiste</b></div>
+</header>
+
+<main>
+  <div class="bo-page">
+    <div class="bo-pagehead">
+      <div>
+        <div class="eyebrow">Boutique du club</div>
+        <h1>Catalogue &amp; commandes</h1>
+        <p class="bo-sub" id="pageSubtitle"></p>
+      </div>
+    </div>
+
+    <div class="bo-tabs" role="tablist">
+      <button class="bo-tab" data-tab="catalogue" aria-selected="true" role="tab">Catalogue SKU</button>
+      <button class="bo-tab" data-tab="commandes" aria-selected="false" role="tab">Commandes &amp; reappro</button>
+    </div>
+
+    <section id="tab-catalogue">
+      <div class="bo-layout">
+        <nav class="bo-sidebar" id="sidebar" aria-label="Typologies d'articles"></nav>
+        <div>
+          <div class="bo-toolbar">
+            <div class="bo-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchInput" placeholder="Rechercher un SKU, une reference...">
+            </div>
+            <button class="btn-navy" id="newSkuBtn"></button>
+          </div>
+          <div class="bo-count" id="skuCount"></div>
+          <table class="sku-table">
+            <thead>
+              <tr>
+                <th>Article</th><th>Couleurs</th><th>Tailles</th><th>Prix</th><th>Statut</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="skuTbody"></tbody>
+          </table>
+          <div class="bo-empty" id="skuEmpty" hidden>Aucun SKU ne correspond a cette recherche.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-commandes" hidden>
+      <div class="reappro-card">
+        <div class="reappro-main">
+          <div class="reappro-title">Prochaine commande fournisseur</div>
+          <div class="reappro-count"><span class="big" id="reapproCount">0</span><span class="of">/ <span id="reapproTarget">20</span> commandes depuis le dernier reassort</span></div>
+          <div class="progress-track"><div class="progress-fill" id="reapproFill" style="width:0%"></div></div>
+          <div class="reappro-meta" id="reapproMeta"></div>
+        </div>
+        <div class="reappro-side">
+          <div class="threshold-field">
+            Seuil <input type="number" id="thresholdInput" min="1" step="1">
+          </div>
+          <button class="btn-ghost" id="restockBtn">Marquer la commande comme passee</button>
+        </div>
+      </div>
+
+      <div class="gsheet-note">
+        <div class="copy">
+          <b>Journal des commandes</b>
+          <span id="gsheetStatus"></span>
+        </div>
+        <span class="status-pill" id="gsheetPill"></span>
+      </div>
+
+      <table class="orders-table">
+        <thead>
+          <tr><th>Client</th><th>Article</th><th>Taille</th><th>Date</th><th>Statut</th></tr>
+        </thead>
+        <tbody id="ordersTbody"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<div class="panel-overlay" id="panelOverlay" hidden></div>
+<aside class="sku-panel" id="skuPanel" aria-hidden="true" hidden>
+  <div class="panel-head">
+    <h2 id="panelTitle">Nouveau SKU</h2>
+    <button class="icon-btn-sm" id="panelClose" aria-label="Fermer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <form class="panel-body" id="skuForm">
+    <div class="field">
+      <label for="f-typ">Typologie</label>
+      <select id="f-typ"></select>
+    </div>
+    <div class="photo-drop" id="photoDrop">
+      <div class="preview" id="photoPreview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div class="copy"><b>Photo produit</b><span>Cliquer pour choisir une image (JPG, PNG)</span></div>
+      <input type="file" id="f-photo" accept="image/*" style="display:none;">
+    </div>
+    <div class="field">
+      <label for="f-name">Nom de l'article</label>
+      <input type="text" id="f-name" required>
+    </div>
+    <div class="field">
+      <label for="f-sub">Sous-titre</label>
+      <input type="text" id="f-sub" placeholder="Ex. Coupe joueur, manches courtes">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-price">Prix (EUR)</label>
+        <input type="number" id="f-price" min="0" step="0.01" required>
+      </div>
+      <div class="field">
+        <label for="f-ref">Reference fournisseur</label>
+        <input type="text" id="f-ref">
+      </div>
+    </div>
+    <div class="field">
+      <label>Couleurs disponibles</label>
+      <div class="chips-row" id="colorChips"></div>
+      <div class="color-add">
+        <input type="color" id="f-color-hex" value="#0B1F3D">
+        <input type="text" id="f-color-name" placeholder="Nom de la couleur">
+        <button type="button" class="btn-ghost" id="addColorBtn">Ajouter</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tailles disponibles</label>
+      <div class="size-grid" id="sizeGrid"></div>
+    </div>
+    <div class="field">
+      <label>Statut</label>
+      <div class="status-toggle" id="statusToggle">
+        <button type="button" data-status="actif">En stock</button>
+        <button type="button" data-status="rupture">Rupture</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-desc">Description</label>
+      <textarea id="f-desc"></textarea>
+    </div>
+  </form>
+  <div class="panel-foot">
+    <button class="btn-navy" id="saveSkuBtn" style="flex:1;justify-content:center;">Enregistrer le SKU</button>
+    <button class="btn-ghost" id="deleteSkuBtn" hidden>Supprimer</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  var ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  var ICON_X_SM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+  var TYPOLOGIES = [
+    { id:"Maillots",    icon:"icon-shirt",  sizes:["S","M","L","XL","XXL"] },
+    { id:"T-shirts",    icon:"icon-shirt",  sizes:["S","M","L","XL","XXL"] },
+    { id:"Sweats",      icon:"icon-hoodie", sizes:["S","M","L","XL","XXL"] },
+    { id:"Shorts",      icon:"icon-shorts", sizes:["S","M","L","XL","XXL"] },
+    { id:"Accessoires", icon:"icon-bag",    sizes:["Taille unique"] }
+  ];
+
+  var SKUS = [
+    { id:"maillot-domicile", typ:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, ref:"IMP-MAILLOT-DOM", icon:"icon-shirt", photo:"assets/maillot-domicile.jpg",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Le maillot officiel porte en championnat, coupe ajustee et tissu technique respirant." },
+    { id:"maillot-exterieur", typ:"Maillots", name:"Maillot Exterieur", sub:"Manches courtes, coupe joueur", price:64.99, ref:"IMP-MAILLOT-EXT", icon:"icon-shirt", photo:"assets/maillot-exterieur.jpg",
+      colors:[{n:"Rouge",h:"#C8102E"},{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Version exterieure du maillot officiel, coloris rouge." },
+    { id:"tshirt-training", typ:"T-shirts", name:"T-shirt Entrainement", sub:"Coton respirant, coupe reguliere", price:24.99, ref:"IMP-TSHIRT-TRN", icon:"icon-shirt",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"},{n:"Blanc",h:"#FFFFFF"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Le t-shirt du quotidien, porte a l'entrainement comme en dehors du terrain." },
+    { id:"polo-club", typ:"T-shirts", name:"Polo Club", sub:"Pique technique, col boutonne", price:34.99, ref:"IMP-POLO-CLB", icon:"icon-shirt",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Blanc",h:"#FFFFFF"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Polo pique pour les jours de match cote touche et les deplacements officiels." },
+    { id:"sweat-capuche", typ:"Sweats", name:"Sweat a Capuche", sub:"Molleton epais, poche kangourou", price:49.99, ref:"IMP-SWEAT-CAP", icon:"icon-hoodie",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Sweat a capuche epais pour les matins d'entrainement frais." },
+    { id:"veste-survetement", typ:"Sweats", name:"Veste de Survetement", sub:"Zip integral, coupe vent", price:59.99, ref:"IMP-VESTE-SURV", icon:"icon-hoodie",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"], status:"rupture",
+      desc:"Veste d'echauffement zippee, portee avant match sur le maillot." },
+    { id:"short-match", typ:"Shorts", name:"Short de Match", sub:"Coupe joueur, bandes contrastees", price:29.99, ref:"IMP-SHORT-MATCH", icon:"icon-shorts",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Short officiel assorti au maillot, renforts aux coutures." },
+    { id:"short-entrainement", typ:"Shorts", name:"Short d'Entrainement", sub:"Leger, poches zippees", price:22.99, ref:"IMP-SHORT-ENT", icon:"icon-shorts",
+      colors:[{n:"Gris",h:"#8A8D93"},{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"], status:"actif",
+      desc:"Short polyvalent pour l'entrainement, tissu leger et poches zippees." },
+    { id:"bonnet-club", typ:"Accessoires", name:"Bonnet Club", sub:"Taille unique, laine fine", price:14.99, ref:"IMP-BONNET", icon:"icon-cap",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["Taille unique"], status:"actif",
+      desc:"Bonnet cotele avec patch club brode." },
+    { id:"sac-sport", typ:"Accessoires", name:"Sac de Sport", sub:"40L, compartiment crampons", price:39.99, ref:"IMP-SAC", icon:"icon-bag",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"}], sizes:["Taille unique"], status:"actif",
+      desc:"Sac de sport 40 litres avec compartiment ventile dedie aux crampons." }
+  ];
+  var nextSkuNum = 1;
+
+  var ORDERS = [
+    { client:"Thomas Girard",     sku:"maillot-domicile",     taille:"L",   date:"2026-08-21", statut:"confirmee" },
+    { client:"Lucas Bernard",     sku:"short-match",           taille:"M",   date:"2026-08-23", statut:"confirmee" },
+    { client:"Maxime Petit",      sku:"tshirt-training",       taille:"XL",  date:"2026-08-25", statut:"confirmee" },
+    { client:"Antoine Roux",      sku:"sweat-capuche",         taille:"L",   date:"2026-08-28", statut:"confirmee" },
+    { client:"Julien Faure",      sku:"maillot-exterieur",     taille:"M",   date:"2026-08-29", statut:"confirmee" },
+    { client:"Nicolas Blanc",     sku:"bonnet-club",           taille:"Taille unique", date:"2026-08-30", statut:"confirmee" },
+    { client:"Romain Leroy",      sku:"polo-club",             taille:"L",   date:"2026-09-01", statut:"confirmee" },
+    { client:"Kevin Morel",       sku:"maillot-domicile",      taille:"XL",  date:"2026-09-02", statut:"confirmee" },
+    { client:"Alexandre Simon",   sku:"short-entrainement",    taille:"M",   date:"2026-09-04", statut:"confirmee" },
+    { client:"Hugo Girard",       sku:"sac-sport",             taille:"Taille unique", date:"2026-09-06", statut:"confirmee" },
+    { client:"Pierre Lambert",    sku:"maillot-domicile",      taille:"M",   date:"2026-09-09", statut:"confirmee" },
+    { client:"Mathieu Fontaine",  sku:"tshirt-training",       taille:"L",   date:"2026-09-11", statut:"confirmee" },
+    { client:"Clement Dubois",    sku:"maillot-exterieur",     taille:"XXL", date:"2026-09-14", statut:"attente" },
+    { client:"Remi Vidal",        sku:"short-match",           taille:"S",   date:"2026-09-15", statut:"attente" }
+  ];
+
+  var state = { activeTyp:"all", search:"", tab:"catalogue", editingId:null, threshold:20, lastRestock:"2026-08-02", photoDataUrl:null, ordersLoaded:false, ordersLoading:false };
+
+  /* Paste the same Google Apps Script web app URL as in boutique.html to pull real orders from the Sheet.
+     Left empty, this tab shows the seeded demo orders below. */
+  var ORDERS_ENDPOINT = "";
+
+  function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+  function fmtDate(d){
+    var parts = d.split("-");
+    var months = ["janv.","fevr.","mars","avr.","mai","juin","juil.","aout","sept.","oct.","nov.","dec."];
+    return parseInt(parts[2],10) + " " + months[parseInt(parts[1],10)-1] + " " + parts[0];
+  }
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  function typologyOf(typId){ return TYPOLOGIES.filter(function(t){return t.id===typId;})[0]; }
+  function skuById(id){ return SKUS.filter(function(s){return s.id===id;})[0]; }
+
+  /* ---------------- sidebar ---------------- */
+  function renderSidebar(){
+    var counts = {};
+    TYPOLOGIES.forEach(function(t){ counts[t.id] = 0; });
+    SKUS.forEach(function(s){ counts[s.typ] = (counts[s.typ]||0) + 1; });
+
+    var html = '<div class="bo-sidebar-title">Typologies</div>' +
+      '<button type="button" class="typ-btn" data-typ="all" aria-current="'+(state.activeTyp==="all")+'">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' +
+        '<span class="name">Tous les articles</span><span class="count">'+SKUS.length+'</span>' +
+      '</button>' +
+      TYPOLOGIES.map(function(t){
+        return '<button type="button" class="typ-btn" data-typ="'+esc(t.id)+'" aria-current="'+(state.activeTyp===t.id)+'">' +
+          '<svg><use href="#'+t.icon+'"/></svg>' +
+          '<span class="name">'+esc(t.id)+'</span><span class="count">'+(counts[t.id]||0)+'</span>' +
+        '</button>';
+      }).join("");
+
+    document.getElementById("sidebar").innerHTML = html;
+    document.querySelectorAll(".typ-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.activeTyp = btn.getAttribute("data-typ");
+        renderSidebar();
+        renderTable();
+      });
+    });
+  }
+
+  /* ---------------- table ---------------- */
+  function filteredSkus(){
+    var q = state.search.trim().toLowerCase();
+    return SKUS.filter(function(s){
+      if(state.activeTyp !== "all" && s.typ !== state.activeTyp) return false;
+      if(q && s.name.toLowerCase().indexOf(q)===-1 && s.ref.toLowerCase().indexOf(q)===-1) return false;
+      return true;
+    });
+  }
+
+  function renderTable(){
+    var list = filteredSkus();
+    var subtitle = state.activeTyp === "all"
+      ? "Vue d'ensemble du catalogue, toutes typologies confondues."
+      : "SKU de la typologie « " + state.activeTyp + " ».";
+    document.getElementById("pageSubtitle").textContent = subtitle;
+    document.getElementById("skuCount").textContent = list.length + (list.length>1 ? " articles" : " article");
+    document.getElementById("newSkuBtn").innerHTML = ICON_PLUS + " Nouveau SKU";
+
+    var tbody = document.getElementById("skuTbody");
+    document.getElementById("skuEmpty").hidden = list.length>0;
+
+    tbody.innerHTML = list.map(function(s){
+      var media = s.photoDataUrl || s.photo
+        ? '<img src="'+(s.photoDataUrl||s.photo)+'" alt="">'
+        : '<svg style="color:'+s.colors[0].h+'"><use href="#'+s.icon+'"/></svg>';
+      return (
+        '<tr data-id="'+s.id+'">' +
+          '<td class="sku-name-td" data-label="Article"><div class="sku-name-cell"><div class="sku-thumb">'+media+'</div>' +
+            '<div class="sku-name"><b>'+esc(s.name)+'</b><span class="ref">'+esc(s.ref)+'</span></div></div></td>' +
+          '<td data-label="Couleurs"><div class="sku-colors">'+s.colors.map(function(c){return '<span style="background:'+c.h+'" title="'+esc(c.n)+'"></span>';}).join("")+'</div></td>' +
+          '<td data-label="Tailles"><span class="sku-sizes">'+s.sizes.join(" · ")+'</span></td>' +
+          '<td data-label="Prix"><span class="sku-price">'+euro(s.price)+'</span></td>' +
+          '<td data-label="Statut"><span class="status-pill '+s.status+'">'+(s.status==="actif"?"En stock":"Rupture")+'</span></td>' +
+          '<td><div class="row-actions">' +
+            '<button type="button" class="icon-btn-sm edit-btn" aria-label="Modifier">'+ICON_EDIT+'</button>' +
+            '<button type="button" class="icon-btn-sm danger delete-btn" aria-label="Supprimer">'+ICON_TRASH+'</button>' +
+          '</div></td>' +
+        '</tr>'
+      );
+    }).join("");
+
+    tbody.querySelectorAll("tr").forEach(function(tr){
+      var id = tr.getAttribute("data-id");
+      tr.querySelector(".edit-btn").addEventListener("click", function(e){ e.stopPropagation(); openPanel(skuById(id)); });
+      tr.querySelector(".delete-btn").addEventListener("click", function(e){ e.stopPropagation(); deleteSku(id); });
+      tr.addEventListener("click", function(){ openPanel(skuById(id)); });
+    });
+  }
+
+  function deleteSku(id){
+    var s = skuById(id);
+    if(!s) return;
+    if(!confirm('Supprimer "'+s.name+'" du catalogue ?')) return;
+    SKUS = SKUS.filter(function(x){return x.id!==id;});
+    renderSidebar();
+    renderTable();
+    toast("SKU supprime");
+  }
+
+  /* ---------------- panel (create / edit) ---------------- */
+  var panelColors = [];
+  var panelSizes = [];
+  var panelStatus = "actif";
+
+  function fillTypSelect(){
+    var sel = document.getElementById("f-typ");
+    sel.innerHTML = TYPOLOGIES.map(function(t){return '<option value="'+esc(t.id)+'">'+esc(t.id)+'</option>';}).join("");
+  }
+
+  function renderColorChips(){
+    document.getElementById("colorChips").innerHTML = panelColors.map(function(c,i){
+      return '<span class="color-chip"><span class="dot" style="background:'+c.h+'"></span>'+esc(c.n)+
+        '<button type="button" data-i="'+i+'">'+ICON_X_SM+'</button></span>';
+    }).join("") || '<span class="hint">Aucune couleur ajoutee</span>';
+    document.querySelectorAll("#colorChips button[data-i]").forEach(function(b){
+      b.addEventListener("click", function(){
+        panelColors.splice(parseInt(b.getAttribute("data-i"),10),1);
+        renderColorChips();
+      });
+    });
+  }
+
+  function renderSizeGrid(){
+    var typ = typologyOf(document.getElementById("f-typ").value) || TYPOLOGIES[0];
+    document.getElementById("sizeGrid").innerHTML = typ.sizes.map(function(sz){
+      var on = panelSizes.indexOf(sz)>-1;
+      return '<div class="size-check'+(on?' on':'')+'" data-size="'+esc(sz)+'">'+esc(sz)+'</div>';
+    }).join("");
+    document.querySelectorAll(".size-check").forEach(function(el){
+      el.addEventListener("click", function(){
+        var sz = el.getAttribute("data-size");
+        var i = panelSizes.indexOf(sz);
+        if(i>-1){ panelSizes.splice(i,1); } else { panelSizes.push(sz); }
+        el.classList.toggle("on");
+      });
+    });
+  }
+
+  function setPanelStatus(st){
+    panelStatus = st;
+    document.querySelectorAll("#statusToggle button").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-status")===st);
+    });
+  }
+
+  function slugRef(name, typ){
+    var base = name.toUpperCase()
+      .replace(/[ÀÂÄ]/g,"A").replace(/[ÉÈÊË]/g,"E").replace(/[ÎÏ]/g,"I").replace(/[ÔÖ]/g,"O").replace(/[ÙÛÜ]/g,"U").replace(/Ç/g,"C")
+      .replace(/[^A-Z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+    return "IMP-" + base.slice(0,18);
+  }
+
+  function openPanel(sku){
+    state.editingId = sku ? sku.id : null;
+    state.photoDataUrl = sku ? (sku.photoDataUrl||null) : null;
+    document.getElementById("panelTitle").textContent = sku ? "Modifier le SKU" : "Nouveau SKU";
+    document.getElementById("deleteSkuBtn").hidden = !sku;
+
+    var defaultTyp = sku ? sku.typ : (state.activeTyp!=="all" ? state.activeTyp : TYPOLOGIES[0].id);
+    document.getElementById("f-typ").value = defaultTyp;
+    document.getElementById("f-name").value = sku ? sku.name : "";
+    document.getElementById("f-sub").value = sku ? sku.sub : "";
+    document.getElementById("f-price").value = sku ? sku.price : "";
+    document.getElementById("f-ref").value = sku ? sku.ref : "";
+    document.getElementById("f-desc").value = sku ? sku.desc : "";
+    panelColors = sku ? sku.colors.slice() : [];
+    panelSizes = sku ? sku.sizes.slice() : [];
+    setPanelStatus(sku ? sku.status : "actif");
+    updatePhotoPreview();
+
+    renderColorChips();
+    renderSizeGrid();
+
+    document.getElementById("panelOverlay").hidden = false;
+    var panel = document.getElementById("skuPanel");
+    panel.hidden = false;
+    panel.setAttribute("aria-hidden","false");
+    requestAnimationFrame(function(){ panel.classList.add("open"); });
+  }
+
+  function closePanel(){
+    var panel = document.getElementById("skuPanel");
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden","true");
+    document.getElementById("panelOverlay").hidden = true;
+    setTimeout(function(){ panel.hidden = true; }, 250);
+  }
+
+  function updatePhotoPreview(){
+    var prev = document.getElementById("photoPreview");
+    var src = state.photoDataUrl || (state.editingId && skuById(state.editingId) && skuById(state.editingId).photo);
+    prev.innerHTML = src
+      ? '<img src="'+src+'" alt="">'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+  }
+
+  function saveSku(e){
+    e.preventDefault();
+    var name = document.getElementById("f-name").value.trim();
+    var price = parseFloat(document.getElementById("f-price").value);
+    var typ = document.getElementById("f-typ").value;
+
+    if(!name){ toast("Donne un nom a l'article"); return; }
+    if(isNaN(price) || price<0){ toast("Indique un prix valide"); return; }
+    if(panelColors.length===0){ toast("Ajoute au moins une couleur"); return; }
+    if(panelSizes.length===0){ toast("Selectionne au moins une taille"); return; }
+
+    var ref = document.getElementById("f-ref").value.trim() || slugRef(name, typ);
+    var existing = state.editingId ? skuById(state.editingId) : null;
+
+    var sku = {
+      id: existing ? existing.id : "sku-" + (nextSkuNum++) + "-" + Date.now().toString(36),
+      typ: typ,
+      name: name,
+      sub: document.getElementById("f-sub").value.trim(),
+      price: price,
+      ref: ref,
+      icon: typologyOf(typ).icon,
+      photo: existing ? existing.photo : undefined,
+      photoDataUrl: state.photoDataUrl || (existing ? existing.photoDataUrl : undefined),
+      colors: panelColors.slice(),
+      sizes: panelSizes.slice(),
+      status: panelStatus,
+      desc: document.getElementById("f-desc").value.trim()
+    };
+
+    if(existing){
+      SKUS = SKUS.map(function(s){ return s.id===existing.id ? sku : s; });
+    } else {
+      SKUS.push(sku);
+    }
+
+    closePanel();
+    renderSidebar();
+    renderTable();
+    toast(existing ? "SKU mis a jour" : "SKU cree");
+  }
+
+  /* ---------------- commandes tab ---------------- */
+  function reapproCountSince(list, since){
+    return list.filter(function(o){ return o.date > since; }).length;
+  }
+
+  function renderOrders(){
+    var pill = document.getElementById("gsheetPill");
+    if(ORDERS_ENDPOINT){
+      pill.className = "status-pill actif";
+      pill.textContent = "Connecte";
+      document.getElementById("gsheetStatus").textContent = "Chaque commande passee sur la boutique est ecrite ici en direct depuis votre Google Sheet.";
+    } else {
+      pill.className = "status-pill rupture";
+      pill.textContent = "Non connecte";
+      document.getElementById("gsheetStatus").textContent = "Ces commandes sont simulees. Deployez le script Apps Script (voir GOOGLE_SHEETS.md) et collez son URL dans ORDERS_ENDPOINT ici et dans boutique.html.";
+    }
+    document.getElementById("thresholdInput").value = state.threshold;
+    var count = reapproCountSince(ORDERS, state.lastRestock);
+    document.getElementById("reapproCount").textContent = count;
+    document.getElementById("reapproTarget").textContent = state.threshold;
+    var pct = Math.max(0, Math.min(100, Math.round((count/state.threshold)*100)));
+    document.getElementById("reapproFill").style.width = pct + "%";
+    document.getElementById("reapproMeta").textContent =
+      "Derniere commande fournisseur passee le " + fmtDate(state.lastRestock) + ". Alternative : tous les X semaines si le seuil n'est pas atteint avant." +
+      (ORDERS_ENDPOINT ? "" : " Donnees de demonstration — branchez le Google Sheet pour les vraies commandes.");
+
+    var tbody = document.getElementById("ordersTbody");
+    if(state.ordersLoading){
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--sub);padding:22px 0;">Chargement des commandes...</td></tr>';
+      return;
+    }
+    tbody.innerHTML = ORDERS.slice().reverse().map(function(o){
+      var s = skuById(o.sku);
+      var artName = s ? s.name : o.sku;
+      return (
+        '<tr>' +
+          '<td data-label="Client">'+esc(o.client)+'</td>' +
+          '<td data-label="Article">'+esc(artName)+'</td>' +
+          '<td data-label="Taille">'+esc(o.taille)+'</td>' +
+          '<td data-label="Date">'+fmtDate(o.date)+'</td>' +
+          '<td data-label="Statut"><span class="order-status '+(o.statut==="confirmee"?"confirmee":"attente")+'">'+(o.statut==="confirmee"?"Confirmee":"En attente")+'</span></td>' +
+        '</tr>'
+      );
+    }).join("");
+  }
+
+  function fetchOrders(){
+    if(!ORDERS_ENDPOINT || state.ordersLoaded || state.ordersLoading){ renderOrders(); return; }
+    state.ordersLoading = true;
+    renderOrders();
+    fetch(ORDERS_ENDPOINT)
+      .then(function(r){ return r.json(); })
+      .then(function(rows){
+        ORDERS = rows.map(function(r){
+          return {
+            client: r.Client || r.client || "",
+            sku: r.Article || r.article || "",
+            taille: r.Taille || r.taille || "",
+            date: String(r.Date || r.date || "").slice(0,10),
+            statut: /confirm/i.test(r.Statut || r.statut || "") ? "confirmee" : "attente"
+          };
+        });
+        state.ordersLoaded = true;
+        state.ordersLoading = false;
+        renderOrders();
+      })
+      .catch(function(){
+        state.ordersLoading = false;
+        toast("Impossible de charger le Google Sheet, affichage des donnees de demonstration");
+        renderOrders();
+      });
+  }
+
+  /* ---------------- tabs ---------------- */
+  function switchTab(tab){
+    state.tab = tab;
+    document.querySelectorAll(".bo-tab").forEach(function(b){
+      b.setAttribute("aria-selected", b.getAttribute("data-tab")===tab);
+    });
+    document.getElementById("tab-catalogue").hidden = tab!=="catalogue";
+    document.getElementById("tab-commandes").hidden = tab!=="commandes";
+    if(tab==="catalogue"){ renderTable(); } else { fetchOrders(); }
+  }
+
+  /* ---------------- wiring ---------------- */
+  fillTypSelect();
+  renderSidebar();
+  renderTable();
+
+  document.querySelectorAll(".bo-tab").forEach(function(b){
+    b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
+  });
+
+  document.getElementById("searchInput").addEventListener("input", function(e){
+    state.search = e.target.value;
+    renderTable();
+  });
+
+  document.getElementById("newSkuBtn").addEventListener("click", function(){ openPanel(null); });
+  document.getElementById("panelClose").addEventListener("click", closePanel);
+  document.getElementById("panelOverlay").addEventListener("click", closePanel);
+
+  document.getElementById("f-typ").addEventListener("change", function(){
+    panelSizes = [];
+    renderSizeGrid();
+  });
+
+  document.getElementById("addColorBtn").addEventListener("click", function(){
+    var nameInput = document.getElementById("f-color-name");
+    var hexInput = document.getElementById("f-color-hex");
+    var name = nameInput.value.trim();
+    if(!name){ toast("Nomme la couleur avant de l'ajouter"); return; }
+    panelColors.push({ n:name, h:hexInput.value });
+    nameInput.value = "";
+    renderColorChips();
+  });
+
+  document.getElementById("statusToggle").addEventListener("click", function(e){
+    var btn = e.target.closest("button[data-status]");
+    if(btn) setPanelStatus(btn.getAttribute("data-status"));
+  });
+
+  document.getElementById("photoDrop").addEventListener("click", function(){
+    document.getElementById("f-photo").click();
+  });
+  document.getElementById("f-photo").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      state.photoDataUrl = ev.target.result;
+      updatePhotoPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById("skuForm").addEventListener("submit", saveSku);
+  document.getElementById("saveSkuBtn").addEventListener("click", saveSku);
+  document.getElementById("deleteSkuBtn").addEventListener("click", function(){
+    if(state.editingId){ closePanel(); deleteSku(state.editingId); }
+  });
+
+  document.getElementById("thresholdInput").addEventListener("change", function(e){
+    var v = parseInt(e.target.value,10);
+    state.threshold = (isNaN(v) || v<1) ? 1 : v;
+    renderOrders();
+  });
+
+  document.getElementById("restockBtn").addEventListener("click", function(){
+    state.lastRestock = new Date().toISOString().slice(0,10);
+    renderOrders();
+    toast("Commande fournisseur enregistree, compteur remis a zero");
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape" && !document.getElementById("skuPanel").hidden) closePanel();
+  });
+})();
+</script>
+
+</body>
+</html>

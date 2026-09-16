@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Boutique Implacables</title>
+<style>
+  :root{
+    --navy:#0B1F3D;
+    --red:#C8102E;
+    --ink:#15171B;
+    --sub:#6E7278;
+    --line:#E3E3E1;
+    --surface:#F4F3F1;
+    --surface-2:#ECEBE8;
+    --bg:#FFFFFF;
+    --white-swatch-border:#D6D5D2;
+  }
+  /* American Captain is not available on an allowed CSP host; Anton (Google Fonts) stands in for it below. */
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:"Anton","Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-weight:400;
+    text-transform:uppercase;
+    letter-spacing:0.01em;
+    text-wrap:balance;
+    margin:0;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;}
+  [hidden]{display:none!important;}
+
+  /* ---------- header ---------- */
+  .site-header{
+    position:sticky;
+    top:env(safe-area-inset-top,0px);
+    z-index:20;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .wordmark{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:0;
+  }
+  .wordmark .name{
+    font-family:"Anton","Helvetica Neue",sans-serif;
+    font-size:22px;
+    letter-spacing:0.04em;
+    color:var(--navy);
+  }
+  .wordmark .tag{
+    font-size:10px;
+    letter-spacing:0.18em;
+    color:var(--sub);
+    text-transform:uppercase;
+  }
+  .header-icons{display:flex;align-items:center;gap:18px;}
+  .icon-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--ink);
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+    width:34px;height:34px;
+    padding:0;
+  }
+  .icon-btn svg{width:21px;height:21px;}
+  .cart-count{
+    position:absolute;
+    top:-2px;right:-2px;
+    background:var(--red);
+    color:#fff;
+    font-size:10px;
+    font-weight:700;
+    line-height:1;
+    min-width:16px;height:16px;
+    border-radius:8px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px;
+    font-variant-numeric:tabular-nums;
+  }
+  .promo-bar{
+    background:var(--surface);
+    text-align:center;
+    font-size:13px;
+    padding:9px 16px;
+    color:var(--ink);
+    border-bottom:1px solid var(--line);
+  }
+  .promo-bar b{color:var(--navy);}
+
+  main{max-width:1280px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- PLP ---------- */
+  .breadcrumb{
+    font-size:12px;color:var(--sub);
+    padding:18px 0 6px;
+  }
+  .breadcrumb a{text-decoration:none;}
+  .breadcrumb a:hover{text-decoration:underline;}
+  .plp-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .plp-head h1{font-size:clamp(28px,4vw,40px);color:var(--navy);}
+  .plp-count{font-size:15px;color:var(--sub);margin-left:10px;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-weight:400;text-transform:none;letter-spacing:normal;}
+  .plp-toolbar{display:flex;align-items:center;gap:20px;}
+  .toolbar-btn{
+    display:flex;align-items:center;gap:6px;
+    background:none;border:none;cursor:pointer;
+    font-size:14px;font-weight:600;color:var(--ink);
+    padding:8px 0;
+  }
+  .toolbar-btn svg{width:16px;height:16px;}
+  select.sort-select{
+    font-size:14px;font-weight:600;color:var(--ink);
+    border:none;background:none;cursor:pointer;
+    padding:8px 4px;
+    font-family:inherit;
+  }
+
+  .plp-layout{
+    display:grid;
+    grid-template-columns:240px 1fr;
+    gap:36px;
+    padding-top:24px;
+    align-items:start;
+  }
+  .filters{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));}
+  .filter-group{border-bottom:1px solid var(--line);}
+  .filter-group summary{
+    list-style:none;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 0;
+    font-size:14px;font-weight:700;
+    cursor:pointer;
+  }
+  .filter-group summary::-webkit-details-marker{display:none;}
+  .filter-group summary::after{
+    content:"";
+    width:9px;height:9px;
+    border-right:1.5px solid var(--ink);
+    border-bottom:1.5px solid var(--ink);
+    transform:rotate(45deg);
+    transition:transform .15s ease;
+    margin-top:-4px;
+  }
+  .filter-group[open] summary::after{transform:rotate(-135deg);margin-top:2px;}
+  .filter-body{padding:0 0 16px;display:flex;flex-direction:column;gap:10px;}
+  .chk{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
+  .chk input{width:16px;height:16px;accent-color:var(--navy);cursor:pointer;}
+  .size-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    border:1px solid var(--line);
+    background:var(--bg);
+    font-size:13px;
+    padding:7px 4px;
+    min-width:42px;
+    text-align:center;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .chip[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff;}
+  .swatch-row{display:flex;flex-wrap:wrap;gap:10px;}
+  .swatch{
+    width:26px;height:26px;border-radius:50%;
+    border:1px solid var(--white-swatch-border);
+    cursor:pointer;position:relative;padding:0;
+  }
+  .swatch[aria-pressed="true"]::after{
+    content:"";position:absolute;inset:-4px;
+    border:1.5px solid var(--ink);border-radius:50%;
+  }
+
+  .product-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:28px 20px;
+  }
+  .card{
+    cursor:pointer;
+    background:none;border:none;text-align:left;
+    padding:0;display:block;width:100%;
+    color:inherit;
+  }
+  .card-media{
+    background:var(--surface);
+    aspect-ratio:1/1;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+    overflow:hidden;
+    transition:background .2s ease;
+  }
+  .card:hover .card-media{background:var(--surface-2);}
+  .card-media svg{width:56%;height:56%;transition:transform .25s ease;}
+  .card:hover .card-media svg{transform:scale(1.05);}
+  .card-badge{
+    position:absolute;top:12px;left:12px;
+    background:var(--bg);
+    font-size:10px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;padding:4px 8px;color:var(--ink);
+  }
+  .card-body{padding-top:12px;}
+  .card-swatches{display:flex;gap:6px;margin-bottom:8px;}
+  .card-swatches span{width:14px;height:14px;border-radius:50%;border:1px solid var(--white-swatch-border);display:block;}
+  .card-label{font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;}
+  .card-name{font-size:14px;font-weight:700;}
+  .card-sub{font-size:14px;color:var(--sub);margin-top:2px;}
+  .card-price{font-size:14px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;}
+
+  .empty-state{padding:60px 0;text-align:center;color:var(--sub);font-size:15px;grid-column:1/-1;}
+
+  /* ---------- PDP ---------- */
+  .pdp-back{
+    display:inline-flex;align-items:center;gap:6px;
+    background:none;border:none;cursor:pointer;
+    font-size:13px;font-weight:600;color:var(--sub);
+    padding:18px 0 4px;
+  }
+  .pdp-back svg{width:14px;height:14px;}
+  .pdp-back:hover{color:var(--ink);}
+
+  .pdp-layout{
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:56px;
+    padding:12px 0 48px;
+    align-items:start;
+  }
+  .pdp-gallery{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));}
+  .gallery-frame{
+    background:var(--surface);
+    aspect-ratio:1/1;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .gallery-frame svg{width:46%;height:46%;}
+  .gallery-badge{
+    position:absolute;top:16px;left:16px;
+    background:var(--bg);color:var(--ink);
+    font-size:10px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;padding:5px 9px;
+    border-radius:14px;
+  }
+  .gallery-dots{
+    display:flex;justify-content:center;gap:8px;
+    padding-top:14px;
+  }
+  .gallery-dots button{
+    width:7px;height:7px;border-radius:50%;
+    border:none;background:var(--line);cursor:pointer;padding:0;
+  }
+  .gallery-dots button[aria-current="true"]{background:var(--ink);width:20px;border-radius:4px;}
+
+  .pdp-info .pdp-label{font-size:13px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+  .pdp-info h1{font-size:clamp(24px,3vw,30px);color:var(--navy);}
+  .pdp-info .pdp-sub{font-size:15px;color:var(--sub);margin-top:6px;}
+  .pdp-info .pdp-price{font-size:18px;font-weight:700;margin-top:14px;font-variant-numeric:tabular-nums;}
+
+  .pdp-colors{margin-top:28px;}
+  .pdp-section-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  .pdp-section-title .muted{font-weight:400;color:var(--sub);}
+  .color-thumbs{display:flex;gap:10px;}
+  .color-thumb{
+    width:64px;height:64px;
+    background:var(--surface);
+    border:1.5px solid transparent;
+    cursor:pointer;padding:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .color-thumb svg{width:60%;height:60%;}
+  .color-thumb[aria-pressed="true"]{border-color:var(--ink);}
+
+  .pdp-sizes{margin-top:28px;}
+  .size-guide-link{font-size:13px;font-weight:600;color:var(--ink);text-decoration:underline;display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:none;border:none;padding:0;}
+  .size-guide-link svg{width:14px;height:14px;}
+  .pdp-size-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;}
+  .pdp-size-row .chip{padding:13px 4px;font-size:14px;}
+
+  .pdp-buyer{margin-top:26px;display:flex;flex-direction:column;gap:8px;}
+  .pdp-buyer input{
+    border:1px solid var(--line);border-radius:2px;padding:13px 14px;font-size:15px;
+    color:var(--ink);background:var(--bg);outline:none;
+  }
+  .pdp-buyer input:focus{border-color:var(--ink);}
+  .pdp-buyer-hint{font-size:12px;color:var(--sub);}
+  .pdp-actions{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .btn-primary{
+    background:var(--ink);color:#fff;border:none;
+    padding:16px;font-size:15px;font-weight:700;
+    cursor:pointer;transition:background .15s ease;
+  }
+  .btn-primary:hover{background:var(--navy);}
+  .btn-primary[data-added="true"]{background:var(--navy);}
+  .btn-secondary{
+    background:none;border:1px solid var(--ink);color:var(--ink);
+    padding:15px;font-size:15px;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-secondary svg{width:17px;height:17px;}
+
+  .pdp-delivery{margin-top:22px;font-size:13px;color:var(--sub);line-height:1.6;}
+  .pdp-delivery b{color:var(--ink);}
+
+  .pdp-meta{margin-top:24px;font-size:13px;color:var(--sub);}
+  .pdp-meta li{margin-bottom:3px;}
+
+  .accordion{margin-top:20px;border-top:1px solid var(--line);}
+  .accordion-item{border-bottom:1px solid var(--line);}
+  .accordion-item summary{
+    list-style:none;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 0;font-size:15px;font-weight:600;cursor:pointer;
+  }
+  .accordion-item summary::-webkit-details-marker{display:none;}
+  .accordion-item summary::after{
+    content:"";width:9px;height:9px;
+    border-right:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);
+    transform:rotate(45deg);margin-top:-4px;transition:transform .15s ease;
+  }
+  .accordion-item[open] summary::after{transform:rotate(-135deg);margin-top:2px;}
+  .accordion-item p{margin:0 0 16px;font-size:14px;color:var(--sub);line-height:1.65;max-width:60ch;}
+
+  .related{padding:8px 0 64px;border-top:1px solid var(--line);margin-top:8px;}
+  .related h2{font-size:clamp(20px,3vw,26px);color:var(--navy);padding:32px 0 22px;}
+  .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px 20px;}
+
+  @media (max-width:860px){
+    .plp-layout{grid-template-columns:1fr;}
+    .filters{position:static;border-top:1px solid var(--line);padding-top:4px;}
+    .product-grid{grid-template-columns:repeat(2,1fr);}
+    .pdp-layout{grid-template-columns:1fr;gap:0;}
+    .pdp-gallery{position:static;margin:0 -24px;}
+    .gallery-frame{aspect-ratio:4/5;}
+    .pdp-info{padding-top:22px;}
+    .related-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:460px){
+    .product-grid{grid-template-columns:1fr;}
+    .related-grid{grid-template-columns:1fr;}
+    .pdp-size-row{grid-template-columns:repeat(3,1fr);}
+    main{padding:0 16px;}
+    .site-header{padding:12px 16px;}
+  }
+
+  .card-media img,.gallery-frame img{
+    width:100%;height:100%;object-fit:cover;object-position:50% 18%;
+  }
+  .color-thumb{background:none;}
+  .color-thumb .swatch-fill{width:100%;height:100%;border-radius:0;}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;font-size:13px;font-weight:600;
+    padding:12px 20px;border-radius:24px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;
+    z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition-duration:0.001ms!important;animation-duration:0.001ms!important;}
+  }
+</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+
+<!-- garment icon set (shared silhouettes, tinted per colorway) -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="icon-shirt" viewBox="0 0 120 120">
+    <polygon points="42,8 78,8 78,18 100,26 92,44 78,36 78,112 42,112 42,36 28,44 20,26 42,18" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <ellipse cx="60" cy="9" rx="11" ry="4" fill="var(--surface)" />
+  </symbol>
+  <symbol id="icon-hoodie" viewBox="0 0 120 120">
+    <path d="M42,22 C42,9 49,4 60,4 C71,4 78,9 78,22 L78,18 100,26 92,44 78,36 78,112 42,112 42,36 28,44 20,26 42,18 Z" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <ellipse cx="60" cy="13" rx="9" ry="3.2" fill="var(--surface)" />
+  </symbol>
+  <symbol id="icon-shorts" viewBox="0 0 120 120">
+    <polygon points="25,14 95,14 95,110 70,110 70,47 50,47 50,110 25,110" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+  </symbol>
+  <symbol id="icon-cap" viewBox="0 0 120 120">
+    <path d="M20,78 C20,40 36,16 60,16 C84,16 100,40 100,78 L100,90 20,90 Z" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <circle cx="60" cy="12" r="5" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" />
+  </symbol>
+  <symbol id="icon-bag" viewBox="0 0 120 120">
+    <path d="M32,40 C32,16 42,8 60,8 C78,8 88,16 88,40" fill="none" stroke="currentColor" stroke-width="7" />
+    <rect x="14" y="38" width="92" height="66" rx="12" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" />
+    <rect x="52" y="58" width="16" height="10" fill="var(--surface)" />
+  </symbol>
+</svg>
+
+<header class="site-header">
+  <button class="wordmark" id="logoBtn" aria-label="Retour a la boutique">
+    <img src="assets/logo.png" alt="Les Implacables" style="height:34px;width:auto;">
+    <span class="tag">Boutique</span>
+  </button>
+  <div class="header-icons">
+    <button class="icon-btn" aria-label="Rechercher">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="icon-btn" aria-label="Panier">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L4 3H2"/><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none"/></svg>
+      <span class="cart-count" id="cartCount" hidden>0</span>
+    </button>
+  </div>
+</header>
+<div class="promo-bar">Livraison offerte des <b>60€</b> d'achat pour les licencies du club</div>
+
+<main>
+  <section id="view-plp"></section>
+  <section id="view-pdp" hidden></section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PRODUCTS = [
+    { id:"maillot-domicile", cat:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, label:"Nouveaute", icon:"icon-shirt",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"],
+      photo:"assets/maillot-domicile.jpg", photos:["assets/maillot-domicile.jpg","assets/maillot-domicile-dos.jpg"],
+      desc:"Le maillot officiel porte en championnat, coupe ajustee et tissu technique respirant. Motif feuille de vigne tisse, blason club et sponsors brodes sur la poitrine." },
+    { id:"maillot-exterieur", cat:"Maillots", name:"Maillot Exterieur", sub:"Manches courtes, coupe joueur", price:64.99, icon:"icon-shirt",
+      colors:[{n:"Rouge",h:"#C8102E"},{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"],
+      photo:"assets/maillot-exterieur.jpg", photos:["assets/maillot-exterieur.jpg","assets/maillot-exterieur-dos.jpg"],
+      desc:"Version exterieure du maillot officiel, coloris rouge. Meme coupe technique que le maillot domicile, blason club au dos et sponsors partenaires." },
+    { id:"tshirt-training", cat:"T-shirts", name:"T-shirt Entrainement", sub:"Coton respirant, coupe reguliere", price:24.99, icon:"icon-shirt",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"},{n:"Blanc",h:"#FFFFFF"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Le t-shirt du quotidien, porte a l'entrainement comme en dehors du terrain. Coton peigne 220g, logo club serigraphie." },
+    { id:"polo-club", cat:"T-shirts", name:"Polo Club", sub:"Pique technique, col boutonne", price:34.99, label:"Edition limitee", icon:"icon-shirt",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Blanc",h:"#FFFFFF"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Polo pique pour les jours de match cote touche et les deplacements officiels. Blason club brode sur la poitrine." },
+    { id:"sweat-capuche", cat:"Sweats", name:"Sweat a Capuche", sub:"Molleton epais, poche kangourou", price:49.99, label:"Edition limitee", icon:"icon-hoodie",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Sweat a capuche epais pour les matins d'entrainement frais. Molleton gratte a l'interieur, cordons ton sur ton." },
+    { id:"veste-survetement", cat:"Sweats", name:"Veste de Survetement", sub:"Zip integral, coupe vent", price:59.99, icon:"icon-hoodie",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Veste d'echauffement zippee, portee avant match sur le maillot. Doublure legere coupe-vent." },
+    { id:"short-match", cat:"Shorts", name:"Short de Match", sub:"Coupe joueur, bandes contrastees", price:29.99, icon:"icon-shorts",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Short officiel assorti au maillot, renforts aux coutures pour resister au contact." },
+    { id:"short-entrainement", cat:"Shorts", name:"Short d'Entrainement", sub:"Leger, poches zippees", price:22.99, icon:"icon-shorts",
+      colors:[{n:"Gris",h:"#8A8D93"},{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Short polyvalent pour l'entrainement, tissu leger et poches zippees pour les cles et le telephone." },
+    { id:"bonnet-club", cat:"Accessoires", name:"Bonnet Club", sub:"Taille unique, laine fine", price:14.99, icon:"icon-cap",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["Taille unique"],
+      desc:"Bonnet cotele avec patch club brode, pour les matchs d'hiver en tribune comme sur le terrain." },
+    { id:"sac-sport", cat:"Accessoires", name:"Sac de Sport", sub:"40L, compartiment crampons", price:39.99, icon:"icon-bag",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"}], sizes:["Taille unique"],
+      desc:"Sac de sport 40 litres avec compartiment ventile dedie aux crampons, logo club floque." }
+  ];
+
+  var CATS = ["Maillots","T-shirts","Sweats","Shorts","Accessoires"];
+  var SIZES = ["S","M","L","XL","XXL"];
+  var COLOR_SWATCHES = [{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"},{n:"Blanc",h:"#FFFFFF"},{n:"Gris",h:"#8A8D93"}];
+  var PRICE_BANDS = [
+    {id:"all", label:"Tous les prix", test:function(){return true;}},
+    {id:"u30", label:"Moins de 30€", test:function(p){return p<30;}},
+    {id:"30-50", label:"30€ - 50€", test:function(p){return p>=30&&p<=50;}},
+    {id:"o50", label:"Plus de 50€", test:function(p){return p>50;}}
+  ];
+
+  var state = { cats:[], sizes:[], colors:[], price:"all", sort:"new", cartCount:0 };
+
+  /* Paste your deployed Google Apps Script web app URL here to log real orders to a Sheet.
+     Left empty, orders are only logged to the browser console (demo mode). */
+  var ORDERS_ENDPOINT = "";
+
+  function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove("show"); }, 1800);
+  }
+
+  /* ---------------- filtering / sorting ---------------- */
+  function filteredProducts(){
+    var band = PRICE_BANDS.filter(function(b){return b.id===state.price;})[0] || PRICE_BANDS[0];
+    var list = PRODUCTS.filter(function(p){
+      if(state.cats.length && state.cats.indexOf(p.cat)===-1) return false;
+      if(state.sizes.length && !p.sizes.some(function(s){return state.sizes.indexOf(s)!==-1;})) return false;
+      if(state.colors.length && !p.colors.some(function(c){return state.colors.indexOf(c.n)!==-1;})) return false;
+      if(!band.test(p.price)) return false;
+      return true;
+    });
+    if(state.sort==="asc") list = list.slice().sort(function(a,b){return a.price-b.price;});
+    if(state.sort==="desc") list = list.slice().sort(function(a,b){return b.price-a.price;});
+    return list;
+  }
+
+  /* ---------------- PLP ---------------- */
+  function cardHTML(p){
+    var badge = p.label ? '<span class="card-badge">'+esc(p.label)+'</span>' : "";
+    var swatches = p.colors.map(function(c){return '<span style="background:'+c.h+(c.h==="#FFFFFF"?";border-color:var(--white-swatch-border)":"")+'"></span>';}).join("");
+    var media = p.photo
+      ? '<img src="'+p.photo+'" alt="'+esc(p.name)+'" loading="lazy">'
+      : '<svg style="color:'+p.colors[0].h+'"><use href="#'+p.icon+'"/></svg>';
+    return (
+      '<button class="card" data-id="'+p.id+'">' +
+        '<div class="card-media">'+
+          badge +
+          media +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="card-swatches">'+swatches+'</div>' +
+          (p.label ? '<div class="card-label">'+esc(p.label)+'</div>' : '') +
+          '<div class="card-name">'+esc(p.name)+'</div>' +
+          '<div class="card-sub">'+esc(p.sub)+'</div>' +
+          '<div class="card-price">'+euro(p.price)+'</div>' +
+        '</div>' +
+      '</button>'
+    );
+  }
+
+  function renderPLP(){
+    var list = filteredProducts();
+    var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond a ces filtres.</div>';
+
+    var catFilters = CATS.map(function(c){
+      var checked = state.cats.indexOf(c)!==-1;
+      return '<label class="chk"><input type="checkbox" data-filter="cat" value="'+c+'" '+(checked?"checked":"")+'> '+c+'</label>';
+    }).join("");
+
+    var sizeFilters = SIZES.map(function(s){
+      var on = state.sizes.indexOf(s)!==-1;
+      return '<button type="button" class="chip" data-filter="size" value="'+s+'" aria-pressed="'+on+'">'+s+'</button>';
+    }).join("");
+
+    var colorFilters = COLOR_SWATCHES.map(function(c){
+      var on = state.colors.indexOf(c.n)!==-1;
+      return '<button type="button" class="swatch" title="'+c.n+'" data-filter="color" value="'+c.n+'" aria-pressed="'+on+'" style="background:'+c.h+(c.h==="#FFFFFF"?";border-color:var(--white-swatch-border)":"")+'"></button>';
+    }).join("");
+
+    var priceFilters = PRICE_BANDS.map(function(b){
+      var checked = state.price===b.id;
+      return '<label class="chk"><input type="radio" name="price" data-filter="price" value="'+b.id+'" '+(checked?"checked":"")+'> '+b.label+'</label>';
+    }).join("");
+
+    document.getElementById("view-plp").innerHTML =
+      '<nav class="breadcrumb"><a href="#/">Boutique</a> / Vetements</nav>' +
+      '<div class="plp-head">' +
+        '<h1>Vetements Club<span class="plp-count">('+list.length+')</span></h1>' +
+        '<div class="plp-toolbar">' +
+          '<select class="sort-select" id="sortSelect">' +
+            '<option value="new"'+(state.sort==="new"?" selected":"")+'>Nouveautes</option>' +
+            '<option value="asc"'+(state.sort==="asc"?" selected":"")+'>Prix croissant</option>' +
+            '<option value="desc"'+(state.sort==="desc"?" selected":"")+'>Prix decroissant</option>' +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div class="plp-layout">' +
+        '<aside class="filters">' +
+          '<details class="filter-group" open><summary>Categorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
+          '<details class="filter-group" open><summary>Taille</summary><div class="filter-body"><div class="size-row">'+sizeFilters+'</div></div></details>' +
+          '<details class="filter-group" open><summary>Couleur</summary><div class="filter-body"><div class="swatch-row">'+colorFilters+'</div></div></details>' +
+          '<details class="filter-group"><summary>Prix</summary><div class="filter-body">'+priceFilters+'</div></details>' +
+        '</aside>' +
+        '<div class="product-grid">'+grid+'</div>' +
+      '</div>';
+
+    document.getElementById("view-plp").querySelectorAll('.card').forEach(function(btn){
+      btn.addEventListener("click", function(){ location.hash = "#/produit/"+btn.getAttribute("data-id"); });
+    });
+    document.getElementById("view-plp").querySelectorAll('[data-filter="cat"]').forEach(function(el){
+      el.addEventListener("change", function(){
+        var v = el.value;
+        state.cats = el.checked ? state.cats.concat([v]) : state.cats.filter(function(x){return x!==v;});
+        renderPLP();
+      });
+    });
+    document.getElementById("view-plp").querySelectorAll('[data-filter="size"]').forEach(function(el){
+      el.addEventListener("click", function(){
+        var v = el.value, on = el.getAttribute("aria-pressed")==="true";
+        state.sizes = on ? state.sizes.filter(function(x){return x!==v;}) : state.sizes.concat([v]);
+        renderPLP();
+      });
+    });
+    document.getElementById("view-plp").querySelectorAll('[data-filter="color"]').forEach(function(el){
+      el.addEventListener("click", function(){
+        var v = el.value, on = el.getAttribute("aria-pressed")==="true";
+        state.colors = on ? state.colors.filter(function(x){return x!==v;}) : state.colors.concat([v]);
+        renderPLP();
+      });
+    });
+    document.getElementById("view-plp").querySelectorAll('[data-filter="price"]').forEach(function(el){
+      el.addEventListener("change", function(){ state.price = el.value; renderPLP(); });
+    });
+    document.getElementById("sortSelect").addEventListener("change", function(e){ state.sort = e.target.value; renderPLP(); });
+  }
+
+  /* ---------------- PDP ---------------- */
+  var pdpState = {};
+
+  function relatedHTML(current){
+    var others = PRODUCTS.filter(function(p){return p.id!==current.id;});
+    var pool = others.filter(function(p){return p.cat===current.cat;});
+    while(pool.length<3){ var extra = others.filter(function(p){return pool.indexOf(p)===-1;})[0]; if(!extra) break; pool.push(extra); }
+    return pool.slice(0,3).map(cardHTML).join("");
+  }
+
+  function renderPDP(id){
+    var p = PRODUCTS.filter(function(x){return x.id===id;})[0];
+    if(!p){ location.hash = "#/"; return; }
+    pdpState = { color: p.colors[0], size: null, view: 0, added:false };
+
+    var views = ["Face","Dos","Detail","Porte"];
+    var hasPhotos = !!(p.photos && p.photos.length);
+    var mediaList = hasPhotos ? p.photos : views;
+
+    document.getElementById("view-pdp").innerHTML =
+      '<button class="pdp-back" id="pdpBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Retour</button>' +
+      '<div class="pdp-layout">' +
+        '<div class="pdp-gallery">' +
+          '<div class="gallery-frame" id="galleryFrame">' +
+            (hasPhotos
+              ? '<img id="galleryImg" src="'+p.photos[0]+'" alt="'+esc(p.name)+'">'
+              : '<span class="gallery-badge" id="galleryBadge">'+views[0]+'</span>' +
+                '<svg id="gallerySvg" style="color:'+p.colors[0].h+'"><use href="#'+p.icon+'"/></svg>'
+            ) +
+          '</div>' +
+          (mediaList.length > 1
+            ? '<div class="gallery-dots" id="galleryDots">' +
+                mediaList.map(function(v,i){return '<button type="button" aria-current="'+(i===0)+'" data-i="'+i+'" aria-label="Vue '+(i+1)+' sur '+mediaList.length+'"></button>';}).join("") +
+              '</div>'
+            : ''
+          ) +
+        '</div>' +
+        '<div class="pdp-info">' +
+          (p.label ? '<div class="pdp-label">'+esc(p.label)+'</div>' : '') +
+          '<h1>'+esc(p.name)+'</h1>' +
+          '<div class="pdp-sub">'+esc(p.sub)+'</div>' +
+          '<div class="pdp-price">'+euro(p.price)+'</div>' +
+          '<div class="pdp-colors">' +
+            '<div class="pdp-section-title">Couleur <span class="muted" id="colorName">'+esc(p.colors[0].n)+'</span></div>' +
+            '<div class="color-thumbs">' +
+              p.colors.map(function(c,i){
+                return '<button type="button" class="color-thumb" data-i="'+i+'" aria-pressed="'+(i===0)+'" aria-label="'+esc(c.n)+'"><span class="swatch-fill" style="background:'+c.h+'"></span></button>';
+              }).join("") +
+            '</div>' +
+          '</div>' +
+          '<div class="pdp-sizes">' +
+            '<div class="pdp-section-title">Selectionner la taille <button class="size-guide-link" type="button">Guide des tailles</button></div>' +
+            '<div class="pdp-size-row">' +
+              p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="false">'+s+'</button>';}).join("") +
+            '</div>' +
+          '</div>' +
+          '<div class="pdp-buyer">' +
+            '<input type="text" id="buyerName" placeholder="Nom complet" autocomplete="name">' +
+            '<input type="tel" id="buyerPhone" placeholder="Telephone" autocomplete="tel">' +
+            '<span class="pdp-buyer-hint">Sert a enregistrer ta commande et a te recontacter pour le retrait.</span>' +
+          '</div>' +
+          '<div class="pdp-actions">' +
+            '<button class="btn-primary" id="addToCart">Ajouter au panier</button>' +
+            '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>' +
+          '</div>' +
+          '<div class="pdp-delivery"><b>Retrait gratuit</b> au club house sous 3 a 5 jours.<br>Livraison a domicile disponible au paiement.</div>' +
+          '<ul class="pdp-meta">' +
+            '<li>Reference : IMP-'+p.id.toUpperCase()+'</li>' +
+          '</ul>' +
+          '<div class="accordion">' +
+            '<details class="accordion-item" open><summary>Description</summary><p>'+esc(p.desc)+'</p></details>' +
+            '<details class="accordion-item"><summary>Livraison et retours</summary><p>Retrait gratuit au club house. Livraison a domicile en 3 a 7 jours ouvres. Retours et echanges acceptes sous 30 jours, article non porte avec etiquette.</p></details>' +
+            '<details class="accordion-item"><summary>Composition et entretien</summary><p>100% polyester recycle pour les hauts techniques, coton biologique pour les pieces en jersey. Lavage en machine a 30 degres, ne pas utiliser de secheuse.</p></details>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<section class="related">' +
+        '<h2>Vous aimerez aussi</h2>' +
+        '<div class="related-grid">'+relatedHTML(p)+'</div>' +
+      '</section>';
+
+    document.getElementById("pdpBack").addEventListener("click", function(){ location.hash = "#/"; });
+
+    document.getElementById("view-pdp").querySelectorAll(".color-thumb").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var i = parseInt(btn.getAttribute("data-i"),10);
+        pdpState.color = p.colors[i];
+        document.getElementById("view-pdp").querySelectorAll(".color-thumb").forEach(function(b,bi){ b.setAttribute("aria-pressed", bi===i); });
+        document.getElementById("colorName").textContent = p.colors[i].n;
+        if(!hasPhotos){
+          document.getElementById("gallerySvg").style.color = p.colors[i].h;
+        }
+      });
+    });
+
+    document.getElementById("view-pdp").querySelectorAll("[data-size]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        pdpState.size = btn.getAttribute("data-size");
+        document.getElementById("view-pdp").querySelectorAll("[data-size]").forEach(function(b){ b.setAttribute("aria-pressed", b===btn); });
+      });
+    });
+
+    var galleryDotsEl = document.getElementById("galleryDots");
+    if(galleryDotsEl){
+      galleryDotsEl.querySelectorAll("button").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var i = parseInt(btn.getAttribute("data-i"),10);
+          galleryDotsEl.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
+          if(hasPhotos){
+            document.getElementById("galleryImg").src = p.photos[i];
+          } else {
+            document.getElementById("galleryBadge").textContent = views[i];
+            document.getElementById("gallerySvg").style.transform = i===1 ? "scaleX(-1)" : i===2 ? "scale(1.35)" : "none";
+          }
+        });
+      });
+    }
+
+    document.getElementById("addToCart").addEventListener("click", function(){
+      if(!pdpState.size){ toast("Choisis une taille avant d'ajouter au panier"); return; }
+      var nameField = document.getElementById("buyerName");
+      var phoneField = document.getElementById("buyerPhone");
+      var name = nameField.value.trim();
+      var phone = phoneField.value.trim();
+      if(!name || !phone){ toast("Indique ton nom et ton telephone pour valider"); return; }
+
+      var self = this;
+      self.disabled = true;
+
+      var order = {
+        client: name,
+        telephone: phone,
+        article: p.name,
+        reference: "IMP-"+p.id.toUpperCase(),
+        couleur: pdpState.color.n,
+        taille: pdpState.size,
+        prix: p.price
+      };
+
+      function finish(){
+        state.cartCount++;
+        var badge = document.getElementById("cartCount");
+        badge.hidden = false;
+        badge.textContent = state.cartCount;
+        self.textContent = "Commande enregistree ✓";
+        self.setAttribute("data-added","true");
+        toast(p.name+" (Taille "+pdpState.size+") - commande enregistree");
+        setTimeout(function(){ self.textContent = "Ajouter au panier"; self.removeAttribute("data-added"); self.disabled = false; }, 1800);
+      }
+
+      if(ORDERS_ENDPOINT){
+        fetch(ORDERS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(order)
+        }).then(finish).catch(function(){
+          toast("Commande non envoyee, verifie ta connexion et reessaie");
+          self.disabled = false;
+        });
+      } else {
+        console.log("Commande (mode demo, ORDERS_ENDPOINT non configure) :", order);
+        finish();
+      }
+    });
+
+    document.getElementById("view-pdp").querySelectorAll(".card").forEach(function(btn){
+      btn.addEventListener("click", function(){ location.hash = "#/produit/"+btn.getAttribute("data-id"); window.scrollTo(0,0); });
+    });
+
+    window.scrollTo(0,0);
+  }
+
+  /* ---------------- router ---------------- */
+  function route(){
+    var hash = location.hash || "#/";
+    var m = hash.match(/^#\/produit\/(.+)$/);
+    if(m){
+      document.getElementById("view-plp").hidden = true;
+      document.getElementById("view-pdp").hidden = false;
+      renderPDP(m[1]);
+    } else {
+      document.getElementById("view-pdp").hidden = true;
+      document.getElementById("view-plp").hidden = false;
+      renderPLP();
+    }
+  }
+
+  document.getElementById("logoBtn").addEventListener("click", function(){ location.hash = "#/"; });
+  window.addEventListener("hashchange", route);
+  route();
+})();
+</script>
+
+</body>
+</html>
