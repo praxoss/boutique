@@ -659,7 +659,21 @@
     );
   }
 
+  /* Sur mobile, la colonne de filtres passe au-dessus de la grille : on la
+     livre repliee pour que les produits restent visibles sans scroller.
+     Les ouvertures/fermetures faites par le visiteur sont conservees d'un
+     rendu a l'autre (chaque filtre clique re-rend la page). */
+  var MOBILE_Q = window.matchMedia("(max-width:860px)");
+  var openGroups = null;
+  function initOpenGroups(){
+    var wide = !MOBILE_Q.matches;
+    openGroups = { cat:wide, size:wide, color:wide, price:false };
+  }
+  MOBILE_Q.addEventListener("change", function(){ initOpenGroups(); if(!document.getElementById("view-plp").hidden) renderPLP(); });
+  function op(g){ return openGroups[g] ? " open" : ""; }
+
   function renderPLP(){
+    if(!openGroups) initOpenGroups();
     var list = filteredProducts();
     var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
 
@@ -697,10 +711,10 @@
       '</div>' +
       '<div class="plp-layout">' +
         '<aside class="filters">' +
-          '<details class="filter-group" open><summary>Catégorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
-          '<details class="filter-group" open><summary>Taille</summary><div class="filter-body"><div class="size-row">'+sizeFilters+'</div></div></details>' +
-          '<details class="filter-group" open><summary>Couleur</summary><div class="filter-body"><div class="swatch-row">'+colorFilters+'</div></div></details>' +
-          '<details class="filter-group"><summary>Prix</summary><div class="filter-body">'+priceFilters+'</div></details>' +
+          '<details class="filter-group" data-group="cat"'+op("cat")+'><summary>Catégorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
+          '<details class="filter-group" data-group="size"'+op("size")+'><summary>Taille</summary><div class="filter-body"><div class="size-row">'+sizeFilters+'</div></div></details>' +
+          '<details class="filter-group" data-group="color"'+op("color")+'><summary>Couleur</summary><div class="filter-body"><div class="swatch-row">'+colorFilters+'</div></div></details>' +
+          '<details class="filter-group" data-group="price"'+op("price")+'><summary>Prix</summary><div class="filter-body">'+priceFilters+'</div></details>' +
         '</aside>' +
         '<div class="product-grid">'+grid+'</div>' +
       '</div>';
@@ -731,6 +745,9 @@
     });
     document.getElementById("view-plp").querySelectorAll('[data-filter="price"]').forEach(function(el){
       el.addEventListener("change", function(){ state.price = el.value; renderPLP(); });
+    });
+    document.getElementById("view-plp").querySelectorAll(".filter-group").forEach(function(el){
+      el.addEventListener("toggle", function(){ openGroups[el.getAttribute("data-group")] = el.open; });
     });
     document.getElementById("sortSelect").addEventListener("change", function(e){ state.sort = e.target.value; renderPLP(); });
   }
