@@ -105,6 +105,110 @@
   }
   .promo-bar b{color:var(--navy);}
 
+  /* ---------- main nav (mega menu) ---------- */
+  .main-nav{
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+    position:relative;
+    z-index:19;
+  }
+  .main-nav-list{
+    list-style:none;
+    margin:0;padding:0;
+    display:flex;
+    justify-content:center;
+    gap:40px;
+  }
+  .main-nav-item{position:static;}
+  .main-nav-link{
+    background:none;border:none;cursor:pointer;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--ink);
+    padding:15px 2px;
+    position:relative;
+  }
+  .main-nav-link::after{
+    content:"";
+    position:absolute;
+    left:2px;right:2px;bottom:11px;
+    height:1px;
+    background:var(--navy);
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform .2s ease;
+  }
+  .main-nav-item.open .main-nav-link::after,
+  .main-nav-link:hover::after{ transform:scaleX(1); }
+  .main-nav-item.open .main-nav-link{ color:var(--navy); }
+
+  .mega-panel{
+    position:absolute;
+    left:0;right:0;top:100%;
+    background:var(--bg);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 12px 24px rgba(0,0,0,.07);
+    padding:28px 24px;
+    display:none;
+  }
+  .main-nav-item.open .mega-panel{ display:block; }
+  .mega-inner{
+    max-width:1280px;margin:0 auto;
+    display:flex;
+    justify-content:center;
+    gap:56px;
+    flex-wrap:wrap;
+  }
+  .mega-foot{
+    max-width:1280px;margin:22px auto 0;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    text-align:center;
+  }
+  .mega-all{
+    display:inline-block;width:auto;min-width:0;
+    background:none;border:none;cursor:pointer;
+    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--navy);
+    padding:4px 2px;
+    border-bottom:1px solid var(--navy);
+  }
+  .mega-all:hover{opacity:.7;}
+  .mega-col-title{
+    font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+    color:var(--sub);margin:0 0 14px;
+  }
+  .mega-link{
+    display:flex;align-items:center;gap:12px;
+    padding:8px 0;
+    background:none;border:none;cursor:pointer;
+    text-align:left;width:100%;min-width:220px;
+    color:var(--ink);
+    font-size:14px;
+  }
+  .mega-link:hover{color:var(--navy);}
+  .mega-link .mega-icon{
+    width:32px;height:32px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface);
+    border-radius:50%;
+    color:var(--sub);
+  }
+  .mega-link .mega-icon svg{width:18px;height:18px;}
+  .mega-link .mega-name{flex:1;}
+  .mega-link .mega-price{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .mega-empty{font-size:13px;color:var(--sub);max-width:32ch;line-height:1.6;}
+
+  @media (max-width:860px){
+    .main-nav-list{ gap:0; justify-content:flex-start; overflow-x:auto; padding:0 12px; -webkit-overflow-scrolling:touch; }
+    .main-nav-link{ padding:13px 10px; white-space:nowrap; }
+    .mega-panel{ position:static; box-shadow:none; padding:6px 16px 16px; }
+    .mega-inner{ flex-direction:column; gap:18px; }
+    .mega-link{ min-width:0; }
+  }
+
   main{max-width:1280px;margin:0 auto;padding:0 24px;}
 
   /* ---------- PLP ---------- */
@@ -409,10 +513,14 @@
     <rect x="14" y="38" width="92" height="66" rx="12" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" />
     <rect x="52" y="58" width="16" height="10" fill="var(--surface)" />
   </symbol>
+  <symbol id="icon-socks" viewBox="0 0 120 120">
+    <path d="M38,12 L76,12 L76,60 C76,70 81,77 90,81 L103,87 C110,90 109,99 101,101 L54,110 C42,112 32,104 30,92 L27,40 C26,24 30,16 38,12 Z" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
+    <line x1="38" y1="27" x2="76" y2="27" stroke="var(--surface)" stroke-width="4" />
+  </symbol>
 </svg>
 
 <header class="site-header">
-  <button class="wordmark" id="logoBtn" aria-label="Retour a la boutique">
+  <button class="wordmark" id="logoBtn" aria-label="Retour à la boutique">
     <img src="assets/logo.png" alt="Les Implacables" style="height:34px;width:auto;">
     <span class="tag">Boutique</span>
   </button>
@@ -426,7 +534,10 @@
     </button>
   </div>
 </header>
-<div class="promo-bar">Livraison offerte des <b>60€</b> d'achat pour les licencies du club</div>
+<nav class="main-nav" id="mainNav">
+  <ul class="main-nav-list" id="mainNavList"></ul>
+</nav>
+<div class="promo-bar">Livraison offerte dès <b>60 €</b> d'achat pour les licenciés du club</div>
 
 <main>
   <section id="view-plp"></section>
@@ -440,41 +551,47 @@
   "use strict";
 
   var PRODUCTS = [
-    { id:"maillot-domicile", cat:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, label:"Nouveaute", icon:"icon-shirt",
+    { id:"maillot-domicile", cat:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, label:"Nouveauté", icon:"icon-shirt",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"],
       photo:"assets/maillot-domicile.jpg", photos:["assets/maillot-domicile.jpg","assets/maillot-domicile-dos.jpg"],
-      desc:"Le maillot officiel porte en championnat, coupe ajustee et tissu technique respirant. Motif feuille de vigne tisse, blason club et sponsors brodes sur la poitrine." },
-    { id:"maillot-exterieur", cat:"Maillots", name:"Maillot Exterieur", sub:"Manches courtes, coupe joueur", price:64.99, icon:"icon-shirt",
+      desc:"Le maillot officiel porté en championnat, coupe ajustée et tissu technique respirant. Motif feuille de vigne tissé, blason club et sponsors brodés sur la poitrine." },
+    { id:"maillot-exterieur", cat:"Maillots", name:"Maillot Extérieur", sub:"Manches courtes, coupe joueur", price:64.99, icon:"icon-shirt",
       colors:[{n:"Rouge",h:"#C8102E"},{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"],
       photo:"assets/maillot-exterieur.jpg", photos:["assets/maillot-exterieur.jpg","assets/maillot-exterieur-dos.jpg"],
-      desc:"Version exterieure du maillot officiel, coloris rouge. Meme coupe technique que le maillot domicile, blason club au dos et sponsors partenaires." },
-    { id:"tshirt-training", cat:"T-shirts", name:"T-shirt Entrainement", sub:"Coton respirant, coupe reguliere", price:24.99, icon:"icon-shirt",
+      desc:"Version extérieure du maillot officiel, coloris rouge. Même coupe technique que le maillot domicile, blason club au dos et sponsors partenaires." },
+    { id:"tshirt-training", cat:"T-shirts", name:"T-shirt Entraînement", sub:"Coton respirant, coupe régulière", price:24.99, icon:"icon-shirt",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"},{n:"Blanc",h:"#FFFFFF"}], sizes:["S","M","L","XL","XXL"],
-      desc:"Le t-shirt du quotidien, porte a l'entrainement comme en dehors du terrain. Coton peigne 220g, logo club serigraphie." },
-    { id:"polo-club", cat:"T-shirts", name:"Polo Club", sub:"Pique technique, col boutonne", price:34.99, label:"Edition limitee", icon:"icon-shirt",
+      desc:"Le t-shirt du quotidien, porté à l'entraînement comme en dehors du terrain. Coton peigné 220 g, logo club sérigraphié." },
+    { id:"polo-club", cat:"T-shirts", name:"Polo Club", sub:"Piqué technique, col boutonné", price:34.99, label:"Édition limitée", icon:"icon-shirt",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Blanc",h:"#FFFFFF"}], sizes:["S","M","L","XL","XXL"],
-      desc:"Polo pique pour les jours de match cote touche et les deplacements officiels. Blason club brode sur la poitrine." },
-    { id:"sweat-capuche", cat:"Sweats", name:"Sweat a Capuche", sub:"Molleton epais, poche kangourou", price:49.99, label:"Edition limitee", icon:"icon-hoodie",
+      desc:"Polo piqué pour les jours de match côté touche et les déplacements officiels. Blason club brodé sur la poitrine." },
+    { id:"sweat-capuche", cat:"Sweats", name:"Sweat à Capuche", sub:"Molleton épais, poche kangourou", price:49.99, label:"Édition limitée", icon:"icon-hoodie",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"}], sizes:["S","M","L","XL","XXL"],
-      desc:"Sweat a capuche epais pour les matins d'entrainement frais. Molleton gratte a l'interieur, cordons ton sur ton." },
-    { id:"veste-survetement", cat:"Sweats", name:"Veste de Survetement", sub:"Zip integral, coupe vent", price:59.99, icon:"icon-hoodie",
+      desc:"Sweat à capuche épais pour les matins d'entraînement frais. Molleton gratté à l'intérieur, cordons ton sur ton." },
+    { id:"veste-survetement", cat:"Sweats", name:"Veste de Survêtement", sub:"Zip intégral, coupe-vent", price:59.99, icon:"icon-hoodie",
       colors:[{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"],
-      desc:"Veste d'echauffement zippee, portee avant match sur le maillot. Doublure legere coupe-vent." },
-    { id:"short-match", cat:"Shorts", name:"Short de Match", sub:"Coupe joueur, bandes contrastees", price:29.99, icon:"icon-shorts",
+      desc:"Veste d'échauffement zippée, portée avant match sur le maillot. Doublure légère coupe-vent." },
+    { id:"vareuse-entrainement", cat:"Sweats", name:"Vareuse d'Entraînement", sub:"Maille technique, col zippé", price:54.99, icon:"icon-hoodie",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Gris",h:"#8A8D93"}], sizes:["S","M","L","XL","XXL"],
+      desc:"Vareuse d'entraînement en maille technique, col zippé, portée par-dessus le maillot ou le t-shirt les jours de fraîcheur." },
+    { id:"short-match", cat:"Shorts", name:"Short de Match", sub:"Coupe joueur, bandes contrastées", price:29.99, icon:"icon-shorts",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"],
-      desc:"Short officiel assorti au maillot, renforts aux coutures pour resister au contact." },
-    { id:"short-entrainement", cat:"Shorts", name:"Short d'Entrainement", sub:"Leger, poches zippees", price:22.99, icon:"icon-shorts",
+      desc:"Short officiel assorti au maillot, renforts aux coutures pour résister au contact." },
+    { id:"short-entrainement", cat:"Shorts", name:"Short d'Entraînement", sub:"Léger, poches zippées", price:22.99, icon:"icon-shorts",
       colors:[{n:"Gris",h:"#8A8D93"},{n:"Bleu marine",h:"#0B1F3D"}], sizes:["S","M","L","XL","XXL"],
-      desc:"Short polyvalent pour l'entrainement, tissu leger et poches zippees pour les cles et le telephone." },
+      desc:"Short polyvalent pour l'entraînement, tissu léger et poches zippées pour les clés et le téléphone." },
+    { id:"chaussettes-match", cat:"Chaussettes", name:"Chaussettes de Match", sub:"Paire, maintien renforcé", price:12.99, icon:"icon-socks",
+      colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["36-39","40-43","44-47"],
+      desc:"Chaussettes hautes du kit officiel, maintien renforcé à la cheville et au tibia, assorties au maillot." },
     { id:"bonnet-club", cat:"Accessoires", name:"Bonnet Club", sub:"Taille unique, laine fine", price:14.99, icon:"icon-cap",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["Taille unique"],
-      desc:"Bonnet cotele avec patch club brode, pour les matchs d'hiver en tribune comme sur le terrain." },
-    { id:"sac-sport", cat:"Accessoires", name:"Sac de Sport", sub:"40L, compartiment crampons", price:39.99, icon:"icon-bag",
+      desc:"Bonnet côtelé avec patch club brodé, pour les matchs d'hiver en tribune comme sur le terrain." },
+    { id:"sac-sport", cat:"Accessoires", name:"Sac de Sport", sub:"40 L, compartiment crampons", price:39.99, icon:"icon-bag",
       colors:[{n:"Bleu marine",h:"#0B1F3D"}], sizes:["Taille unique"],
-      desc:"Sac de sport 40 litres avec compartiment ventile dedie aux crampons, logo club floque." }
+      desc:"Sac de sport 40 litres avec compartiment ventilé dédié aux crampons, logo club floqué." }
   ];
 
-  var CATS = ["Maillots","T-shirts","Sweats","Shorts","Accessoires"];
+  var CATS = ["Maillots","T-shirts","Sweats","Shorts","Chaussettes","Accessoires"];
   var SIZES = ["S","M","L","XL","XXL"];
   var COLOR_SWATCHES = [{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"},{n:"Blanc",h:"#FFFFFF"},{n:"Gris",h:"#8A8D93"}];
   var PRICE_BANDS = [
@@ -542,7 +659,7 @@
 
   function renderPLP(){
     var list = filteredProducts();
-    var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond a ces filtres.</div>';
+    var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
 
     var catFilters = CATS.map(function(c){
       var checked = state.cats.indexOf(c)!==-1;
@@ -567,18 +684,18 @@
     document.getElementById("view-plp").innerHTML =
       '<nav class="breadcrumb"><a href="#/">Boutique</a> / Vetements</nav>' +
       '<div class="plp-head">' +
-        '<h1>Vetements Club<span class="plp-count">('+list.length+')</span></h1>' +
+        '<h1>Vêtements Club<span class="plp-count">('+list.length+')</span></h1>' +
         '<div class="plp-toolbar">' +
           '<select class="sort-select" id="sortSelect">' +
-            '<option value="new"'+(state.sort==="new"?" selected":"")+'>Nouveautes</option>' +
+            '<option value="new"'+(state.sort==="new"?" selected":"")+'>Nouveautés</option>' +
             '<option value="asc"'+(state.sort==="asc"?" selected":"")+'>Prix croissant</option>' +
-            '<option value="desc"'+(state.sort==="desc"?" selected":"")+'>Prix decroissant</option>' +
+            '<option value="desc"'+(state.sort==="desc"?" selected":"")+'>Prix décroissant</option>' +
           '</select>' +
         '</div>' +
       '</div>' +
       '<div class="plp-layout">' +
         '<aside class="filters">' +
-          '<details class="filter-group" open><summary>Categorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
+          '<details class="filter-group" open><summary>Catégorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
           '<details class="filter-group" open><summary>Taille</summary><div class="filter-body"><div class="size-row">'+sizeFilters+'</div></div></details>' +
           '<details class="filter-group" open><summary>Couleur</summary><div class="filter-body"><div class="swatch-row">'+colorFilters+'</div></div></details>' +
           '<details class="filter-group"><summary>Prix</summary><div class="filter-body">'+priceFilters+'</div></details>' +
@@ -667,28 +784,28 @@
             '</div>' +
           '</div>' +
           '<div class="pdp-sizes">' +
-            '<div class="pdp-section-title">Selectionner la taille <button class="size-guide-link" type="button">Guide des tailles</button></div>' +
+            '<div class="pdp-section-title">Sélectionner la taille <button class="size-guide-link" type="button">Guide des tailles</button></div>' +
             '<div class="pdp-size-row">' +
               p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="false">'+s+'</button>';}).join("") +
             '</div>' +
           '</div>' +
           '<div class="pdp-buyer">' +
             '<input type="text" id="buyerName" placeholder="Nom complet" autocomplete="name">' +
-            '<input type="tel" id="buyerPhone" placeholder="Telephone" autocomplete="tel">' +
-            '<span class="pdp-buyer-hint">Sert a enregistrer ta commande et a te recontacter pour le retrait.</span>' +
+            '<input type="tel" id="buyerPhone" placeholder="Téléphone" autocomplete="tel">' +
+            '<span class="pdp-buyer-hint">Sert à enregistrer ta commande et à te recontacter pour le retrait.</span>' +
           '</div>' +
           '<div class="pdp-actions">' +
             '<button class="btn-primary" id="addToCart">Ajouter au panier</button>' +
             '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>' +
           '</div>' +
-          '<div class="pdp-delivery"><b>Retrait gratuit</b> au club house sous 3 a 5 jours.<br>Livraison a domicile disponible au paiement.</div>' +
+          '<div class="pdp-delivery"><b>Retrait gratuit</b> au club house sous 3 à 5 jours.<br>Livraison à domicile disponible au paiement.</div>' +
           '<ul class="pdp-meta">' +
             '<li>Reference : IMP-'+p.id.toUpperCase()+'</li>' +
           '</ul>' +
           '<div class="accordion">' +
             '<details class="accordion-item" open><summary>Description</summary><p>'+esc(p.desc)+'</p></details>' +
-            '<details class="accordion-item"><summary>Livraison et retours</summary><p>Retrait gratuit au club house. Livraison a domicile en 3 a 7 jours ouvres. Retours et echanges acceptes sous 30 jours, article non porte avec etiquette.</p></details>' +
-            '<details class="accordion-item"><summary>Composition et entretien</summary><p>100% polyester recycle pour les hauts techniques, coton biologique pour les pieces en jersey. Lavage en machine a 30 degres, ne pas utiliser de secheuse.</p></details>' +
+            '<details class="accordion-item"><summary>Livraison et retours</summary><p>Retrait gratuit au club house. Livraison à domicile en 3 à 7 jours ouvrés. Retours et échanges acceptés sous 30 jours, article non porté avec étiquette.</p></details>' +
+            '<details class="accordion-item"><summary>Composition et entretien</summary><p>100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge.</p></details>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -760,9 +877,9 @@
         var badge = document.getElementById("cartCount");
         badge.hidden = false;
         badge.textContent = state.cartCount;
-        self.textContent = "Commande enregistree ✓";
+        self.textContent = "Commande enregistrée ✓";
         self.setAttribute("data-added","true");
-        toast(p.name+" (Taille "+pdpState.size+") - commande enregistree");
+        toast(p.name+" (Taille "+pdpState.size+") - commande enregistrée");
         setTimeout(function(){ self.textContent = "Ajouter au panier"; self.removeAttribute("data-added"); self.disabled = false; }, 1800);
       }
 
@@ -772,11 +889,11 @@
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(order)
         }).then(finish).catch(function(){
-          toast("Commande non envoyee, verifie ta connexion et reessaie");
+          toast("Commande non envoyée, vérifie ta connexion et réessaie");
           self.disabled = false;
         });
       } else {
-        console.log("Commande (mode demo, ORDERS_ENDPOINT non configure) :", order);
+        console.log("Commande (mode démo, ORDERS_ENDPOINT non configuré) :", order);
         finish();
       }
     });
@@ -786,6 +903,103 @@
     });
 
     window.scrollTo(0,0);
+  }
+
+  /* ---------------- menu principal (mega-menu) ---------------- */
+  var MENUS = [
+    { label:"Vêtements rugby", cats:["Maillots","Shorts","Sweats","T-shirts"], cols:[
+        { title:"Maillots", ids:["maillot-domicile","maillot-exterieur","vareuse-entrainement"] },
+        { title:"Entraînement", ids:["short-entrainement","tshirt-training","veste-survetement"] }
+      ] },
+    { label:"Lifestyle", cats:["Sweats","T-shirts"], cols:[
+        { title:"Prêt-à-porter", ids:["sweat-capuche","polo-club"] }
+      ] },
+    { label:"Enfant", cols:[], note:"La collection enfant arrive pour la saison prochaine. Les tailles junior des maillots sont déjà disponibles sur demande auprès du club." },
+    { label:"Accessoires", cats:["Accessoires","Chaussettes"], cols:[
+        { title:"Le sac du joueur", ids:["chaussettes-match","bonnet-club","sac-sport"] }
+      ] }
+  ];
+
+  function megaLinkHTML(id){
+    var p = PRODUCTS.filter(function(x){ return x.id===id; })[0];
+    if(!p) return "";
+    return '<button type="button" class="mega-link" data-goto="'+p.id+'">'+
+             '<span class="mega-icon" style="color:'+p.colors[0].h+'"><svg><use href="#'+p.icon+'"/></svg></span>'+
+             '<span class="mega-name">'+esc(p.name)+'</span>'+
+             '<span class="mega-price">'+euro(p.price)+'</span>'+
+           '</button>';
+  }
+
+  function renderMainNav(){
+    document.getElementById("mainNavList").innerHTML = MENUS.map(function(menu, i){
+      var panel, foot = "";
+      if(menu.cols.length){
+        panel = menu.cols.map(function(col){
+          return '<div class="mega-col">'+
+                   '<p class="mega-col-title">'+esc(col.title)+'</p>'+
+                   col.ids.map(megaLinkHTML).join("")+
+                 '</div>';
+        }).join("");
+        if(menu.cats){
+          foot = '<div class="mega-foot">'+
+                   '<button type="button" class="mega-all" data-cats="'+menu.cats.join("|")+'">'+
+                   'Voir tout ' + esc(menu.label.toLowerCase()) +
+                   '</button></div>';
+        }
+      } else {
+        panel = '<div class="mega-col"><p class="mega-empty">'+esc(menu.note||"")+'</p></div>';
+      }
+      return '<li class="main-nav-item" data-menu="'+i+'">'+
+               '<button type="button" class="main-nav-link" aria-expanded="false">'+esc(menu.label)+'</button>'+
+               '<div class="mega-panel"><div class="mega-inner">'+panel+'</div>'+foot+'</div>'+
+             '</li>';
+    }).join("");
+  }
+
+  function closeMenus(){
+    document.querySelectorAll(".main-nav-item.open").forEach(function(li){
+      li.classList.remove("open");
+      li.querySelector(".main-nav-link").setAttribute("aria-expanded","false");
+    });
+  }
+
+  function openMenu(li){
+    if(li.classList.contains("open")) return;
+    closeMenus();
+    li.classList.add("open");
+    li.querySelector(".main-nav-link").setAttribute("aria-expanded","true");
+  }
+
+  function wireMainNav(){
+    var nav = document.getElementById("mainNav");
+    var hoverable = window.matchMedia("(hover:hover)").matches;
+
+    nav.querySelectorAll(".main-nav-item").forEach(function(li){
+      var link = li.querySelector(".main-nav-link");
+      link.addEventListener("click", function(){
+        if(li.classList.contains("open")) closeMenus(); else openMenu(li);
+      });
+      if(hoverable){
+        li.addEventListener("mouseenter", function(){ openMenu(li); });
+        link.addEventListener("focus", function(){ openMenu(li); });
+      }
+    });
+
+    if(hoverable) nav.addEventListener("mouseleave", closeMenus);
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeMenus(); });
+    document.addEventListener("click", function(e){ if(!nav.contains(e.target)) closeMenus(); });
+
+    nav.addEventListener("click", function(e){
+      var go = e.target.closest("[data-goto]");
+      if(go){ closeMenus(); location.hash = "#/produit/"+go.getAttribute("data-goto"); window.scrollTo(0,0); return; }
+      var all = e.target.closest("[data-cats]");
+      if(all){
+        closeMenus();
+        state.cats = all.getAttribute("data-cats").split("|");
+        if(location.hash && location.hash !== "#/") location.hash = "#/"; else route();
+        window.scrollTo(0,0);
+      }
+    });
   }
 
   /* ---------------- router ---------------- */
@@ -805,6 +1019,8 @@
 
   document.getElementById("logoBtn").addEventListener("click", function(){ location.hash = "#/"; });
   window.addEventListener("hashchange", route);
+  renderMainNav();
+  wireMainNav();
   route();
 })();
 </script>
