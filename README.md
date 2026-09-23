@@ -29,5 +29,9 @@ et le backoffice affiche des commandes de demonstration.
 
 Chaque page etant un fichier HTML autonome (aucune dependance serveur),
 elles peuvent etre servies telles quelles par n'importe quel hebergeur
-statique (Nginx, GitHub Pages, Netlify...). Pas encore configure dans ce
-repo — a faire quand le sous-domaine `boutique.implacables.fr` sera pret.
+statique (Nginx, GitHub Pages, Netlify...).
+
+Le deploiement vers le serveur Hetzner est automatise : chaque push sur
+`main` declenche une GitHub Action qui synchronise `boutique/` et
+`backoffice/` sur le serveur. Voir [`DEPLOY.md`](./DEPLOY.md) pour le
+reglage initial (a faire une seule fois).
