@@ -331,7 +331,6 @@
   .card-body{padding-top:12px;}
   .card-swatches{display:flex;gap:6px;margin-bottom:8px;}
   .card-swatches span{width:14px;height:14px;border-radius:50%;border:1px solid var(--white-swatch-border);display:block;}
-  .card-label{font-size:12px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px;}
   .card-name{font-size:14px;font-weight:700;}
   .card-sub{font-size:14px;color:var(--sub);margin-top:2px;}
   .card-price{font-size:14px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;}
@@ -652,7 +651,6 @@
         '</div>' +
         '<div class="card-body">' +
           '<div class="card-swatches">'+swatches+'</div>' +
-          (p.label ? '<div class="card-label">'+esc(p.label)+'</div>' : '') +
           '<div class="card-name">'+esc(p.name)+'</div>' +
           '<div class="card-sub">'+esc(p.sub)+'</div>' +
           '<div class="card-price">'+euro(p.price)+'</div>' +
