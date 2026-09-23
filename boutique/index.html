@@ -537,9 +537,11 @@
   .filter-bar.hide{display:none !important;}
   .filter-bar button{
     flex:1;
+    display:flex;align-items:center;justify-content:center;gap:9px;
     font-family:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
     padding:13px 10px;cursor:pointer;
   }
+  .filter-bar svg{width:16px;height:16px;flex-shrink:0;}
   .filter-bar .fb-filter{background:var(--navy);color:#fff;border:1px solid var(--navy);}
   .filter-bar .fb-sort{background:var(--bg);color:var(--ink);border:1px solid var(--line);}
   .filter-sheet{
@@ -688,8 +690,14 @@
 </aside>
 
 <div class="filter-bar" id="filterBar">
-  <button type="button" class="fb-filter" id="openFilters">Filtrer</button>
-  <button type="button" class="fb-sort" id="openSort">Trier</button>
+  <button type="button" class="fb-filter" id="openFilters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8.2V19l-4 2v-7.8z"/></svg>
+    <span id="filterLabel">Filtrer</span>
+  </button>
+  <button type="button" class="fb-sort" id="openSort">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V4"/><path d="M4 8l3-4 3 4"/><path d="M17 4v16"/><path d="M14 16l3 4 3-4"/></svg>
+    <span>Trier</span>
+  </button>
 </div>
 
 <div class="filter-sheet" id="filterSheet" aria-hidden="true">
@@ -1256,7 +1264,7 @@
       parked.remove();
     }
     var active = state.cats.length + state.sizes.length + state.colors.length + (state.price!=="all" ? 1 : 0);
-    document.getElementById("openFilters").textContent = active ? "Filtrer ("+active+")" : "Filtrer";
+    document.getElementById("filterLabel").textContent = active ? "Filtrer ("+active+")" : "Filtrer";
     document.getElementById("sheetApply").textContent = "Voir les "+count+" article"+(count>1?"s":"");
   }
 
