@@ -398,15 +398,6 @@
   }
   .quick-size:hover{border-color:var(--navy);}
   .quick-size[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy);}
-  .quick-input{
-    width:100%;
-    font-family:inherit;font-size:12px;
-    padding:9px 10px;
-    border:1px solid var(--line);
-    background:var(--bg);
-    color:var(--ink);
-  }
-  .quick-input:focus{outline:none;border-color:var(--navy);}
   .quick-submit{
     background:var(--navy);color:#fff;border:1px solid var(--navy);
     font-family:inherit;font-size:11px;letter-spacing:.11em;text-transform:uppercase;
@@ -494,14 +485,6 @@
   .pdp-size-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px;}
   .pdp-size-row .chip{padding:13px 4px;font-size:14px;}
 
-  .pdp-buyer{margin-top:26px;display:flex;flex-direction:column;gap:8px;}
-  .pdp-buyer input{
-    border:1px solid var(--line);border-radius:2px;padding:13px 14px;font-size:15px;
-    color:var(--ink);background:var(--bg);outline:none;
-  }
-  .pdp-buyer input:focus{border-color:var(--ink);}
-  .pdp-buyer-hint{font-size:12px;color:var(--sub);}
-  .pdp-actions{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
   .btn-primary{
     background:var(--ink);color:#fff;border:none;
     padding:16px;font-size:15px;font-weight:700;
@@ -603,6 +586,67 @@
   .drawer-group .mega-link{padding:10px 18px;min-width:0;}
   .drawer-group .mega-empty{padding:0 18px 18px;max-width:none;}
   .drawer-group .mega-all{margin:2px 18px 18px;}
+
+  /* Panier : meme tiroir que la nav, mais colle a droite et sur tout ecran. */
+  .cart-drawer{
+    position:fixed;top:0;bottom:0;right:0;
+    width:min(92vw,400px);
+    background:var(--bg);
+    z-index:41;
+    transform:translateX(100%);
+    transition:transform .25s ease;
+    display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .cart-drawer.open{transform:none;}
+  .cart-body{flex:1;overflow-y:auto;padding:4px 18px 18px;}
+  .cart-empty{font-size:13px;color:var(--sub);padding:22px 0;line-height:1.6;}
+  .cart-line{display:flex;gap:12px;padding:16px 0;border-bottom:1px solid var(--line);}
+  .cart-line-media{
+    width:56px;height:70px;flex-shrink:0;
+    background:var(--surface);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .cart-line-media img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;}
+  .cart-line-media svg{width:60%;height:60%;}
+  .cart-line-info{flex:1;min-width:0;}
+  .cart-line-name{font-size:13px;font-weight:700;}
+  .cart-line-meta{font-size:12px;color:var(--sub);margin-top:2px;}
+  .cart-line-price{font-size:13px;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .cart-qty{display:flex;align-items:center;gap:8px;margin-top:8px;}
+  .cart-qty button{
+    width:26px;height:26px;line-height:1;
+    background:none;border:1px solid var(--line);color:var(--ink);
+    font-family:inherit;font-size:14px;cursor:pointer;
+  }
+  .cart-qty button:hover{border-color:var(--navy);}
+  .cart-qty span{font-size:13px;min-width:16px;text-align:center;font-variant-numeric:tabular-nums;}
+  .cart-drop{
+    background:none;border:none;cursor:pointer;padding:0;
+    font-family:inherit;font-size:11px;color:var(--sub);text-decoration:underline;
+    margin-left:6px;
+  }
+  .cart-drop:hover{color:var(--red);}
+  .cart-foot{border-top:1px solid var(--line);padding:16px 18px;display:flex;flex-direction:column;gap:12px;}
+  .cart-total{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
+  }
+  .cart-form{display:flex;flex-direction:column;gap:8px;}
+  .cart-form-hint{margin:0;font-size:12px;color:var(--sub);}
+  .cart-form input{
+    font-family:inherit;font-size:14px;
+    padding:12px 13px;
+    border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  }
+  .cart-form input:focus{outline:none;border-color:var(--navy);}
+  .cart-cta{
+    background:var(--navy);color:#fff;border:1px solid var(--navy);
+    font-family:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    padding:14px 10px;cursor:pointer;
+  }
+  .cart-cta:disabled{opacity:.7;cursor:default;}
 
   .filter-bar{
     display:none;
@@ -739,7 +783,7 @@
     <button class="icon-btn" aria-label="Rechercher">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
-    <button class="icon-btn" aria-label="Panier">
+    <button class="icon-btn" id="cartBtn" aria-label="Panier">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6L4 3H2"/><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"/><circle cx="18" cy="20" r="1.4" fill="currentColor" stroke="none"/></svg>
       <span class="cart-count" id="cartCount" hidden>0</span>
     </button>
@@ -766,6 +810,27 @@
     </button>
   </div>
   <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<aside class="cart-drawer" id="cartDrawer" aria-label="Panier" aria-hidden="true">
+  <div class="drawer-head">
+    <span class="drawer-title">Panier</span>
+    <button class="drawer-close" id="cartClose" aria-label="Fermer le panier">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+  </div>
+  <div class="cart-body" id="cartBody"></div>
+  <div class="cart-foot" id="cartFoot" hidden>
+    <div class="cart-total"><span>Total</span><span id="cartTotal">0,00 €</span></div>
+    <form class="cart-form" id="cartForm" hidden>
+      <p class="cart-form-hint">Pour te recontacter au moment du retrait au club house.</p>
+      <input type="text" id="coName" placeholder="Nom complet" autocomplete="name" required>
+      <input type="tel" id="coPhone" placeholder="Téléphone" autocomplete="tel" required>
+      <input type="email" id="coEmail" placeholder="E-mail" autocomplete="email" required>
+      <button type="submit" class="cart-cta" id="cartConfirm">Valider la commande</button>
+    </form>
+    <button type="button" class="cart-cta" id="cartCheckout">Passer la commande</button>
+  </div>
 </aside>
 
 <div class="filter-bar" id="filterBar">
@@ -846,35 +911,57 @@
     {id:"o50", label:"Plus de 50€", test:function(p){return p>50;}}
   ];
 
-  var state = { cats:[], sizes:[], colors:[], price:"all", sort:"new", cartCount:0 };
+  var state = { cats:[], sizes:[], colors:[], price:"all", sort:"new" };
 
   /* Paste your deployed Google Apps Script web app URL here to log real orders to a Sheet.
      Left empty, orders are only logged to the browser console (demo mode). */
   var ORDERS_ENDPOINT = "";
 
-  /* Coordonnees de l'acheteur : retenues d'une commande a l'autre pour que
-     l'achat rapide depuis la grille ne redemande pas nom et telephone a
-     chaque article. Stockage navigateur, jamais envoye ailleurs que dans la
-     commande elle-meme ; peut echouer (navigation privee), d'ou le try. */
-  var buyer = { name:"", phone:"" };
+  /* Panier : garde les lignes choisies (tuile ou fiche). Les coordonnees
+     ne sont demandees qu'a la validation, pas a l'ajout. Le stockage
+     navigateur peut etre indisponible (navigation privee), d'ou les try :
+     le panier retombe alors en memoire de page. */
+  var cart = [];
   try {
-    var saved = JSON.parse(localStorage.getItem("implacables-buyer") || "null");
-    if(saved && typeof saved === "object"){ buyer = { name:saved.name||"", phone:saved.phone||"" }; }
+    var savedCart = JSON.parse(localStorage.getItem("implacables-cart") || "[]");
+    if(Array.isArray(savedCart)) cart = savedCart;
   } catch(e){}
-  function rememberBuyer(name, phone){
-    buyer = { name:name, phone:phone };
+  function saveCart(){ try { localStorage.setItem("implacables-cart", JSON.stringify(cart)); } catch(e){} }
+
+  var buyer = { name:"", phone:"", email:"" };
+  try {
+    var savedBuyer = JSON.parse(localStorage.getItem("implacables-buyer") || "null");
+    if(savedBuyer && typeof savedBuyer === "object"){
+      buyer = { name:savedBuyer.name||"", phone:savedBuyer.phone||"", email:savedBuyer.email||"" };
+    }
+  } catch(e){}
+  function rememberBuyer(b){
+    buyer = { name:b.name, phone:b.phone, email:b.email };
     try { localStorage.setItem("implacables-buyer", JSON.stringify(buyer)); } catch(e){}
   }
 
-  function bumpCart(){
-    state.cartCount++;
+  function cartCount(){ return cart.reduce(function(n,l){ return n + l.qty; }, 0); }
+  function cartTotal(){ return cart.reduce(function(n,l){ return n + l.qty * l.prix; }, 0); }
+  function refreshCartBadge(){
     var badge = document.getElementById("cartCount");
-    badge.hidden = false;
-    badge.textContent = state.cartCount;
+    var n = cartCount();
+    badge.hidden = n === 0;
+    badge.textContent = n;
+  }
+  function addToCart(line){
+    var found = cart.filter(function(l){
+      return l.id === line.id && l.couleur === line.couleur && l.taille === line.taille;
+    })[0];
+    if(found) found.qty++;
+    else { line.qty = 1; cart.push(line); }
+    saveCart();
+    refreshCartBadge();
+    renderCart();
+    toast(line.article + " (" + line.taille + ") ajouté au panier");
   }
 
-  /* Envoi d'une commande (fiche produit ou achat rapide). Sans endpoint
-     Google Sheets configure, la commande est seulement loguee. */
+  /* Envoi d'une commande : une requete par ligne, le Sheet attend une ligne
+     par article. Sans endpoint configure, la commande est seulement loguee. */
   function sendOrder(order, onSuccess, onError){
     if(ORDERS_ENDPOINT){
       fetch(ORDERS_ENDPOINT, {
@@ -945,9 +1032,7 @@
             return '<button type="button" class="quick-size" data-quick-size="'+sz+'" aria-pressed="false">'+sz+'</button>';
           }).join("") +
         '</div>' +
-        '<input type="text" class="quick-input" data-field="name" placeholder="Nom complet" autocomplete="name" value="'+esc(buyer.name)+'">' +
-        '<input type="tel" class="quick-input" data-field="phone" placeholder="Téléphone" autocomplete="tel" value="'+esc(buyer.phone)+'">' +
-        '<button type="button" class="quick-submit">Commander</button>' +
+        '<button type="button" class="quick-submit">Ajouter au panier</button>' +
         '<button type="button" class="quick-more">Voir la fiche</button>' +
       '</div>';
     // <div> et non <button> : la tuile contient desormais ses propres boutons.
@@ -997,8 +1082,8 @@
         panel.hidden = false;
         card.classList.add("quick-open");
         openBtn.setAttribute("aria-expanded","true");
-        var pre = panel.querySelector('.quick-input[data-field="name"]');
-        if(!pre.value) pre.focus();
+        var firstSize = panel.querySelector("[data-quick-size]");
+        if(firstSize) firstSize.focus();
       }
 
       openBtn.addEventListener("click", function(e){
@@ -1026,34 +1111,15 @@
         var sizeBtn = panel.querySelector('[data-quick-size][aria-pressed="true"]');
         if(!sizeBtn){ toast("Choisis une taille"); return; }
         var colorBtn = panel.querySelector('[data-quick-color][aria-pressed="true"]');
-        var name = panel.querySelector('.quick-input[data-field="name"]').value.trim();
-        var phone = panel.querySelector('.quick-input[data-field="phone"]').value.trim();
-        if(!name || !phone){ toast("Indique ton nom et ton téléphone pour valider"); return; }
-
-        var size = sizeBtn.getAttribute("data-quick-size");
-        submit.disabled = true;
-        sendOrder({
-          client: name,
-          telephone: phone,
+        addToCart({
+          id: p.id,
           article: p.name,
           reference: "IMP-" + p.id.toUpperCase(),
           couleur: colorBtn ? colorBtn.getAttribute("data-quick-color") : p.colors[0].n,
-          taille: size,
+          taille: sizeBtn.getAttribute("data-quick-size"),
           prix: p.price
-        }, function(){
-          rememberBuyer(name, phone);
-          bumpCart();
-          submit.textContent = "Commande enregistrée ✓";
-          toast(p.name + " (Taille " + size + ") - commande enregistrée");
-          setTimeout(function(){
-            submit.textContent = "Commander";
-            submit.disabled = false;
-            closePanel();
-          }, 1600);
-        }, function(){
-          toast("Commande non envoyée, vérifie ta connexion et réessaie");
-          submit.disabled = false;
         });
+        closePanel();
       });
     });
   }
@@ -1204,11 +1270,6 @@
               p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="'+(pdpState.size===s)+'">'+s+'</button>';}).join("") +
             '</div>' +
           '</div>' +
-          '<div class="pdp-buyer">' +
-            '<input type="text" id="buyerName" placeholder="Nom complet" autocomplete="name" value="'+esc(buyer.name)+'">' +
-            '<input type="tel" id="buyerPhone" placeholder="Téléphone" autocomplete="tel" value="'+esc(buyer.phone)+'">' +
-            '<span class="pdp-buyer-hint">Sert à enregistrer ta commande et à te recontacter pour le retrait.</span>' +
-          '</div>' +
           '<div class="pdp-actions">' +
             '<button class="btn-primary" id="addToCart">Ajouter au panier</button>' +
             '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>' +
@@ -1268,38 +1329,19 @@
 
     document.getElementById("addToCart").addEventListener("click", function(){
       if(!pdpState.size){ toast("Choisis une taille avant d'ajouter au panier"); return; }
-      var nameField = document.getElementById("buyerName");
-      var phoneField = document.getElementById("buyerPhone");
-      var name = nameField.value.trim();
-      var phone = phoneField.value.trim();
-      if(!name || !phone){ toast("Indique ton nom et ton telephone pour valider"); return; }
-
-      var self = this;
-      self.disabled = true;
-
-      var order = {
-        client: name,
-        telephone: phone,
+      addToCart({
+        id: p.id,
         article: p.name,
         reference: "IMP-"+p.id.toUpperCase(),
         couleur: pdpState.color.n,
         taille: pdpState.size,
         prix: p.price
-      };
-
-      sendOrder(order, function(){
-        rememberBuyer(name, phone);
-        bumpCart();
-        self.textContent = "Commande enregistrée ✓";
-        self.setAttribute("data-added","true");
-        toast(p.name+" (Taille "+pdpState.size+") - commande enregistrée");
-        setTimeout(function(){ self.textContent = "Ajouter au panier"; self.removeAttribute("data-added"); self.disabled = false; }, 1800);
-      }, function(){
-        toast("Commande non envoyée, vérifie ta connexion et réessaie");
-        self.disabled = false;
       });
+      var self = this;
+      self.textContent = "Ajouté au panier ✓";
+      self.setAttribute("data-added","true");
+      setTimeout(function(){ self.textContent = "Ajouter au panier"; self.removeAttribute("data-added"); }, 1600);
     });
-
 
     wireCards(document.getElementById("view-pdp"));
 
@@ -1433,6 +1475,8 @@
   function lockScroll(on){ document.body.style.overflow = on ? "hidden" : ""; }
 
   function closeOverlays(){
+    document.getElementById("cartDrawer").classList.remove("open");
+    document.getElementById("cartDrawer").setAttribute("aria-hidden","true");
     navDrawer.classList.remove("open");
     filterSheet.classList.remove("open");
     scrim.classList.remove("show");
@@ -1526,6 +1570,124 @@
     });
   }
 
+  /* ---------------- panier ---------------- */
+  var cartDrawer = document.getElementById("cartDrawer");
+  var cartBody = document.getElementById("cartBody");
+  var cartFoot = document.getElementById("cartFoot");
+  var cartForm = document.getElementById("cartForm");
+
+  function lineMedia(l){
+    var p = PRODUCTS.filter(function(x){ return x.id === l.id; })[0];
+    if(p && p.photo) return '<img src="'+p.photo+'" alt="" loading="lazy">';
+    var color = (p ? p.colors[0].h : "#0B1F3D");
+    return '<svg style="color:'+color+'"><use href="#'+(p ? p.icon : "icon-shirt")+'"/></svg>';
+  }
+
+  function renderCart(){
+    if(!cart.length){
+      cartBody.innerHTML = '<p class="cart-empty">Ton panier est vide. Ajoute un article depuis la grille ou une fiche produit.</p>';
+      cartFoot.hidden = true;
+      return;
+    }
+    cartBody.innerHTML = cart.map(function(l, i){
+      return '<div class="cart-line">' +
+               '<div class="cart-line-media">'+lineMedia(l)+'</div>' +
+               '<div class="cart-line-info">' +
+                 '<div class="cart-line-name">'+esc(l.article)+'</div>' +
+                 '<div class="cart-line-meta">'+esc(l.couleur)+' · Taille '+esc(l.taille)+'</div>' +
+                 '<div class="cart-line-price">'+euro(l.prix * l.qty)+'</div>' +
+                 '<div class="cart-qty">' +
+                   '<button type="button" data-qty="-1" data-i="'+i+'" aria-label="Retirer un exemplaire">−</button>' +
+                   '<span>'+l.qty+'</span>' +
+                   '<button type="button" data-qty="1" data-i="'+i+'" aria-label="Ajouter un exemplaire">+</button>' +
+                   '<button type="button" class="cart-drop" data-drop="'+i+'">Retirer</button>' +
+                 '</div>' +
+               '</div>' +
+             '</div>';
+    }).join("");
+    cartFoot.hidden = false;
+    document.getElementById("cartTotal").textContent = euro(cartTotal());
+  }
+
+  function openCart(){
+    closeOverlays();
+    renderCart();
+    cartDrawer.classList.add("open");
+    cartDrawer.setAttribute("aria-hidden","false");
+    document.getElementById("scrim").classList.add("show");
+    lockScroll(true);
+  }
+
+  cartBody.addEventListener("click", function(e){
+    var q = e.target.closest("[data-qty]");
+    if(q){
+      var line = cart[+q.getAttribute("data-i")];
+      line.qty += +q.getAttribute("data-qty");
+      if(line.qty < 1) cart.splice(cart.indexOf(line), 1);
+      saveCart(); refreshCartBadge(); renderCart();
+      return;
+    }
+    var d = e.target.closest("[data-drop]");
+    if(d){
+      cart.splice(+d.getAttribute("data-drop"), 1);
+      saveCart(); refreshCartBadge(); renderCart();
+    }
+  });
+
+  document.getElementById("cartCheckout").addEventListener("click", function(){
+    this.hidden = true;
+    cartForm.hidden = false;
+    document.getElementById("coName").value = buyer.name;
+    document.getElementById("coPhone").value = buyer.phone;
+    document.getElementById("coEmail").value = buyer.email;
+    document.getElementById(buyer.name ? "coPhone" : "coName").focus();
+  });
+
+  cartForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = document.getElementById("coName").value.trim();
+    var phone = document.getElementById("coPhone").value.trim();
+    var email = document.getElementById("coEmail").value.trim();
+    if(!name || !phone || !email){ toast("Nom, téléphone et e-mail sont nécessaires"); return; }
+
+    var btn = document.getElementById("cartConfirm");
+    btn.disabled = true;
+    btn.textContent = "Envoi...";
+
+    /* Une requete par ligne : le Sheet attend une ligne par article. On
+       attend la fin de toutes les lignes avant de vider le panier, pour ne
+       rien perdre si l'une d'elles echoue. */
+    var pending = cart.length, failed = false;
+    cart.forEach(function(l){
+      sendOrder({
+        client: name, telephone: phone, email: email,
+        article: l.article, reference: l.reference,
+        couleur: l.couleur, taille: l.taille,
+        prix: l.prix, quantite: l.qty
+      }, done, function(){ failed = true; done(); });
+    });
+
+    function done(){
+      if(--pending > 0) return;
+      btn.disabled = false;
+      btn.textContent = "Valider la commande";
+      if(failed){
+        toast("Commande non envoyée, vérifie ta connexion et réessaie");
+        return;
+      }
+      rememberBuyer({ name:name, phone:phone, email:email });
+      cart = [];
+      saveCart(); refreshCartBadge(); renderCart();
+      cartForm.hidden = true;
+      document.getElementById("cartCheckout").hidden = false;
+      cartBody.innerHTML = '<p class="cart-empty">Commande enregistrée, merci ! On te recontacte pour le retrait au club house.</p>';
+      toast("Commande enregistrée");
+    }
+  });
+
+  document.getElementById("cartClose").addEventListener("click", closeOverlays);
+  document.getElementById("cartBtn").addEventListener("click", openCart);
+
   /* ---------------- router ---------------- */
   function route(){
     var hash = location.hash || "#/";
@@ -1557,6 +1719,8 @@
   window.addEventListener("resize", syncTopbar);
   topbar.addEventListener("transitionend", syncTopbar);
 
+  refreshCartBadge();
+  renderCart();
   renderMainNav();
   wireMainNav();
   renderDrawer();

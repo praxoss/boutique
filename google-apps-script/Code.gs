@@ -7,7 +7,7 @@
  */
 
 var SHEET_NAME = "Commandes";
-var HEADERS = ["Date", "Client", "Telephone", "Article", "Reference", "Couleur", "Taille", "Prix", "Statut"];
+var HEADERS = ["Date", "Client", "Telephone", "Email", "Article", "Reference", "Couleur", "Taille", "Prix", "Quantite", "Statut"];
 
 function getOrdersSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -21,10 +21,10 @@ function getOrdersSheet_() {
 }
 
 /**
- * Called by boutique/index.html when someone validates an order on a product page.
- * Appends one row per order. Body is JSON (posted as text/plain to dodge the
+ * Called by boutique/index.html when someone validates the cart.
+ * Appends one row per basket line (contact details are collected at checkout). Body is JSON (posted as text/plain to dodge the
  * CORS preflight Apps Script doesn't support):
- * { client, telephone, article, reference, couleur, taille, prix }
+ * { client, telephone, email, article, reference, couleur, taille, prix, quantite }
  */
 function doPost(e) {
   var sheet = getOrdersSheet_();
@@ -39,11 +39,13 @@ function doPost(e) {
     new Date(),
     data.client || "",
     data.telephone || "",
+    data.email || "",
     data.article || "",
     data.reference || "",
     data.couleur || "",
     data.taille || "",
     data.prix || "",
+    data.quantite || 1,
     "En attente"
   ]);
 
