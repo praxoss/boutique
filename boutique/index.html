@@ -38,13 +38,19 @@
   [hidden]{display:none!important;}
 
   /* ---------- header ---------- */
-  .site-header{
+  /* En-tete + nav voyagent ensemble : un seul bloc colle en haut.
+     Le logo passe a 50% des que la page n'est plus tout en haut. */
+  .topbar{
     position:sticky;
     top:env(safe-area-inset-top,0px);
     z-index:20;
     background:var(--bg);
+  }
+  .site-header{
+    background:var(--bg);
     border-bottom:1px solid var(--line);
     padding:14px 24px;
+    transition:padding .22s ease;
     display:grid;
     grid-template-columns:1fr auto 1fr;
     align-items:center;
@@ -61,7 +67,10 @@
     border:none;
     padding:0;
   }
-  .wordmark img{height:102px;width:auto;}
+  .wordmark img{height:102px;width:auto;transition:height .22s ease;}
+  .topbar.shrunk .site-header{padding-top:7px;padding-bottom:7px;}
+  .topbar.shrunk .wordmark img{height:51px;}
+  .topbar.shrunk .wordmark{gap:3px;}
   .wordmark .name{
     font-family:"Anton","Helvetica Neue",sans-serif;
     font-size:22px;
@@ -115,6 +124,7 @@
     position:relative;
     z-index:19;
   }
+  .mega-panel{max-height:calc(100vh - var(--topbar-h, 160px) - 40px);overflow-y:auto;}
   .main-nav-list{
     list-style:none;
     margin:0;padding:0;
@@ -254,7 +264,7 @@
     padding-top:24px;
     align-items:start;
   }
-  .filters{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));}
+  .filters{position:sticky;top:calc(var(--topbar-h, 64px) + 16px + env(safe-area-inset-top,0px));}
   .filter-group{border-bottom:1px solid var(--line);}
   .filter-group summary{
     list-style:none;
@@ -354,7 +364,7 @@
     padding:12px 0 48px;
     align-items:start;
   }
-  .pdp-gallery{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));}
+  .pdp-gallery{position:sticky;top:calc(var(--topbar-h, 64px) + 16px + env(safe-area-inset-top,0px));}
   .gallery-frame{
     background:var(--surface);
     aspect-ratio:1/1;
@@ -581,6 +591,7 @@
     main{padding:0 16px;}
     .site-header{padding:12px 16px;}
     .wordmark img{height:78px;}
+    .topbar.shrunk .wordmark img{height:39px;}
   }
 
   .card-media img,.gallery-frame img{
@@ -634,6 +645,7 @@
   </symbol>
 </svg>
 
+<div class="topbar" id="topbar">
 <header class="site-header">
   <button class="burger" id="burgerBtn" aria-label="Ouvrir le menu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -655,6 +667,7 @@
 <nav class="main-nav" id="mainNav">
   <ul class="main-nav-list" id="mainNavList"></ul>
 </nav>
+</div>
 <div class="promo-bar">Livraison offerte dès <b>60 €</b> d'achat pour les licenciés du club</div>
 
 <main>
@@ -1305,11 +1318,24 @@
 
   document.getElementById("logoBtn").addEventListener("click", function(){ location.hash = "#/"; });
   window.addEventListener("hashchange", route);
+  /* Bloc du haut : logo pleine taille uniquement quand la page est tout en
+     haut, moitie moins des le premier defilement. La hauteur reelle est
+     publiee en variable CSS pour caler les colonnes collantes dessous. */
+  var topbar = document.getElementById("topbar");
+  function syncTopbar(){
+    topbar.classList.toggle("shrunk", window.scrollY > 8);
+    document.documentElement.style.setProperty("--topbar-h", topbar.offsetHeight + "px");
+  }
+  window.addEventListener("scroll", syncTopbar, { passive:true });
+  window.addEventListener("resize", syncTopbar);
+  topbar.addEventListener("transitionend", syncTopbar);
+
   renderMainNav();
   wireMainNav();
   renderDrawer();
   wireMobileChrome();
   route();
+  syncTopbar();
 })();
 </script>
 
