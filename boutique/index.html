@@ -452,9 +452,121 @@
   .related h2{font-size:clamp(20px,3vw,26px);color:var(--navy);padding:32px 0 22px;}
   .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px 20px;}
 
+  /* ---------- mobile : burger, tiroir de nav, barre de filtres ---------- */
+  .burger{
+    grid-column:1;justify-self:start;
+    display:none;
+    background:none;border:none;cursor:pointer;padding:0;
+    width:34px;height:34px;align-items:center;justify-content:center;
+    color:var(--ink);
+  }
+  .burger svg{width:22px;height:22px;}
+  .scrim{
+    position:fixed;inset:0;
+    background:rgba(11,31,61,.42);
+    opacity:0;pointer-events:none;
+    transition:opacity .22s ease;
+    z-index:40;
+  }
+  .scrim.show{opacity:1;pointer-events:auto;}
+
+  .nav-drawer{
+    position:fixed;top:0;bottom:0;left:0;
+    width:min(86vw,360px);
+    background:var(--bg);
+    z-index:41;
+    transform:translateX(-100%);
+    transition:transform .25s ease;
+    display:flex;flex-direction:column;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .nav-drawer.open{transform:none;}
+  .drawer-head,.sheet-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px;border-bottom:1px solid var(--line);
+  }
+  .drawer-title,.sheet-title{
+    font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);
+  }
+  .drawer-close{
+    background:none;border:none;cursor:pointer;padding:0;
+    width:32px;height:32px;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .drawer-close svg{width:18px;height:18px;}
+  .drawer-body{overflow-y:auto;flex:1;padding-bottom:20px;}
+  .drawer-group{border-bottom:1px solid var(--line);}
+  .drawer-group summary{
+    list-style:none;cursor:pointer;
+    padding:16px 18px;
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .drawer-group summary::-webkit-details-marker{display:none;}
+  .drawer-group summary::after{
+    content:"";width:7px;height:7px;flex-shrink:0;
+    border-right:1px solid var(--sub);border-bottom:1px solid var(--sub);
+    transform:rotate(45deg);margin-top:-3px;
+  }
+  .drawer-group[open] summary::after{transform:rotate(-135deg);margin-top:2px;}
+  .drawer-group .mega-link{padding:10px 18px;min-width:0;}
+  .drawer-group .mega-empty{padding:0 18px 18px;max-width:none;}
+  .drawer-group .mega-all{margin:2px 18px 18px;}
+
+  .filter-bar{
+    display:none;
+    position:fixed;left:0;right:0;bottom:0;
+    z-index:30;
+    background:var(--bg);
+    border-top:1px solid var(--line);
+    box-shadow:0 -6px 18px rgba(0,0,0,.06);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+    gap:10px;
+  }
+  .filter-bar.hide{display:none !important;}
+  .filter-bar button{
+    flex:1;
+    font-family:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    padding:13px 10px;cursor:pointer;
+  }
+  .filter-bar .fb-filter{background:var(--navy);color:#fff;border:1px solid var(--navy);}
+  .filter-bar .fb-sort{background:var(--bg);color:var(--ink);border:1px solid var(--line);}
+  .filter-sheet{
+    position:fixed;left:0;right:0;bottom:0;
+    z-index:41;
+    background:var(--bg);
+    max-height:82vh;
+    display:flex;flex-direction:column;
+    transform:translateY(100%);
+    transition:transform .25s ease;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .filter-sheet.open{transform:none;}
+  .sheet-body{overflow-y:auto;flex:1;padding:0 18px;}
+  .sheet-body .filters{position:static;border:none;padding-top:0;}
+  .sheet-foot{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 18px;border-top:1px solid var(--line);
+  }
+  .sheet-reset{
+    background:none;border:none;cursor:pointer;font-family:inherit;
+    font-size:12px;color:var(--sub);text-decoration:underline;padding:6px 0;
+  }
+  .sheet-apply{
+    flex:1;
+    background:var(--navy);color:#fff;border:1px solid var(--navy);
+    font-family:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    padding:13px 10px;cursor:pointer;
+  }
+
   @media (max-width:860px){
     .plp-layout{grid-template-columns:1fr;}
-    .filters{position:static;border-top:1px solid var(--line);padding-top:4px;}
+    .main-nav{display:none;}
+    .burger{display:flex;}
+    .plp-layout > .filters{display:none;}
+    .filter-bar{display:flex;}
+    main{padding-bottom:84px;}
     .product-grid{grid-template-columns:repeat(2,1fr);}
     .pdp-layout{grid-template-columns:1fr;gap:0;}
     .pdp-gallery{position:static;margin:0 -24px;}
@@ -523,6 +635,9 @@
 </svg>
 
 <header class="site-header">
+  <button class="burger" id="burgerBtn" aria-label="Ouvrir le menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <button class="wordmark" id="logoBtn" aria-label="Retour à la boutique">
     <img src="assets/logo.png" alt="Les Implacables">
     <span class="tag">Boutique</span>
@@ -546,6 +661,37 @@
   <section id="view-plp"></section>
   <section id="view-pdp" hidden></section>
 </main>
+
+<div class="scrim" id="scrim"></div>
+
+<aside class="nav-drawer" id="navDrawer" aria-label="Menu" aria-hidden="true">
+  <div class="drawer-head">
+    <span class="drawer-title">Menu</span>
+    <button class="drawer-close" id="drawerClose" aria-label="Fermer le menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<div class="filter-bar" id="filterBar">
+  <button type="button" class="fb-filter" id="openFilters">Filtrer</button>
+  <button type="button" class="fb-sort" id="openSort">Trier</button>
+</div>
+
+<div class="filter-sheet" id="filterSheet" aria-hidden="true">
+  <div class="sheet-head">
+    <span class="sheet-title">Filtrer</span>
+    <button class="drawer-close" id="sheetClose" aria-label="Fermer les filtres">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot">
+    <button type="button" class="sheet-reset" id="sheetReset">Tout effacer</button>
+    <button type="button" class="sheet-apply" id="sheetApply">Voir les articles</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -659,21 +805,15 @@
     );
   }
 
-  /* Sur mobile, la colonne de filtres passe au-dessus de la grille : on la
-     livre repliee pour que les produits restent visibles sans scroller.
-     Les ouvertures/fermetures faites par le visiteur sont conservees d'un
-     rendu a l'autre (chaque filtre clique re-rend la page). */
+  /* Sous 860px la colonne de filtres est deplacee dans un panneau appele
+     depuis la barre collee en bas (voir syncFilterHost). L'etat ouvert /
+     ferme de chaque groupe est conserve d'un rendu a l'autre, puisque
+     chaque filtre clique re-genere toute la page. */
   var MOBILE_Q = window.matchMedia("(max-width:860px)");
-  var openGroups = null;
-  function initOpenGroups(){
-    var wide = !MOBILE_Q.matches;
-    openGroups = { cat:wide, size:wide, color:wide, price:false };
-  }
-  MOBILE_Q.addEventListener("change", function(){ initOpenGroups(); if(!document.getElementById("view-plp").hidden) renderPLP(); });
+  var openGroups = { cat:true, size:true, color:true, price:false };
   function op(g){ return openGroups[g] ? " open" : ""; }
 
   function renderPLP(){
-    if(!openGroups) initOpenGroups();
     var list = filteredProducts();
     var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
 
@@ -749,6 +889,7 @@
     document.getElementById("view-plp").querySelectorAll(".filter-group").forEach(function(el){
       el.addEventListener("toggle", function(){ openGroups[el.getAttribute("data-group")] = el.open; });
     });
+    syncFilterHost(list.length);
     document.getElementById("sortSelect").addEventListener("change", function(e){ state.sort = e.target.value; renderPLP(); });
   }
 
@@ -1021,10 +1162,136 @@
     });
   }
 
+  /* ---------------- mobile : tiroir de nav + panneau de filtres ---------------- */
+  var scrim = document.getElementById("scrim");
+  var navDrawer = document.getElementById("navDrawer");
+  var filterSheet = document.getElementById("filterSheet");
+  var filterBar = document.getElementById("filterBar");
+  var sheetBody = document.getElementById("sheetBody");
+  var sortWrap = document.createElement("div");
+
+  function renderDrawer(){
+    document.getElementById("drawerBody").innerHTML = MENUS.map(function(menu){
+      var body;
+      if(menu.cols.length){
+        body = menu.cols.map(function(col){
+          return '<p class="mega-col-title" style="padding:6px 18px 0;">'+esc(col.title)+'</p>'+
+                 col.ids.map(megaLinkHTML).join("");
+        }).join("");
+        if(menu.cats){
+          body += '<button type="button" class="mega-all" data-cats="'+menu.cats.join("|")+'">'+
+                  'Voir tout ' + esc(menu.label.toLowerCase()) + '</button>';
+        }
+      } else {
+        body = '<p class="mega-empty">'+esc(menu.note||"")+'</p>';
+      }
+      return '<details class="drawer-group"><summary>'+esc(menu.label)+'</summary>'+body+'</details>';
+    }).join("");
+  }
+
+  function lockScroll(on){ document.body.style.overflow = on ? "hidden" : ""; }
+
+  function closeOverlays(){
+    navDrawer.classList.remove("open");
+    filterSheet.classList.remove("open");
+    scrim.classList.remove("show");
+    navDrawer.setAttribute("aria-hidden","true");
+    filterSheet.setAttribute("aria-hidden","true");
+    document.getElementById("burgerBtn").setAttribute("aria-expanded","false");
+    lockScroll(false);
+  }
+
+  function openDrawer(){
+    closeMenus();
+    navDrawer.classList.add("open");
+    navDrawer.setAttribute("aria-hidden","false");
+    scrim.classList.add("show");
+    document.getElementById("burgerBtn").setAttribute("aria-expanded","true");
+    lockScroll(true);
+  }
+
+  function openSheet(scrollToSort){
+    filterSheet.classList.add("open");
+    filterSheet.setAttribute("aria-hidden","false");
+    scrim.classList.add("show");
+    lockScroll(true);
+    sheetBody.scrollTop = scrollToSort ? 0 : (sortWrap.offsetHeight || 0);
+  }
+
+  function renderSortGroup(){
+    sortWrap.innerHTML = '<details class="filter-group" data-group="sort" open><summary>Trier par</summary><div class="filter-body">'+
+      [["new","Nouveautés"],["asc","Prix croissant"],["desc","Prix décroissant"]].map(function(o){
+        return '<label class="chk"><input type="radio" name="sheetSort" value="'+o[0]+'"'+(state.sort===o[0]?" checked":"")+'> '+o[1]+'</label>';
+      }).join("")+
+      '</div></details>';
+  }
+
+  /* Deplace la colonne de filtres fraichement rendue dans le panneau du bas
+     sur mobile (et la laisse dans la page sur desktop), puis met a jour les
+     libelles de la barre. */
+  function syncFilterHost(count){
+    var fresh = document.querySelector("#view-plp .filters");
+    var parked = sheetBody.querySelector(".filters");
+    if(MOBILE_Q.matches){
+      if(fresh){
+        if(parked) parked.remove();
+        if(!sortWrap.parentNode) sheetBody.appendChild(sortWrap);
+        renderSortGroup();
+        sheetBody.appendChild(fresh);
+      }
+    } else if(parked){
+      parked.remove();
+    }
+    var active = state.cats.length + state.sizes.length + state.colors.length + (state.price!=="all" ? 1 : 0);
+    document.getElementById("openFilters").textContent = active ? "Filtrer ("+active+")" : "Filtrer";
+    document.getElementById("sheetApply").textContent = "Voir les "+count+" article"+(count>1?"s":"");
+  }
+
+  function wireMobileChrome(){
+    document.getElementById("burgerBtn").addEventListener("click", openDrawer);
+    document.getElementById("drawerClose").addEventListener("click", closeOverlays);
+    document.getElementById("sheetClose").addEventListener("click", closeOverlays);
+    document.getElementById("sheetApply").addEventListener("click", closeOverlays);
+    document.getElementById("openFilters").addEventListener("click", function(){ openSheet(false); });
+    document.getElementById("openSort").addEventListener("click", function(){ openSheet(true); });
+    scrim.addEventListener("click", closeOverlays);
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeOverlays(); });
+
+    sortWrap.addEventListener("change", function(e){
+      if(e.target.name !== "sheetSort") return;
+      state.sort = e.target.value;
+      renderPLP();
+    });
+
+    document.getElementById("sheetReset").addEventListener("click", function(){
+      state.cats = []; state.sizes = []; state.colors = []; state.price = "all";
+      renderPLP();
+    });
+
+    navDrawer.addEventListener("click", function(e){
+      var go = e.target.closest("[data-goto]");
+      if(go){ closeOverlays(); location.hash = "#/produit/"+go.getAttribute("data-goto"); window.scrollTo(0,0); return; }
+      var all = e.target.closest("[data-cats]");
+      if(all){
+        closeOverlays();
+        state.cats = all.getAttribute("data-cats").split("|");
+        if(location.hash && location.hash !== "#/") location.hash = "#/"; else route();
+        window.scrollTo(0,0);
+      }
+    });
+
+    MOBILE_Q.addEventListener("change", function(){
+      closeOverlays();
+      if(!document.getElementById("view-plp").hidden) renderPLP();
+    });
+  }
+
   /* ---------------- router ---------------- */
   function route(){
     var hash = location.hash || "#/";
     var m = hash.match(/^#\/produit\/(.+)$/);
+    closeOverlays();
+    filterBar.classList.toggle("hide", !!m);
     if(m){
       document.getElementById("view-plp").hidden = true;
       document.getElementById("view-pdp").hidden = false;
@@ -1040,6 +1307,8 @@
   window.addEventListener("hashchange", route);
   renderMainNav();
   wireMainNav();
+  renderDrawer();
+  wireMobileChrome();
   route();
 })();
 </script>
