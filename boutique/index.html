@@ -2191,7 +2191,7 @@
     } else {
       document.getElementById("view-home").hidden = false;
       renderHome();
-      if(typeof syncTopbar === "function") syncTopbar();
+      if(typeof syncAll === "function") syncAll();
     }
   }
 
@@ -2204,22 +2204,24 @@
   var promoBar = document.querySelector(".promo-bar");
   function syncTopbar(){
     topbar.classList.toggle("shrunk", window.scrollY > 8);
-    var root = document.documentElement;
-    root.style.setProperty("--topbar-h", topbar.offsetHeight + "px");
-    // hauteur du hero : l'ecran moins ce qui le surplombe. On mesure la
-    // position reelle du hero plutot que d'additionner les blocs, sinon le
-    // chargement de la police (qui change la hauteur de l'en-tete) fausse le
-    // calcul. Uniquement en haut de page : une fois defile, l'en-tete a
-    // retreci et la mesure ne vaut plus.
-    var hero = document.querySelector(".hero");
-    if(hero && window.scrollY <= 8){
-      root.style.setProperty("--hero-offset", Math.ceil(hero.getBoundingClientRect().top) + "px");
-    }
+    document.documentElement.style.setProperty("--topbar-h", topbar.offsetHeight + "px");
   }
+  // Hauteur du hero : l'ecran moins ce qui le surplombe, mesure avec
+  // l'en-tete en pleine taille. On ne mesure jamais pendant le defilement :
+  // en remontant, l'en-tete est encore en train de grandir et la mesure
+  // donnerait un hero trop haut, qui se corrige ensuite (effet de saut).
+  // D'ou une mesure au chargement, au changement de police et au
+  // redimensionnement seulement, et uniquement en haut de page.
+  function measureHero(){
+    var hero = document.querySelector(".hero");
+    if(!hero || window.scrollY > 8 || topbar.classList.contains("shrunk")) return;
+    document.documentElement.style.setProperty("--hero-offset", Math.ceil(hero.getBoundingClientRect().top) + "px");
+  }
+  function syncAll(){ syncTopbar(); measureHero(); }
   window.addEventListener("scroll", syncTopbar, { passive:true });
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncTopbar);
-  window.addEventListener("load", syncTopbar);
-  window.addEventListener("resize", syncTopbar);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncAll);
+  window.addEventListener("load", syncAll);
+  window.addEventListener("resize", syncAll);
   topbar.addEventListener("transitionend", syncTopbar);
 
   function start(){
@@ -2230,7 +2232,7 @@
     renderDrawer();
     wireMobileChrome();
     route();
-    syncTopbar();
+    syncAll();
   }
 
   fetch("catalogue.json", { cache:"no-cache" })
