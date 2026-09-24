@@ -660,6 +660,22 @@
   ];
   var nextSkuNum = 1;
 
+  /* Persistance du catalogue — chargement depuis localStorage au demarrage */
+  (function(){
+    try {
+      var saved = JSON.parse(localStorage.getItem("implacables-skus") || "null");
+      if(saved && Array.isArray(saved) && saved.length > 0){
+        SKUS = saved;
+      }
+    } catch(e){}
+  })();
+
+  function persistSkus(){
+    try { localStorage.setItem("implacables-skus", JSON.stringify(SKUS)); } catch(err){
+      /* si quota depassé (photos base64 lourdes), on ignore silencieusement */
+    }
+  }
+
   var ORDERS = [
     { client:"Thomas Girard",     sku:"maillot-domicile",     taille:"L",   date:"2026-08-21", statut:"confirmee" },
     { client:"Lucas Bernard",     sku:"short-match",           taille:"M",   date:"2026-08-23", statut:"confirmee" },
@@ -785,6 +801,7 @@
     if(!s) return;
     if(!confirm('Supprimer "'+s.name+'" du catalogue ?')) return;
     SKUS = SKUS.filter(function(x){return x.id!==id;});
+    persistSkus();
     renderSidebar();
     renderTable();
     toast("SKU supprime");
@@ -954,6 +971,8 @@
     if(sku.hero){
       SKUS.forEach(function(s){ if(s.id !== sku.id) s.hero = false; });
     }
+    // persistance du catalogue
+    persistSkus();
     // la boutique lit le produit mis en avant dans le meme stockage local
     collectHome();
     try { localStorage.setItem("implacables-home", JSON.stringify(HOME)); } catch(err){}

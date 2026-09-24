@@ -509,6 +509,8 @@
     font-size:10px;font-weight:700;letter-spacing:.05em;
     text-transform:uppercase;padding:4px 8px;color:var(--ink);
   }
+  .card-badge--rupture{ background:#888; color:#fff; }
+  .quick-submit:disabled{ opacity:.55; cursor:not-allowed; }
   .card:focus-visible{outline:2px solid var(--navy);outline-offset:3px;}
   .quick{
     position:absolute;left:10px;right:10px;bottom:10px;
@@ -1101,6 +1103,46 @@
       desc:"Sac de sport 40 litres avec compartiment ventilé dédié aux crampons, logo club floqué." }
   ];
 
+  /* Chargement depuis le backoffice : si le gestionnaire a sauvegarde des SKUs,
+     ils remplacent le catalogue hardcode ci-dessus. On conserve les champs
+     enrichis (photos multiples, heroImage, label) des produits existants. */
+  (function(){
+    try {
+      var saved = JSON.parse(localStorage.getItem("implacables-skus") || "null");
+      if(!saved || !Array.isArray(saved) || saved.length === 0) return;
+      var enriched = {};
+      PRODUCTS.forEach(function(p){ enriched[p.id] = p; });
+      PRODUCTS = saved
+        .filter(function(s){ return s.status !== "discontinue"; })
+        .map(function(s){
+          var ex = enriched[s.id] || {};
+          return {
+            id:        s.id,
+            cat:       s.typ,            /* backoffice "typ" → boutique "cat" */
+            name:      s.name,
+            sub:       s.sub  || ex.sub  || "",
+            price:     s.price,
+            icon:      s.icon || ex.icon || "icon-shirt",
+            label:     ex.label || undefined,
+            colors:    s.colors && s.colors.length ? s.colors : (ex.colors || []),
+            sizes:     s.sizes  && s.sizes.length  ? s.sizes  : (ex.sizes  || []),
+            desc:      s.desc  || ex.desc  || "",
+            /* photo : dataUrl si upload BO, sinon URL fichier BO, sinon original */
+            photo:     s.photoDataUrl || s.photo || ex.photo || "",
+            photos:    ex.photos || undefined,
+            status:    s.status,         /* "actif" | "rupture" */
+            hero:      s.hero || false,
+            heroImage: s.heroDataUrl || s.heroImage || ex.heroImage,
+            heroTitle: s.heroTitle || ex.heroTitle,
+            heroText:  s.heroText  || ex.heroText,
+            heroCta:   s.heroCta   || ex.heroCta,
+            heroFit:   s.heroFit   || ex.heroFit,
+            heroFocus: s.heroFocus != null ? s.heroFocus : (ex.heroFocus != null ? ex.heroFocus : 50)
+          };
+        });
+    } catch(e){}
+  })();
+
   var CATS = ["Maillots","T-shirts","Sweats","Shorts","Chaussettes","Accessoires"];
   var SIZES = ["S","M","L","XL","XXL"];
   var COLOR_SWATCHES = [{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"},{n:"Blanc",h:"#FFFFFF"},{n:"Gris",h:"#8A8D93"}];
@@ -1203,7 +1245,10 @@
 
   /* ---------------- PLP ---------------- */
   function cardHTML(p){
-    var badge = p.label ? '<span class="card-badge">'+esc(p.label)+'</span>' : "";
+    var isRupture = p.status === "rupture";
+    var badge = isRupture
+      ? '<span class="card-badge card-badge--rupture">Rupture</span>'
+      : (p.label ? '<span class="card-badge">'+esc(p.label)+'</span>' : "");
     var swatches = p.colors.map(function(c){return '<span style="background:'+c.h+(c.h==="#FFFFFF"?";border-color:var(--white-swatch-border)":"")+'"></span>';}).join("");
     var media = p.photo
       ? '<img src="'+p.photo+'" alt="'+esc(p.name)+'" loading="lazy">'
@@ -1232,7 +1277,9 @@
             return '<button type="button" class="quick-size" data-quick-size="'+sz+'" aria-pressed="false">'+sz+'</button>';
           }).join("") +
         '</div>' +
-        '<button type="button" class="quick-submit">Ajouter au panier</button>' +
+        (isRupture
+          ? '<button type="button" class="quick-submit" disabled>Rupture de stock</button>'
+          : '<button type="button" class="quick-submit">Ajouter au panier</button>') +
         '<button type="button" class="quick-more">Voir la fiche</button>' +
       '</div>';
     // <div> et non <button> : la tuile contient desormais ses propres boutons.
@@ -1471,7 +1518,9 @@
             '</div>' +
           '</div>' +
           '<div class="pdp-actions">' +
-            '<button class="btn-primary" id="addToCart">Ajouter au panier</button>' +
+            (p.status === "rupture"
+              ? '<button class="btn-primary" id="addToCart" disabled>Rupture de stock</button>'
+              : '<button class="btn-primary" id="addToCart">Ajouter au panier</button>') +
             '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>' +
           '</div>' +
           '<div class="pdp-delivery"><b>Retrait gratuit</b> au club house sous 3 à 5 jours.<br>Livraison à domicile disponible au paiement.</div>' +
