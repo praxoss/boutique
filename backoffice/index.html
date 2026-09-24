@@ -1128,9 +1128,15 @@
     ]
   };
   var HOME = JSON.parse(JSON.stringify(HOME_DEFAULT));
+  /* un champ laisse vide ne doit pas effacer le texte par defaut */
+  function nonEmpty(o){
+    var r = {};
+    Object.keys(o).forEach(function(k){ if(o[k] !== "" && o[k] != null) r[k] = o[k]; });
+    return r;
+  }
   function applyHome(saved){
     if(saved && typeof saved === "object"){
-      HOME = Object.assign(JSON.parse(JSON.stringify(HOME_DEFAULT)), saved);
+      HOME = Object.assign(JSON.parse(JSON.stringify(HOME_DEFAULT)), nonEmpty(saved));
     }
   }
 
@@ -1153,7 +1159,12 @@
     reader.readAsDataURL(file);
   }
 
+  /* collectHome() relit les champs de l'onglet : tant qu'il n'a pas ete
+     ouvert, ils sont vides et ne doivent pas ecraser les textes. */
+  var homeTabRendered = false;
+
   function renderHomeTab(){
+    homeTabRendered = true;
     var hero = SKUS.filter(function(s){ return s.hero; })[0];
     document.getElementById("heroSummary").innerHTML = hero
       ? 'Article mis en avant : <b>'+esc(hero.name)+'</b>. Le visuel et les textes du hero se reglent sur sa fiche, onglet Catalogue SKU.'
@@ -1210,6 +1221,20 @@
   }
 
   function collectHome(){
+    if(homeTabRendered) collectHomeFields();
+    var hero = SKUS.filter(function(s){ return s.hero; })[0];
+    HOME.hero = hero ? {
+      id: hero.id,
+      title: hero.heroTitle || hero.name,
+      text: hero.heroText || hero.desc,
+      cta: hero.heroCta || "Découvrir",
+      image: hero.heroImage || hero.photoDataUrl || hero.photo || "",
+      fit: hero.heroFit || "auto",
+      focus: hero.heroFocus != null ? hero.heroFocus : 50
+    } : null;
+  }
+
+  function collectHomeFields(){
     document.getElementById("tab-accueil").querySelectorAll("[data-home]").forEach(function(el){
       var parts = el.getAttribute("data-home").split(".");
       var target = HOME[parts[0]][+parts[1]];
@@ -1221,17 +1246,6 @@
     HOME.heroEyebrow = document.getElementById("h-eyebrow").value.trim();
     HOME.railTitle = document.getElementById("h-railtitle").value.trim();
     HOME.railSub = document.getElementById("h-railsub").value.trim();
-
-    var hero = SKUS.filter(function(s){ return s.hero; })[0];
-    HOME.hero = hero ? {
-      id: hero.id,
-      title: hero.heroTitle || hero.name,
-      text: hero.heroText || hero.desc,
-      cta: hero.heroCta || "Découvrir",
-      image: hero.heroImage || hero.photoDataUrl || hero.photo || "",
-      fit: hero.heroFit || "auto",
-      focus: hero.heroFocus != null ? hero.heroFocus : 50
-    } : null;
   }
 
   function saveHome(){
@@ -1252,7 +1266,7 @@
     el.classList.toggle("draft", hasDraft);
     el.innerHTML = hasDraft
       ? '<span><b>Modifications non publiees.</b> Elles ne sont visibles que dans ce navigateur. ' +
-        'Clique sur « Exporter pour publication », puis depose les fichiers telecharges dans le depot (dossier boutique/).</span>' +
+        'Clique sur « Exporter pour publication » : un fichier catalogue.json, photos comprises, a deposer dans le depot (dossier boutique/).</span>' +
         '<button type="button" class="btn-ghost" id="dropDraftBtn">Abandonner le brouillon</button>'
       : '<span><b>Catalogue publie.</b> Ce que tu vois ici est ce que voit la boutique.</span>';
     var drop = document.getElementById("dropDraftBtn");
@@ -1263,12 +1277,6 @@
     });
   }
 
-  function dataUrlToBlob(u){
-    var parts = u.split(","), mime = parts[0].match(/:(.*?);/)[1];
-    var bin = atob(parts[1]), arr = new Uint8Array(bin.length);
-    for(var i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
-    return new Blob([arr], { type:mime });
-  }
   function download(name, blob){
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1278,38 +1286,24 @@
     setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
 
-  /* Les images chargees ici sont en data URL : a l'export, chacune devient un
-     fichier assets/<nom>.jpg et le catalogue pointe dessus. */
+  /* Un seul fichier : Chrome bloque les telechargements en rafale. Les images
+     chargees ici restent en data URL dans le JSON ; la boutique sait les
+     afficher telles quelles, et a l'integration dans le depot on les sort
+     en fichiers assets/<id>.jpg pour alleger le catalogue. */
   function exportCatalogue(){
     collectHome();
-    var files = [];
-    function take(u, name){
-      if(!u || u.indexOf("data:") !== 0) return u;
-      var path = "assets/" + name + ".jpg";
-      files.push({ name:name + ".jpg", blob:dataUrlToBlob(u) });
-      return path;
-    }
     var skus = SKUS.map(function(s){
       var o = JSON.parse(JSON.stringify(s));
-      if(o.photoDataUrl){ o.photo = take(o.photoDataUrl, o.id); o.photos = undefined; }
+      if(o.photoDataUrl){ o.photo = o.photoDataUrl; o.photos = undefined; }
       delete o.photoDataUrl;
-      o.heroImage = take(o.heroImage, o.id + "-hero");
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    (home.cats||[]).forEach(function(c,i){ c.image = take(c.image, "accueil-univers-" + (i+1)); });
-    (home.duo||[]).forEach(function(d,i){ d.image = take(d.image, "accueil-bloc-" + (i+1)); });
-    if(home.hero){
-      var heroSku = skus.filter(function(s){ return s.id === home.hero.id; })[0];
-      home.hero.image = heroSku ? (heroSku.heroImage || heroSku.photo || "") : take(home.hero.image, "accueil-hero");
-    }
     var json = JSON.stringify({ skus:skus, home:home }, null, 2);
     download("catalogue.json", new Blob([json], { type:"application/json" }));
-    files.forEach(function(f, i){ setTimeout(function(){ download(f.name, f.blob); }, 400 * (i+1)); });
-    toast(files.length
-      ? "catalogue.json + " + files.length + " image" + (files.length>1?"s":"") + " telecharges"
-      : "catalogue.json telecharge");
+    toast("catalogue.json telecharge");
   }
+
 
   /* ---------------- wiring ---------------- */
   fillTypSelect();

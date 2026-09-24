@@ -1846,8 +1846,14 @@
     ]
   };
   var HOME = HOME_DEFAULT;
+  /* un champ laisse vide ne doit pas effacer le texte par defaut */
+  function nonEmpty(o){
+    var r = {};
+    Object.keys(o).forEach(function(k){ if(o[k] !== "" && o[k] != null) r[k] = o[k]; });
+    return r;
+  }
   function applyHome(saved){
-    if(saved && typeof saved === "object") HOME = Object.assign({}, HOME_DEFAULT, saved);
+    if(saved && typeof saved === "object") HOME = Object.assign({}, HOME_DEFAULT, nonEmpty(saved));
   }
 
   /* Le produit mis en avant vient du backoffice (option cochee sur la fiche
