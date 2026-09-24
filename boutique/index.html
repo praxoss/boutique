@@ -1106,45 +1106,44 @@
       desc:"Sac de sport 40 litres avec compartiment ventilé dédié aux crampons, logo club floqué." }
   ];
 
-  /* Chargement depuis le backoffice : si le gestionnaire a sauvegarde des SKUs,
-     ils remplacent le catalogue hardcode ci-dessus. On conserve les champs
-     enrichis (photos multiples, heroImage, label) des produits existants. */
-  (function(){
-    try {
-      var saved = JSON.parse(localStorage.getItem("implacables-skus") || "null");
-      if(!saved || !Array.isArray(saved) || saved.length === 0) return;
-      var enriched = {};
-      PRODUCTS.forEach(function(p){ enriched[p.id] = p; });
-      PRODUCTS = saved
-        .filter(function(s){ return s.status !== "discontinue"; })
-        .map(function(s){
-          var ex = enriched[s.id] || {};
-          return {
-            id:        s.id,
-            cat:       s.typ,            /* backoffice "typ" → boutique "cat" */
-            name:      s.name,
-            sub:       s.sub  || ex.sub  || "",
-            price:     s.price,
-            icon:      s.icon || ex.icon || "icon-shirt",
-            label:     ex.label || undefined,
-            colors:    s.colors && s.colors.length ? s.colors : (ex.colors || []),
-            sizes:     s.sizes  && s.sizes.length  ? s.sizes  : (ex.sizes  || []),
-            desc:      s.desc  || ex.desc  || "",
-            /* photo : dataUrl si upload BO, sinon URL fichier BO, sinon original */
-            photo:     s.photoDataUrl || s.photo || ex.photo || "",
-            photos:    ex.photos || undefined,
-            status:    s.status,         /* "actif" | "rupture" */
-            hero:      s.hero || false,
-            heroImage: s.heroDataUrl || s.heroImage || ex.heroImage,
-            heroTitle: s.heroTitle || ex.heroTitle,
-            heroText:  s.heroText  || ex.heroText,
-            heroCta:   s.heroCta   || ex.heroCta,
-            heroFit:   s.heroFit   || ex.heroFit,
-            heroFocus: s.heroFocus != null ? s.heroFocus : (ex.heroFocus != null ? ex.heroFocus : 50)
-          };
-        });
-    } catch(e){}
-  })();
+  /* Catalogue publie : catalogue.json, a cote de cette page, exporte depuis
+     le backoffice puis commite dans le depot. S'il manque ou ne se charge
+     pas, la liste ci-dessus sert de secours. On conserve les champs enrichis
+     (photos multiples, heroImage, label) des produits deja connus. */
+  function applySkus(saved){
+    if(!saved || !Array.isArray(saved) || saved.length === 0) return;
+    var enriched = {};
+    PRODUCTS.forEach(function(p){ enriched[p.id] = p; });
+    PRODUCTS = saved
+      .filter(function(s){ return s.status !== "discontinue"; })
+      .map(function(s){
+        var ex = enriched[s.id] || {};
+        var photo = s.photo || ex.photo || "";
+        return {
+          id:        s.id,
+          cat:       s.typ,            /* backoffice "typ" -> boutique "cat" */
+          name:      s.name,
+          sub:       s.sub  || ex.sub  || "",
+          price:     s.price,
+          icon:      s.icon || ex.icon || "icon-shirt",
+          label:     s.label || ex.label || undefined,
+          colors:    s.colors && s.colors.length ? s.colors : (ex.colors || []),
+          sizes:     s.sizes  && s.sizes.length  ? s.sizes  : (ex.sizes  || []),
+          desc:      s.desc  || ex.desc  || "",
+          photo:     photo,
+          /* une seule photo suffit a remplacer le picto sur la fiche produit */
+          photos:    s.photos || ex.photos || (photo ? [photo] : undefined),
+          status:    s.status,         /* "actif" | "rupture" */
+          hero:      s.hero || false,
+          heroImage: s.heroImage || ex.heroImage,
+          heroTitle: s.heroTitle || ex.heroTitle,
+          heroText:  s.heroText  || ex.heroText,
+          heroCta:   s.heroCta   || ex.heroCta,
+          heroFit:   s.heroFit   || ex.heroFit,
+          heroFocus: s.heroFocus != null ? s.heroFocus : (ex.heroFocus != null ? ex.heroFocus : 50)
+        };
+      });
+  }
 
   var CATS = ["Maillots","T-shirts","Sweats","Shorts","Chaussettes","Accessoires"];
   var SIZES = ["S","M","L","XL","XXL"];
@@ -1847,12 +1846,9 @@
     ]
   };
   var HOME = HOME_DEFAULT;
-  try {
-    var savedHome = JSON.parse(localStorage.getItem("implacables-home") || "null");
-    if(savedHome && typeof savedHome === "object"){
-      HOME = Object.assign({}, HOME_DEFAULT, savedHome);
-    }
-  } catch(e){}
+  function applyHome(saved){
+    if(saved && typeof saved === "object") HOME = Object.assign({}, HOME_DEFAULT, saved);
+  }
 
   /* Le produit mis en avant vient du backoffice (option cochee sur la fiche
      produit, avec son visuel et ses textes). A defaut, on retombe sur le
@@ -2209,14 +2205,26 @@
   window.addEventListener("resize", syncTopbar);
   topbar.addEventListener("transitionend", syncTopbar);
 
-  refreshCartBadge();
-  renderCart();
-  renderMainNav();
-  wireMainNav();
-  renderDrawer();
-  wireMobileChrome();
-  route();
-  syncTopbar();
+  function start(){
+    refreshCartBadge();
+    renderCart();
+    renderMainNav();
+    wireMainNav();
+    renderDrawer();
+    wireMobileChrome();
+    route();
+    syncTopbar();
+  }
+
+  fetch("catalogue.json", { cache:"no-cache" })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if(!data) return;
+      applySkus(data.skus);
+      applyHome(data.home);
+    })
+    .catch(function(){ /* catalogue injoignable : liste de secours */ })
+    .then(start);
 })();
 </script>
 

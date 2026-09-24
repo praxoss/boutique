@@ -1,0 +1,412 @@
+{
+  "skus": [
+    {
+      "id": "maillot-domicile",
+      "typ": "Maillots",
+      "name": "Maillot Domicile",
+      "sub": "Manches courtes, coupe joueur",
+      "price": 64.99,
+      "ref": "IMP-MAILLOT-DOM",
+      "icon": "icon-shirt",
+      "status": "actif",
+      "label": "Nouveauté",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Rouge",
+          "h": "#C8102E"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "photo": "assets/maillot-domicile.jpg",
+      "photos": [
+        "assets/maillot-domicile.jpg",
+        "assets/maillot-domicile-dos.jpg"
+      ],
+      "desc": "Le maillot officiel porté en championnat, coupe ajustée et tissu technique respirant. Motif feuille de vigne tissé, blason club et sponsors brodés sur la poitrine.",
+      "hero": true,
+      "heroImage": "assets/hero-maillot.jpg",
+      "heroTitle": "Maillot Domicile 26/27",
+      "heroText": "Le maillot officiel des Implacables, porté en championnat FFSE. Motif feuille de vigne tissé, blason brodé.",
+      "heroCta": "Découvrir"
+    },
+    {
+      "id": "maillot-exterieur",
+      "typ": "Maillots",
+      "name": "Maillot Extérieur",
+      "sub": "Manches courtes, coupe joueur",
+      "price": 64.99,
+      "ref": "IMP-MAILLOT-EXT",
+      "icon": "icon-shirt",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Rouge",
+          "h": "#C8102E"
+        },
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "photo": "assets/maillot-exterieur.jpg",
+      "photos": [
+        "assets/maillot-exterieur.jpg",
+        "assets/maillot-exterieur-dos.jpg"
+      ],
+      "desc": "Version extérieure du maillot officiel, coloris rouge. Même coupe technique que le maillot domicile, blason club au dos et sponsors partenaires."
+    },
+    {
+      "id": "tshirt-training",
+      "typ": "T-shirts",
+      "name": "T-shirt Entraînement",
+      "sub": "Coton respirant, coupe régulière",
+      "price": 24.99,
+      "ref": "IMP-TSHIRT-TRN",
+      "icon": "icon-shirt",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Gris",
+          "h": "#8A8D93"
+        },
+        {
+          "n": "Blanc",
+          "h": "#FFFFFF"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Le t-shirt du quotidien, porté à l'entraînement comme en dehors du terrain. Coton peigné 220 g, logo club sérigraphié."
+    },
+    {
+      "id": "polo-club",
+      "typ": "T-shirts",
+      "name": "Polo Club",
+      "sub": "Piqué technique, col boutonné",
+      "price": 34.99,
+      "ref": "IMP-POLO-CLB",
+      "icon": "icon-shirt",
+      "status": "actif",
+      "label": "Édition limitée",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Blanc",
+          "h": "#FFFFFF"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Polo piqué pour les jours de match côté touche et les déplacements officiels. Blason club brodé sur la poitrine."
+    },
+    {
+      "id": "sweat-capuche",
+      "typ": "Sweats",
+      "name": "Sweat à Capuche",
+      "sub": "Molleton épais, poche kangourou",
+      "price": 49.99,
+      "ref": "IMP-SWEAT-CAP",
+      "icon": "icon-hoodie",
+      "status": "actif",
+      "label": "Édition limitée",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Gris",
+          "h": "#8A8D93"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Sweat à capuche épais pour les matins d'entraînement frais. Molleton gratté à l'intérieur, cordons ton sur ton."
+    },
+    {
+      "id": "veste-survetement",
+      "typ": "Sweats",
+      "name": "Veste de Survêtement",
+      "sub": "Zip intégral, coupe-vent",
+      "price": 59.99,
+      "ref": "IMP-VESTE-SURV",
+      "icon": "icon-hoodie",
+      "status": "rupture",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Veste d'échauffement zippée, portée avant match sur le maillot. Doublure légère coupe-vent."
+    },
+    {
+      "id": "vareuse-entrainement",
+      "typ": "Sweats",
+      "name": "Vareuse d'Entraînement",
+      "sub": "Maille technique, col zippé",
+      "price": 54.99,
+      "ref": "IMP-VAREUSE-ENTRAINEME",
+      "icon": "icon-hoodie",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Gris",
+          "h": "#8A8D93"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Vareuse d'entraînement en maille technique, col zippé, portée par-dessus le maillot ou le t-shirt les jours de fraîcheur."
+    },
+    {
+      "id": "short-match",
+      "typ": "Shorts",
+      "name": "Short de Match",
+      "sub": "Coupe joueur, bandes contrastées",
+      "price": 29.99,
+      "ref": "IMP-SHORT-MATCH",
+      "icon": "icon-shorts",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Rouge",
+          "h": "#C8102E"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Short officiel assorti au maillot, renforts aux coutures pour résister au contact."
+    },
+    {
+      "id": "short-entrainement",
+      "typ": "Shorts",
+      "name": "Short d'Entraînement",
+      "sub": "Léger, poches zippées",
+      "price": 22.99,
+      "ref": "IMP-SHORT-ENT",
+      "icon": "icon-shorts",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Gris",
+          "h": "#8A8D93"
+        },
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "desc": "Short polyvalent pour l'entraînement, tissu léger et poches zippées pour les clés et le téléphone."
+    },
+    {
+      "id": "chaussettes-match",
+      "typ": "Chaussettes",
+      "name": "Chaussettes de Match",
+      "sub": "Paire, maintien renforcé",
+      "price": 12.99,
+      "ref": "IMP-CHAUSSETTES-MATCH",
+      "icon": "icon-socks",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Rouge",
+          "h": "#C8102E"
+        }
+      ],
+      "sizes": [
+        "36-39",
+        "40-43",
+        "44-47"
+      ],
+      "desc": "Chaussettes hautes du kit officiel, maintien renforcé à la cheville et au tibia, assorties au maillot."
+    },
+    {
+      "id": "bonnet-club",
+      "typ": "Accessoires",
+      "name": "Bonnet Club",
+      "sub": "Taille unique, laine fine",
+      "price": 14.99,
+      "ref": "IMP-BONNET",
+      "icon": "icon-cap",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        },
+        {
+          "n": "Rouge",
+          "h": "#C8102E"
+        }
+      ],
+      "sizes": [
+        "Taille unique"
+      ],
+      "desc": "Bonnet côtelé avec patch club brodé, pour les matchs d'hiver en tribune comme sur le terrain."
+    },
+    {
+      "id": "sac-sport",
+      "typ": "Accessoires",
+      "name": "Sac de Sport",
+      "sub": "40 L, compartiment crampons",
+      "price": 39.99,
+      "ref": "IMP-SAC",
+      "icon": "icon-bag",
+      "status": "actif",
+      "colors": [
+        {
+          "n": "Bleu marine",
+          "h": "#0B1F3D"
+        }
+      ],
+      "sizes": [
+        "Taille unique"
+      ],
+      "desc": "Sac de sport 40 litres avec compartiment ventilé dédié aux crampons, logo club floqué."
+    }
+  ],
+  "home": {
+    "heroEyebrow": "Collection 26/27",
+    "cats": [
+      {
+        "label": "Vêtements rugby",
+        "filter": [
+          "Maillots",
+          "Shorts"
+        ],
+        "id": "maillot-domicile"
+      },
+      {
+        "label": "Lifestyle",
+        "filter": [
+          "Sweats",
+          "T-shirts"
+        ],
+        "id": "sweat-capuche"
+      },
+      {
+        "label": "Accessoires",
+        "filter": [
+          "Accessoires",
+          "Chaussettes"
+        ],
+        "id": "sac-sport"
+      }
+    ],
+    "railTitle": "Les plus demandés",
+    "railSub": "Ce que le vestiaire commande le plus cette saison.",
+    "duo": [
+      {
+        "title": "Le kit de match",
+        "text": "Maillot, short et chaussettes du kit officiel, assortis.",
+        "cta": "Découvrir",
+        "filter": [
+          "Maillots",
+          "Shorts",
+          "Chaussettes"
+        ],
+        "id": "maillot-domicile"
+      },
+      {
+        "title": "Le vestiaire",
+        "text": "Sweats, polos et vestes pour les jours sans crampons.",
+        "cta": "Découvrir",
+        "filter": [
+          "Sweats",
+          "T-shirts"
+        ],
+        "id": "maillot-exterieur"
+      }
+    ],
+    "trust": [
+      {
+        "title": "Retrait au club house",
+        "text": "Sous 3 à 5 jours, sans frais."
+      },
+      {
+        "title": "Livraison à domicile",
+        "text": "En 3 à 7 jours ouvrés."
+      },
+      {
+        "title": "Échange sous 30 jours",
+        "text": "Article non porté, étiquette d'origine."
+      }
+    ]
+  }
+}
