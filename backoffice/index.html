@@ -188,6 +188,11 @@
   .hero-switch span em{display:block;font-style:normal;font-size:12px;color:var(--sub);margin-top:3px;line-height:1.5;text-transform:none;letter-spacing:0;font-weight:400;}
   #heroFields{margin-top:16px;}
   #heroFields label{display:block;font-size:12px;color:var(--sub);margin:14px 0 6px;}
+  #heroFields select{
+    display:block;width:100%;box-sizing:border-box;
+    font-family:inherit;font-size:14px;
+    padding:10px 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  }
   #heroFields input[type=text],#heroFields textarea{
     display:block;width:100%;box-sizing:border-box;
     font-family:inherit;font-size:14px;
@@ -584,6 +589,15 @@
         <textarea id="f-hero-text" rows="3" placeholder="Deux lignes maximum."></textarea>
         <label for="f-hero-cta">Libelle du bouton</label>
         <input type="text" id="f-hero-cta" placeholder="Decouvrir">
+        <label for="f-hero-fit">Cadrage du visuel</label>
+        <select id="f-hero-fit">
+          <option value="auto">Automatique (recommande)</option>
+          <option value="cover">Remplir le cadre (photo)</option>
+          <option value="contain">Visuel entier (packshot detoure)</option>
+        </select>
+        <label for="f-hero-focus">Point d'interet vertical : <span id="heroFocusVal">50 %</span></label>
+        <input type="range" id="f-hero-focus" min="0" max="100" step="5" value="50" style="width:100%">
+        <p class="home-hint" style="margin-top:6px">0 % cadre sur le haut du visuel, 100 % sur le bas. Sans effet sur un visuel affiche en entier.</p>
       </div>
     </div>
   </form>
@@ -848,6 +862,10 @@
     document.getElementById("f-hero-title").value = sku && sku.heroTitle ? sku.heroTitle : "";
     document.getElementById("f-hero-text").value  = sku && sku.heroText  ? sku.heroText  : "";
     document.getElementById("f-hero-cta").value   = sku && sku.heroCta   ? sku.heroCta   : "";
+    document.getElementById("f-hero-fit").value = (sku && sku.heroFit) || "auto";
+    var focus = sku && sku.heroFocus != null ? sku.heroFocus : 50;
+    document.getElementById("f-hero-focus").value = focus;
+    document.getElementById("heroFocusVal").textContent = focus + " %";
     state.heroDataUrl = null;
     updateHeroPreview();
     panelColors = sku ? sku.colors.slice() : [];
@@ -922,7 +940,9 @@
       heroTitle: document.getElementById("f-hero-title").value.trim(),
       heroText: document.getElementById("f-hero-text").value.trim(),
       heroCta: document.getElementById("f-hero-cta").value.trim(),
-      heroImage: state.heroDataUrl || (existing ? existing.heroImage : undefined)
+      heroImage: state.heroDataUrl || (existing ? existing.heroImage : undefined),
+      heroFit: document.getElementById("f-hero-fit").value,
+      heroFocus: parseInt(document.getElementById("f-hero-focus").value, 10)
     };
 
     if(existing){
@@ -1156,7 +1176,9 @@
       title: hero.heroTitle || hero.name,
       text: hero.heroText || hero.desc,
       cta: hero.heroCta || "Découvrir",
-      image: hero.heroImage || hero.photoDataUrl || hero.photo || ""
+      image: hero.heroImage || hero.photoDataUrl || hero.photo || "",
+      fit: hero.heroFit || "auto",
+      focus: hero.heroFocus != null ? hero.heroFocus : 50
     } : null;
   }
 
@@ -1251,6 +1273,9 @@
     saveHome();
   });
 
+  document.getElementById("f-hero-focus").addEventListener("input", function(){
+    document.getElementById("heroFocusVal").textContent = this.value + " %";
+  });
   document.getElementById("f-hero").addEventListener("change", function(){
     document.getElementById("heroFields").hidden = !this.checked;
   });
