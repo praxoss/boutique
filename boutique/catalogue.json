@@ -8,7 +8,7 @@
       "price": 64.99,
       "ref": "IMP-MAILLOT-DOM",
       "icon": "icon-shirt",
-      "photo": "assets/maillot-domicile.jpg",
+      "photo": "assets/maillot-domicile-8d143ff2.jpg",
       "colors": [
         {
           "n": "Bleu marine",
@@ -36,7 +36,11 @@
       "heroImage": "assets/hero-maillot.jpg",
       "heroFit": "auto",
       "heroFocus": 50,
-      "feature": false
+      "feature": false,
+      "photos": [
+        "assets/maillot-domicile-8d143ff2.jpg",
+        "assets/maillot-domicile-dos.jpg"
+      ]
     },
     {
       "id": "maillot-exterieur",
@@ -384,11 +388,11 @@
       "heroTitle": "Casquette trucker",
       "heroText": "Collection feuille de vigne",
       "heroCta": "Découvrir",
-      "heroImage": "assets/casquette-trucker-implacs-hero.jpg",
+      "heroImage": "assets/casquette-trucker-implacs-hero-d167b8fb.jpg",
       "heroFit": "auto",
       "heroFocus": 50,
       "feature": false,
-      "photo": "assets/casquette-trucker-implacs.jpg"
+      "photo": "assets/casquette-trucker-implacs-d6593b3c.jpg"
     },
     {
       "id": "t-shirt-implac",
@@ -420,7 +424,7 @@
       "heroCta": "",
       "heroFit": "auto",
       "heroFocus": 50,
-      "photo": "assets/t-shirt-implac.jpg"
+      "photo": "assets/t-shirt-implac-fd5173b0.jpg"
     }
   ],
   "home": {
@@ -500,7 +504,7 @@
       "title": "Casquette trucker",
       "text": "Collection feuille de vigne",
       "cta": "Découvrir",
-      "image": "assets/casquette-trucker-implacs-hero.jpg",
+      "image": "assets/casquette-trucker-implacs-hero-d167b8fb.jpg",
       "fit": "auto",
       "focus": 50
     },

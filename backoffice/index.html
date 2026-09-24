@@ -246,6 +246,28 @@
   .photo-drop .copy b{display:block;font-size:13px;}
   .photo-drop .copy span{font-size:12px;color:var(--sub);}
 
+  /* galerie photos de la fiche SKU */
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;}
+  .photo-tile{position:relative;aspect-ratio:1/1;border-radius:6px;overflow:hidden;background:var(--surface-2);}
+  .photo-tile img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
+  .photo-tile .main-badge{
+    position:absolute;left:4px;top:4px;background:var(--navy);color:#fff;
+    font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;border-radius:3px;
+  }
+  .photo-tile .tile-actions{position:absolute;right:3px;bottom:3px;display:flex;gap:3px;}
+  .photo-tile .tile-actions button{
+    width:24px;height:24px;border:none;border-radius:4px;background:rgba(255,255,255,.92);color:var(--ink);
+    cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .photo-tile .tile-actions button:hover{background:var(--navy);color:#fff;}
+  .photo-add{
+    aspect-ratio:1/1;border:1.5px dashed var(--line);border-radius:6px;background:var(--surface);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    cursor:pointer;color:var(--sub);font-size:11px;text-align:center;padding:4px;
+  }
+  .photo-add:hover{border-color:var(--navy);color:var(--navy);}
+  .photo-add svg{width:20px;height:20px;}
+
   .chips-row{display:flex;flex-wrap:wrap;gap:8px;}
   .color-chip{
     display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:20px;
@@ -533,12 +555,11 @@
       <label for="f-typ">Typologie</label>
       <select id="f-typ"></select>
     </div>
-    <div class="photo-drop" id="photoDrop">
-      <div class="preview" id="photoPreview">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      </div>
-      <div class="copy"><b>Photo produit</b><span>Cliquer pour choisir une image (JPG, PNG)</span></div>
-      <input type="file" id="f-photo" accept="image/*" style="display:none;">
+    <div class="field">
+      <label>Photos produit</label>
+      <div class="photo-grid" id="photoGrid"></div>
+      <span class="hint">La premiere photo sert de vignette dans la boutique ; les suivantes s'affichent dans la galerie de la fiche produit. Tu peux en choisir plusieurs d'un coup.</span>
+      <input type="file" id="f-photo" accept="image/*" multiple style="display:none;">
     </div>
     <div class="field">
       <label for="f-name">Nom de l'article</label>
@@ -902,7 +923,7 @@
 
   function openPanel(sku){
     state.editingId = sku ? sku.id : null;
-    state.photoDataUrl = sku ? (sku.photoDataUrl||null) : null;
+    panelPhotos = photosOf(sku);
     document.getElementById("panelTitle").textContent = sku ? "Modifier le SKU" : "Nouveau SKU";
     document.getElementById("deleteSkuBtn").hidden = !sku;
 
@@ -958,12 +979,41 @@
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
   }
 
+  /* Photos de la fiche : chemins publies (assets/...) ou data URL des
+     images chargees ici. La premiere est la photo principale. */
+  var panelPhotos = [];
+
+  function photosOf(sku){
+    if(!sku) return [];
+    if(sku.photos && sku.photos.length) return sku.photos.slice();
+    var one = sku.photoDataUrl || sku.photo;
+    return one ? [one] : [];
+  }
+
   function updatePhotoPreview(){
-    var prev = document.getElementById("photoPreview");
-    var src = assetUrl(state.photoDataUrl || (state.editingId && skuById(state.editingId) && skuById(state.editingId).photo));
-    prev.innerHTML = src
-      ? '<img src="'+src+'" alt="">'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+    var grid = document.getElementById("photoGrid");
+    grid.innerHTML = panelPhotos.map(function(u, i){
+      return '<div class="photo-tile"><img src="'+assetUrl(u)+'" alt="">' +
+        (i === 0 ? '<span class="main-badge">Principale</span>' : '') +
+        '<div class="tile-actions">' +
+          (i > 0 ? '<button type="button" data-first="'+i+'" title="Mettre en premier" aria-label="Mettre en premier">&#9733;</button>' : '') +
+          '<button type="button" data-drop="'+i+'" title="Retirer" aria-label="Retirer la photo">&times;</button>' +
+        '</div></div>';
+    }).join("") +
+      '<button type="button" class="photo-add" id="photoAdd">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        'Ajouter</button>';
+    document.getElementById("photoAdd").addEventListener("click", function(){ document.getElementById("f-photo").click(); });
+    grid.querySelectorAll("[data-drop]").forEach(function(b){
+      b.addEventListener("click", function(){ panelPhotos.splice(+b.getAttribute("data-drop"), 1); updatePhotoPreview(); });
+    });
+    grid.querySelectorAll("[data-first]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var u = panelPhotos.splice(+b.getAttribute("data-first"), 1)[0];
+        panelPhotos.unshift(u);
+        updatePhotoPreview();
+      });
+    });
   }
 
   function saveSku(e){
@@ -988,14 +1038,13 @@
       price: price,
       ref: ref,
       icon: typologyOf(typ).icon,
-      photo: existing ? existing.photo : undefined,
-      photoDataUrl: state.photoDataUrl || (existing ? existing.photoDataUrl : undefined),
+      photo: panelPhotos[0] || undefined,
+      photos: panelPhotos.length ? panelPhotos.slice() : undefined,
       colors: panelColors.slice(),
       sizes: panelSizes.slice(),
       status: panelStatus,
       desc: document.getElementById("f-desc").value.trim(),
       label: existing ? existing.label : undefined,
-      photos: existing && !state.photoDataUrl ? existing.photos : undefined,
       feature: document.getElementById("f-feature").checked,
       hero: document.getElementById("f-hero").checked,
       heroTitle: document.getElementById("f-hero-title").value.trim(),
@@ -1384,15 +1433,16 @@
     if(btn) setPanelStatus(btn.getAttribute("data-status"));
   });
 
-  document.getElementById("photoDrop").addEventListener("click", function(){
-    document.getElementById("f-photo").click();
-  });
   document.getElementById("f-photo").addEventListener("change", function(e){
-    var file = e.target.files[0];
-    if(!file) return;
-    shrinkImage(file, 1200, function(dataUrl){
-      state.photoDataUrl = dataUrl;
-      updatePhotoPreview();
+    var files = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";   // pour pouvoir rechoisir le meme fichier
+    // dans l'ordre de selection, meme si les lectures finissent en desordre
+    var slots = files.map(function(){ return null; }), left = files.length;
+    files.forEach(function(file, i){
+      shrinkImage(file, 1200, function(dataUrl){
+        slots[i] = dataUrl;
+        if(--left === 0){ panelPhotos = panelPhotos.concat(slots); updatePhotoPreview(); }
+      });
     });
   });
 
