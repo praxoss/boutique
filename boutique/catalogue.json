@@ -376,6 +376,37 @@
       "heroFit": "auto",
       "heroFocus": 50,
       "photo": "assets/casquette-trucker-implacs.jpg"
+    },
+    {
+      "id": "t-shirt-implac",
+      "typ": "T-shirts",
+      "name": "T-shirt implac",
+      "sub": "Collection 24/25",
+      "price": 15,
+      "ref": "IMP-T-SHIRT-IMPLAC",
+      "icon": "icon-shirt",
+      "colors": [
+        {
+          "n": "Rouge",
+          "h": "#cc0000"
+        }
+      ],
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "status": "actif",
+      "desc": "",
+      "hero": false,
+      "heroTitle": "",
+      "heroText": "",
+      "heroCta": "",
+      "heroFit": "auto",
+      "heroFocus": 50,
+      "photo": "assets/t-shirt-implac.jpg"
     }
   ],
   "home": {
