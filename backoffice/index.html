@@ -164,12 +164,12 @@
   .home-card{border:1px solid var(--line);background:var(--bg);padding:22px 24px;}
   .home-card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 14px;color:var(--ink);}
   .home-card label{display:block;font-size:12px;color:var(--sub);margin:14px 0 6px;}
-  .home-card input[type=text],.home-card textarea{
+  .home-card input[type=text],.home-card textarea,.home-card select{
     display:block;width:100%;box-sizing:border-box;
     font-family:inherit;font-size:14px;
     padding:10px 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
   }
-  .home-card input[type=text]:focus,.home-card textarea:focus{outline:none;border-color:var(--navy);}
+  .home-card input[type=text]:focus,.home-card textarea:focus,.home-card select:focus{outline:none;border-color:var(--navy);}
   .home-card textarea{resize:vertical;}
   .home-hint{font-size:12px;color:var(--sub);line-height:1.6;margin:0;}
   .home-row{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
@@ -586,8 +586,15 @@
 
     <div class="field hero-box">
       <label class="hero-switch">
+        <input type="checkbox" id="f-feature">
+        <span><b>Produit du moment</b><em>Le bloc sous le hero, avec tailles et ajout au panier. Un seul article a la fois. Si aucun n'est coche, c'est l'article du hero.</em></span>
+      </label>
+    </div>
+
+    <div class="field hero-box">
+      <label class="hero-switch">
         <input type="checkbox" id="f-hero">
-        <span><b>Mettre en avant sur la page d'accueil</b><em>Un seul article a la fois : cocher ici retire la mise en avant de l'article precedent.</em></span>
+        <span><b>Hero de la page d'accueil</b><em>Le grand bandeau en haut de l'accueil. Un seul article a la fois : cocher ici le retire de l'article precedent.</em></span>
       </label>
       <div id="heroFields" hidden>
         <div class="photo-drop" id="heroDrop">
@@ -909,6 +916,7 @@
     document.getElementById("f-desc").value = sku ? sku.desc : "";
     var isHero = !!(sku && sku.hero);
     document.getElementById("f-hero").checked = isHero;
+    document.getElementById("f-feature").checked = !!(sku && sku.feature);
     document.getElementById("heroFields").hidden = !isHero;
     document.getElementById("f-hero-title").value = sku && sku.heroTitle ? sku.heroTitle : "";
     document.getElementById("f-hero-text").value  = sku && sku.heroText  ? sku.heroText  : "";
@@ -989,6 +997,7 @@
       desc: document.getElementById("f-desc").value.trim(),
       label: existing ? existing.label : undefined,
       photos: existing && !state.photoDataUrl ? existing.photos : undefined,
+      feature: document.getElementById("f-feature").checked,
       hero: document.getElementById("f-hero").checked,
       heroTitle: document.getElementById("f-hero-title").value.trim(),
       heroText: document.getElementById("f-hero-text").value.trim(),
@@ -1006,6 +1015,9 @@
     // un seul article en avant a la fois
     if(sku.hero){
       SKUS.forEach(function(s){ if(s.id !== sku.id) s.hero = false; });
+    }
+    if(sku.feature){
+      SKUS.forEach(function(s){ if(s.id !== sku.id) s.feature = false; });
     }
     // le produit mis en avant est repris dans la config de la page d'accueil
     collectHome();
@@ -1168,7 +1180,11 @@
     var hero = SKUS.filter(function(s){ return s.hero; })[0];
     document.getElementById("heroSummary").innerHTML = hero
       ? 'Article mis en avant : <b>'+esc(hero.name)+'</b>. Le visuel et les textes du hero se reglent sur sa fiche, onglet Catalogue SKU.'
-      : 'Aucun article mis en avant. Ouvre une fiche dans Catalogue SKU et coche <b>Mettre en avant sur la page d\'accueil</b>.';
+      : 'Aucun article mis en avant. Ouvre une fiche dans Catalogue SKU et coche <b>Hero de la page d\'accueil</b>.';
+    var feature = SKUS.filter(function(s){ return s.feature; })[0];
+    document.getElementById("heroSummary").innerHTML += '<br>Produit du moment : <b>' +
+      esc(feature ? feature.name : (hero ? hero.name + " (le meme que le hero)" : "aucun")) +
+      '</b>. Pour en changer, coche <b>Produit du moment</b> sur la fiche de l\'article.';
 
     document.getElementById("h-eyebrow").value = HOME.heroEyebrow || "";
     document.getElementById("h-railtitle").value = HOME.railTitle || "";
@@ -1222,6 +1238,8 @@
 
   function collectHome(){
     if(homeTabRendered) collectHomeFields();
+    var feature = SKUS.filter(function(s){ return s.feature; })[0];
+    HOME.featureId = feature ? feature.id : "";
     var hero = SKUS.filter(function(s){ return s.hero; })[0];
     HOME.hero = hero ? {
       id: hero.id,

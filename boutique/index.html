@@ -1923,8 +1923,16 @@
     if(img.complete && img.naturalWidth) detect(); else img.addEventListener("load", detect, { once:true });
   }
 
+  /* "Le produit du moment" : reglage a part dans le backoffice (featureId),
+     a defaut le meme article que le hero. */
+  function featureProduct(heroId){
+    var byId = function(id){ return PRODUCTS.filter(function(x){ return x.id === id; })[0]; };
+    return (HOME.featureId && byId(HOME.featureId)) || byId(heroId) || PRODUCTS[0];
+  }
+
   function renderHome(){
     var p = heroProduct();
+    var f = featureProduct(p.id);
     var heroVisual = p.heroImage
       ? '<img src="'+p.heroImage+'" alt="'+esc(p.heroTitle || p.name)+'">'
       : (p.photo ? '<img src="'+p.photo+'" alt="'+esc(p.name)+'">'
@@ -1979,19 +1987,19 @@
           '<p class="home-sub">Disponible à la commande, retrait au club house.</p></div>' +
         '</div>' +
         '<div class="feature">' +
-          '<div class="feature-media">'+mediaOf(p)+'</div>' +
+          '<div class="feature-media">'+mediaOf(f)+'</div>' +
           '<div>' +
-            '<h2>'+esc(p.name)+'</h2>' +
-            '<p class="feature-price">'+euro(p.price)+'</p>' +
-            '<p class="feature-desc">'+esc(p.desc)+'</p>' +
+            '<h2>'+esc(f.name)+'</h2>' +
+            '<p class="feature-price">'+euro(f.price)+'</p>' +
+            '<p class="feature-desc">'+esc(f.desc)+'</p>' +
             '<div class="feature-sizes" id="homeSizes">' +
-              p.sizes.map(function(sz){
+              f.sizes.map(function(sz){
                 return '<button type="button" class="quick-size" data-home-size="'+sz+'" aria-pressed="false">'+sz+'</button>';
               }).join("") +
             '</div>' +
             '<div class="feature-actions">' +
               '<button type="button" class="quick-submit" id="homeAdd" style="padding:14px 28px">Ajouter au panier</button>' +
-              '<button type="button" class="btn-ghost" data-goto="'+p.id+'">Voir la fiche</button>' +
+              '<button type="button" class="btn-ghost" data-goto="'+f.id+'">Voir la fiche</button>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -2038,8 +2046,8 @@
       var sel = home.querySelector('[data-home-size][aria-pressed="true"]');
       if(!sel){ toast("Choisis une taille"); return; }
       addToCart({
-        id: p.id, article: p.name, reference: "IMP-"+p.id.toUpperCase(),
-        couleur: p.colors[0].n, taille: sel.getAttribute("data-home-size"), prix: p.price
+        id: f.id, article: f.name, reference: "IMP-"+f.id.toUpperCase(),
+        couleur: f.colors[0].n, taille: sel.getAttribute("data-home-size"), prix: f.price
       });
     });
   }
