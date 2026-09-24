@@ -192,7 +192,7 @@
   /* produit en vedette */
   .feature{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:center;}
   .feature-media{background:var(--surface);aspect-ratio:4/5;overflow:hidden;display:flex;align-items:center;justify-content:center;}
-  .feature-media img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;}
+  .feature-media img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
   .feature-media svg{width:56%;height:56%;}
   .feature-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);margin:0 0 10px;}
   .feature h2{font-family:"Anton","Helvetica Neue",sans-serif;font-size:clamp(24px,3.2vw,34px);text-transform:uppercase;margin:0 0 6px;}
@@ -784,7 +784,7 @@
     background:var(--surface);
     display:flex;align-items:center;justify-content:center;overflow:hidden;
   }
-  .cart-line-media img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;}
+  .cart-line-media img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
   .cart-line-media svg{width:60%;height:60%;}
   .cart-line-info{flex:1;min-width:0;}
   .cart-line-name{font-size:13px;font-weight:700;}
@@ -895,8 +895,11 @@
     .topbar.shrunk .wordmark img{height:39px;}
   }
 
+  /* Photo produit toujours entiere (jamais recadree) sur les tuiles, la
+     fiche et le bloc en vedette. Le multiply fond le fond blanc des
+     packshots dans le gris du cadre. */
   .card-media img,.gallery-frame img{
-    width:100%;height:100%;object-fit:cover;object-position:50% 18%;
+    width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;
   }
   .color-thumb{background:none;}
   .color-thumb .swatch-fill{width:100%;height:100%;border-radius:0;}
