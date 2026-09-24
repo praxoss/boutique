@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>Backoffice Implacables</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <style>
   :root{
     --navy:#0B1F3D;
@@ -147,6 +150,49 @@
   .icon-btn-sm.danger:hover{color:var(--red);}
 
   .bo-empty{padding:40px 10px;text-align:center;color:var(--sub);}
+
+  /* ---------- onglet page d'accueil ---------- */
+  .home-admin{display:flex;flex-direction:column;gap:18px;max-width:880px;}
+  .home-card{border:1px solid var(--line);background:var(--bg);padding:22px 24px;}
+  .home-card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 14px;color:var(--ink);}
+  .home-card label{display:block;font-size:12px;color:var(--sub);margin:14px 0 6px;}
+  .home-card input[type=text],.home-card textarea{
+    display:block;width:100%;box-sizing:border-box;
+    font-family:inherit;font-size:14px;
+    padding:10px 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  }
+  .home-card input[type=text]:focus,.home-card textarea:focus{outline:none;border-color:var(--navy);}
+  .home-card textarea{resize:vertical;}
+  .home-hint{font-size:12px;color:var(--sub);line-height:1.6;margin:0;}
+  .home-row{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
+  #homeCats .home-row:first-child,#homeDuo .home-row:first-child,#homeTrust .home-row:first-child{
+    border-top:none;padding-top:0;margin-top:0;
+  }
+  .home-row-head{display:flex;align-items:center;gap:12px;justify-content:space-between;}
+  .home-row-head b{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sub);}
+  .home-upload{
+    background:none;border:1px solid var(--line);cursor:pointer;
+    font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    padding:8px 12px;color:var(--ink);
+  }
+  .home-upload:hover{border-color:var(--navy);}
+  .home-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .home-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;}
+
+  /* option hero dans la fiche produit */
+  .hero-box{border:1px solid var(--line);padding:16px;background:var(--surface);}
+  .hero-switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer;}
+  .hero-switch input{margin-top:3px;}
+  .hero-switch span b{display:block;font-size:13px;color:var(--ink);}
+  .hero-switch span em{display:block;font-style:normal;font-size:12px;color:var(--sub);margin-top:3px;line-height:1.5;text-transform:none;letter-spacing:0;font-weight:400;}
+  #heroFields{margin-top:16px;}
+  #heroFields label{display:block;font-size:12px;color:var(--sub);margin:14px 0 6px;}
+  #heroFields input[type=text],#heroFields textarea{
+    display:block;width:100%;box-sizing:border-box;
+    font-family:inherit;font-size:14px;
+    padding:10px 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  }
+  #heroFields textarea{resize:vertical;}
 
   /* ---------- panel (create/edit SKU) ---------- */
   .panel-overlay{
@@ -348,6 +394,7 @@
     <div class="bo-tabs" role="tablist">
       <button class="bo-tab" data-tab="catalogue" aria-selected="true" role="tab">Catalogue SKU</button>
       <button class="bo-tab" data-tab="commandes" aria-selected="false" role="tab">Commandes &amp; reappro</button>
+      <button class="bo-tab" data-tab="accueil" aria-selected="false" role="tab">Page d'accueil</button>
     </div>
 
     <section id="tab-catalogue">
@@ -372,6 +419,51 @@
           </table>
           <div class="bo-empty" id="skuEmpty" hidden>Aucun SKU ne correspond a cette recherche.</div>
         </div>
+      </div>
+    </section>
+
+    <section id="tab-accueil" hidden>
+      <div class="home-admin">
+        <div class="home-card">
+          <h2>Mise en avant (hero)</h2>
+          <p class="home-hint" id="heroSummary"></p>
+        </div>
+
+        <div class="home-card">
+          <h2>Bandeau du hero</h2>
+          <label for="h-eyebrow">Sur-titre</label>
+          <input type="text" id="h-eyebrow">
+        </div>
+
+        <div class="home-card">
+          <h2>Les trois univers</h2>
+          <p class="home-hint">Tuiles cliquables sous le produit du moment. Sans visuel, la photo du produit associe est reprise.</p>
+          <div id="homeCats"></div>
+        </div>
+
+        <div class="home-card">
+          <h2>Carrousel produits</h2>
+          <label for="h-railtitle">Titre</label>
+          <input type="text" id="h-railtitle">
+          <label for="h-railsub">Sous-titre</label>
+          <input type="text" id="h-railsub">
+        </div>
+
+        <div class="home-card">
+          <h2>Deux blocs collection</h2>
+          <div id="homeDuo"></div>
+        </div>
+
+        <div class="home-card">
+          <h2>Bandeau de reassurance</h2>
+          <div id="homeTrust"></div>
+        </div>
+
+        <div class="home-actions">
+          <button class="btn-navy" id="homeSave">Enregistrer la page d'accueil</button>
+          <button class="btn-ghost" id="homeReset">Revenir aux valeurs par defaut</button>
+        </div>
+        <p class="home-hint" id="homeSaved"></p>
       </div>
     </section>
 
@@ -471,6 +563,28 @@
       <label for="f-desc">Description</label>
       <textarea id="f-desc"></textarea>
     </div>
+
+    <div class="field hero-box">
+      <label class="hero-switch">
+        <input type="checkbox" id="f-hero">
+        <span><b>Mettre en avant sur la page d'accueil</b><em>Un seul article a la fois : cocher ici retire la mise en avant de l'article precedent.</em></span>
+      </label>
+      <div id="heroFields" hidden>
+        <div class="photo-drop" id="heroDrop">
+          <div class="preview" id="heroPreview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="copy"><b>Visuel du hero</b><span>Format paysage conseille (1600 x 1100). A defaut, la photo produit est reprise.</span></div>
+          <input type="file" id="f-hero-photo" accept="image/*" style="display:none;">
+        </div>
+        <label for="f-hero-title">Titre affiche</label>
+        <input type="text" id="f-hero-title" placeholder="Ex. Maillot Domicile 26/27">
+        <label for="f-hero-text">Accroche</label>
+        <textarea id="f-hero-text" rows="3" placeholder="Deux lignes maximum."></textarea>
+        <label for="f-hero-cta">Libelle du bouton</label>
+        <input type="text" id="f-hero-cta" placeholder="Decouvrir">
+      </div>
+    </div>
   </form>
   <div class="panel-foot">
     <button class="btn-navy" id="saveSkuBtn" style="flex:1;justify-content:center;">Enregistrer le SKU</button>
@@ -548,7 +662,7 @@
     { client:"Remi Vidal",        sku:"short-match",           taille:"S",   date:"2026-09-15", statut:"attente" }
   ];
 
-  var state = { activeTyp:"all", search:"", tab:"catalogue", editingId:null, threshold:20, lastRestock:"2026-08-02", photoDataUrl:null, ordersLoaded:false, ordersLoading:false };
+  var state = { activeTyp:"all", search:"", tab:"catalogue", editingId:null, threshold:20, lastRestock:"2026-08-02", photoDataUrl:null, heroDataUrl:null, ordersLoaded:false, ordersLoading:false };
 
   /* Paste the same Google Apps Script web app URL as in boutique.html to pull real orders from the Sheet.
      Left empty, this tab shows the seeded demo orders below. */
@@ -727,6 +841,14 @@
     document.getElementById("f-price").value = sku ? sku.price : "";
     document.getElementById("f-ref").value = sku ? sku.ref : "";
     document.getElementById("f-desc").value = sku ? sku.desc : "";
+    var isHero = !!(sku && sku.hero);
+    document.getElementById("f-hero").checked = isHero;
+    document.getElementById("heroFields").hidden = !isHero;
+    document.getElementById("f-hero-title").value = sku && sku.heroTitle ? sku.heroTitle : "";
+    document.getElementById("f-hero-text").value  = sku && sku.heroText  ? sku.heroText  : "";
+    document.getElementById("f-hero-cta").value   = sku && sku.heroCta   ? sku.heroCta   : "";
+    state.heroDataUrl = null;
+    updateHeroPreview();
     panelColors = sku ? sku.colors.slice() : [];
     panelSizes = sku ? sku.sizes.slice() : [];
     setPanelStatus(sku ? sku.status : "actif");
@@ -748,6 +870,15 @@
     panel.setAttribute("aria-hidden","true");
     document.getElementById("panelOverlay").hidden = true;
     setTimeout(function(){ panel.hidden = true; }, 250);
+  }
+
+  function updateHeroPreview(){
+    var box = document.getElementById("heroPreview");
+    var sku = state.editingId ? skuById(state.editingId) : null;
+    var src = state.heroDataUrl || (sku && (sku.heroImage || sku.photoDataUrl || sku.photo));
+    box.innerHTML = src
+      ? '<img src="'+src+'" alt="">'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
   }
 
   function updatePhotoPreview(){
@@ -785,7 +916,12 @@
       colors: panelColors.slice(),
       sizes: panelSizes.slice(),
       status: panelStatus,
-      desc: document.getElementById("f-desc").value.trim()
+      desc: document.getElementById("f-desc").value.trim(),
+      hero: document.getElementById("f-hero").checked,
+      heroTitle: document.getElementById("f-hero-title").value.trim(),
+      heroText: document.getElementById("f-hero-text").value.trim(),
+      heroCta: document.getElementById("f-hero-cta").value.trim(),
+      heroImage: state.heroDataUrl || (existing ? existing.heroImage : undefined)
     };
 
     if(existing){
@@ -793,6 +929,13 @@
     } else {
       SKUS.push(sku);
     }
+    // un seul article en avant a la fois
+    if(sku.hero){
+      SKUS.forEach(function(s){ if(s.id !== sku.id) s.hero = false; });
+    }
+    // la boutique lit le produit mis en avant dans le meme stockage local
+    collectHome();
+    try { localStorage.setItem("implacables-home", JSON.stringify(HOME)); } catch(err){}
 
     closePanel();
     renderSidebar();
@@ -881,7 +1024,153 @@
     });
     document.getElementById("tab-catalogue").hidden = tab!=="catalogue";
     document.getElementById("tab-commandes").hidden = tab!=="commandes";
-    if(tab==="catalogue"){ renderTable(); } else { fetchOrders(); }
+    document.getElementById("tab-accueil").hidden = tab!=="accueil";
+    if(tab==="catalogue") renderTable();
+    else if(tab==="commandes") fetchOrders();
+    else renderHomeTab();
+  }
+
+  /* ---------------- page d'accueil ----------------
+     Ce que la boutique lit dans le meme stockage local (cle
+     implacables-home) : les textes des blocs, leurs visuels, et le produit
+     mis en avant, qui vient lui de l'option cochee sur une fiche produit. */
+  var HOME_DEFAULT = {
+    heroEyebrow: "Collection 26/27",
+    cats: [
+      { label:"Vêtements rugby", filter:["Maillots","Shorts"], id:"maillot-domicile" },
+      { label:"Lifestyle",       filter:["Sweats","T-shirts"], id:"sweat-capuche" },
+      { label:"Accessoires",     filter:["Accessoires","Chaussettes"], id:"sac-sport" }
+    ],
+    railTitle: "Les plus demandés",
+    railSub: "Ce que le vestiaire commande le plus cette saison.",
+    duo: [
+      { title:"Le kit de match", text:"Maillot, short et chaussettes du kit officiel, assortis.", cta:"Découvrir", filter:["Maillots","Shorts","Chaussettes"], id:"maillot-domicile" },
+      { title:"Le vestiaire",    text:"Sweats, polos et vestes pour les jours sans crampons.", cta:"Découvrir", filter:["Sweats","T-shirts"], id:"maillot-exterieur" }
+    ],
+    trust: [
+      { title:"Retrait au club house", text:"Sous 3 à 5 jours, sans frais." },
+      { title:"Livraison à domicile",  text:"En 3 à 7 jours ouvrés." },
+      { title:"Échange sous 30 jours", text:"Article non porté, étiquette d'origine." }
+    ]
+  };
+  var HOME = JSON.parse(JSON.stringify(HOME_DEFAULT));
+  try {
+    var savedHome = JSON.parse(localStorage.getItem("implacables-home") || "null");
+    if(savedHome && typeof savedHome === "object"){
+      HOME = Object.assign(JSON.parse(JSON.stringify(HOME_DEFAULT)), savedHome);
+    }
+  } catch(e){}
+
+  /* Une image de hero part telle quelle dans le stockage local (limite ~5 Mo) :
+     on la redimensionne avant de la garder. */
+  function shrinkImage(file, maxW, cb){
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var w = Math.min(maxW, img.width), h = Math.round(img.height * w / img.width);
+        var c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        cb(c.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = function(){ cb(ev.target.result); };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function renderHomeTab(){
+    var hero = SKUS.filter(function(s){ return s.hero; })[0];
+    document.getElementById("heroSummary").innerHTML = hero
+      ? 'Article mis en avant : <b>'+esc(hero.name)+'</b>. Le visuel et les textes du hero se reglent sur sa fiche, onglet Catalogue SKU.'
+      : 'Aucun article mis en avant. Ouvre une fiche dans Catalogue SKU et coche <b>Mettre en avant sur la page d\'accueil</b>.';
+
+    document.getElementById("h-eyebrow").value = HOME.heroEyebrow || "";
+    document.getElementById("h-railtitle").value = HOME.railTitle || "";
+    document.getElementById("h-railsub").value = HOME.railSub || "";
+
+    document.getElementById("homeCats").innerHTML = HOME.cats.map(function(c, i){
+      return '<div class="home-row">' +
+        '<div class="home-row-head"><b>Univers '+(i+1)+'</b>' +
+          '<button type="button" class="home-upload" data-upload="cat" data-i="'+i+'">Choisir un visuel</button></div>' +
+        '<label>Libelle</label><input type="text" data-home="cats.'+i+'.label" value="'+esc(c.label)+'">' +
+        '<label>Categories filtrees (separees par une virgule)</label>' +
+        '<input type="text" data-home="cats.'+i+'.filter" value="'+esc((c.filter||[]).join(", "))+'">' +
+      '</div>';
+    }).join("");
+
+    document.getElementById("homeDuo").innerHTML = HOME.duo.map(function(d, i){
+      return '<div class="home-row">' +
+        '<div class="home-row-head"><b>Bloc '+(i+1)+'</b>' +
+          '<button type="button" class="home-upload" data-upload="duo" data-i="'+i+'">Choisir un visuel</button></div>' +
+        '<label>Titre</label><input type="text" data-home="duo.'+i+'.title" value="'+esc(d.title)+'">' +
+        '<label>Texte</label><textarea rows="2" data-home="duo.'+i+'.text">'+esc(d.text)+'</textarea>' +
+        '<label>Libelle du bouton</label><input type="text" data-home="duo.'+i+'.cta" value="'+esc(d.cta)+'">' +
+        '<label>Categories filtrees (separees par une virgule)</label>' +
+        '<input type="text" data-home="duo.'+i+'.filter" value="'+esc((d.filter||[]).join(", "))+'">' +
+      '</div>';
+    }).join("");
+
+    document.getElementById("homeTrust").innerHTML = HOME.trust.map(function(t, i){
+      return '<div class="home-row">' +
+        '<div class="home-row-head"><b>Argument '+(i+1)+'</b></div>' +
+        '<label>Titre</label><input type="text" data-home="trust.'+i+'.title" value="'+esc(t.title)+'">' +
+        '<label>Precision</label><input type="text" data-home="trust.'+i+'.text" value="'+esc(t.text)+'">' +
+      '</div>';
+    }).join("");
+
+    document.getElementById("tab-accueil").querySelectorAll("[data-upload]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var input = document.createElement("input");
+        input.type = "file"; input.accept = "image/*";
+        input.addEventListener("change", function(){
+          if(!input.files[0]) return;
+          shrinkImage(input.files[0], 1400, function(dataUrl){
+            HOME[btn.getAttribute("data-upload") === "cat" ? "cats" : "duo"][+btn.getAttribute("data-i")].image = dataUrl;
+            toast("Visuel charge, pense a enregistrer");
+          });
+        });
+        input.click();
+      });
+    });
+  }
+
+  function collectHome(){
+    document.getElementById("tab-accueil").querySelectorAll("[data-home]").forEach(function(el){
+      var parts = el.getAttribute("data-home").split(".");
+      var target = HOME[parts[0]][+parts[1]];
+      var key = parts[2];
+      target[key] = key === "filter"
+        ? el.value.split(",").map(function(x){ return x.trim(); }).filter(Boolean)
+        : el.value.trim();
+    });
+    HOME.heroEyebrow = document.getElementById("h-eyebrow").value.trim();
+    HOME.railTitle = document.getElementById("h-railtitle").value.trim();
+    HOME.railSub = document.getElementById("h-railsub").value.trim();
+
+    var hero = SKUS.filter(function(s){ return s.hero; })[0];
+    HOME.hero = hero ? {
+      id: hero.id,
+      title: hero.heroTitle || hero.name,
+      text: hero.heroText || hero.desc,
+      cta: hero.heroCta || "Découvrir",
+      image: hero.heroImage || hero.photoDataUrl || hero.photo || ""
+    } : null;
+  }
+
+  function saveHome(){
+    collectHome();
+    try {
+      localStorage.setItem("implacables-home", JSON.stringify(HOME));
+      document.getElementById("homeSaved").textContent =
+        "Enregistre. La boutique reprend ces reglages au prochain chargement.";
+      toast("Page d'accueil enregistree");
+    } catch(err){
+      document.getElementById("homeSaved").textContent =
+        "Enregistrement impossible : le stockage du navigateur est plein ou bloque. Un visuel trop lourd en est souvent la cause.";
+      toast("Enregistrement impossible");
+    }
   }
 
   /* ---------------- wiring ---------------- */
@@ -952,6 +1241,29 @@
     state.lastRestock = new Date().toISOString().slice(0,10);
     renderOrders();
     toast("Commande fournisseur enregistree, compteur remis a zero");
+  });
+
+  document.getElementById("homeSave").addEventListener("click", saveHome);
+  document.getElementById("homeReset").addEventListener("click", function(){
+    HOME = JSON.parse(JSON.stringify(HOME_DEFAULT));
+    renderHomeTab();
+    saveHome();
+  });
+
+  document.getElementById("f-hero").addEventListener("change", function(){
+    document.getElementById("heroFields").hidden = !this.checked;
+  });
+  document.getElementById("heroDrop").addEventListener("click", function(){
+    document.getElementById("f-hero-photo").click();
+  });
+  document.getElementById("f-hero-photo").addEventListener("change", function(e){
+    var f = e.target.files[0];
+    if(!f) return;
+    shrinkImage(f, 1600, function(dataUrl){
+      state.heroDataUrl = dataUrl;
+      updateHeroPreview();
+      toast("Visuel du hero charge");
+    });
   });
 
   document.addEventListener("keydown", function(e){

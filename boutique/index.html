@@ -120,6 +120,152 @@
   }
   .promo-bar b{color:var(--navy);}
 
+  /* ---------- page d'accueil ---------- */
+  .home section{max-width:1280px;margin:0 auto;padding:0 24px;}
+  .home .full{max-width:none;padding:0;}
+  .home-title{
+    font-family:"Anton","Helvetica Neue",sans-serif;
+    font-size:clamp(22px,3vw,30px);letter-spacing:.02em;text-transform:uppercase;
+    margin:0 0 4px;color:var(--ink);
+  }
+  .home-sub{margin:0 0 22px;font-size:14px;color:var(--sub);}
+  .home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .home-head .home-sub{margin:0;}
+  .link-all{
+    background:none;border:none;cursor:pointer;padding:4px 0;
+    font-family:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--navy);border-bottom:1px solid var(--navy);
+  }
+  .link-all:hover{opacity:.7;}
+
+  /* hero : texte a gauche, visuel a droite */
+  .hero{
+    display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);
+    background:var(--navy);color:#fff;
+    min-height:420px;
+  }
+  .hero-text{
+    display:flex;flex-direction:column;justify-content:center;
+    gap:14px;padding:56px clamp(24px,5vw,72px);
+  }
+  .hero-eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62);}
+  .hero-title{
+    font-family:"Anton","Helvetica Neue",sans-serif;
+    font-size:clamp(30px,4.4vw,52px);line-height:1.04;letter-spacing:.01em;
+    text-transform:uppercase;margin:0;text-wrap:balance;
+  }
+  .hero-baseline{margin:0;font-size:15px;line-height:1.6;color:rgba(255,255,255,.82);max-width:46ch;}
+  .hero-cta{
+    align-self:flex-start;margin-top:8px;
+    background:#fff;color:var(--navy);border:1px solid #fff;
+    font-family:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    padding:14px 30px;cursor:pointer;
+  }
+  .hero-cta:hover{background:transparent;color:#fff;}
+  .hero-media{background:var(--surface);overflow:hidden;}
+  .hero-media img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block;}
+  .hero-media .hero-fallback{
+    width:100%;height:100%;min-height:320px;
+    display:flex;align-items:center;justify-content:center;background:var(--surface);
+  }
+  .hero-media .hero-fallback svg{width:46%;height:46%;color:var(--navy);}
+
+  /* produit en vedette */
+  .feature{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:center;}
+  .feature-media{background:var(--surface);aspect-ratio:4/5;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+  .feature-media img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;}
+  .feature-media svg{width:56%;height:56%;}
+  .feature-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);margin:0 0 10px;}
+  .feature h2{font-family:"Anton","Helvetica Neue",sans-serif;font-size:clamp(24px,3.2vw,34px);text-transform:uppercase;margin:0 0 6px;}
+  .feature-price{font-size:17px;font-weight:700;margin:0 0 16px;font-variant-numeric:tabular-nums;}
+  .feature-desc{font-size:14px;color:var(--sub);line-height:1.65;margin:0 0 20px;max-width:52ch;}
+  .feature-sizes{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+  .feature-actions{display:flex;gap:12px;flex-wrap:wrap;}
+  .btn-ghost{
+    background:none;border:1px solid var(--line);color:var(--ink);
+    font-family:inherit;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    padding:14px 24px;cursor:pointer;
+  }
+  .btn-ghost:hover{border-color:var(--navy);}
+
+  /* trois categories */
+  .cats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .cat-tile{
+    position:relative;display:block;width:100%;padding:0;cursor:pointer;
+    background:var(--surface);border:none;overflow:hidden;
+    aspect-ratio:3/4;
+  }
+  .cat-tile img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;transition:transform .35s ease;}
+  .cat-tile:hover img{transform:scale(1.04);}
+  .cat-tile .cat-icon{width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+  .cat-tile .cat-icon svg{width:46%;height:46%;color:var(--navy);}
+  .cat-label{
+    position:absolute;left:0;right:0;bottom:0;
+    padding:16px 18px;
+    background:linear-gradient(to top, rgba(11,31,61,.78), rgba(11,31,61,0));
+    color:#fff;text-align:left;
+    font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+  }
+
+  /* carrousel */
+  .rail{
+    display:grid;grid-auto-flow:column;grid-auto-columns:minmax(232px,1fr);
+    gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;
+    padding-bottom:6px;scrollbar-width:thin;
+  }
+  .rail > *{scroll-snap-align:start;}
+
+  /* blocs collection */
+  .duo{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+  .duo-block{position:relative;overflow:hidden;background:var(--surface-2);min-height:300px;display:flex;}
+  .duo-block img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 18%;}
+  .duo-inner{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;justify-content:flex-end;gap:10px;
+    padding:28px;width:100%;
+    background:linear-gradient(to top, rgba(11,31,61,.72), rgba(11,31,61,.05) 62%);
+    color:#fff;
+  }
+  .duo-inner h3{font-family:"Anton","Helvetica Neue",sans-serif;font-size:24px;text-transform:uppercase;margin:0;}
+  .duo-inner p{margin:0;font-size:14px;line-height:1.55;color:rgba(255,255,255,.86);max-width:36ch;}
+  .duo-cta{
+    align-self:flex-start;margin-top:6px;
+    background:#fff;color:var(--navy);border:none;
+    font-family:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    padding:12px 22px;cursor:pointer;
+  }
+
+  /* reassurance */
+  .trust{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;border-top:1px solid var(--line);padding-top:34px;}
+  .trust-item{display:flex;gap:14px;align-items:flex-start;}
+  .trust-item svg{width:22px;height:22px;flex-shrink:0;color:var(--navy);margin-top:2px;}
+  .trust-item b{display:block;font-size:13px;margin-bottom:3px;}
+  .trust-item span{font-size:13px;color:var(--sub);line-height:1.5;}
+
+  /* pied de page */
+  .site-footer{
+    margin-top:64px;background:var(--navy);color:rgba(255,255,255,.8);
+    padding:44px 24px calc(34px + env(safe-area-inset-bottom,0px));
+  }
+  .footer-inner{max-width:1280px;margin:0 auto;display:flex;gap:32px;flex-wrap:wrap;justify-content:space-between;}
+  .footer-brand{font-family:"Anton","Helvetica Neue",sans-serif;font-size:20px;letter-spacing:.04em;text-transform:uppercase;color:#fff;}
+  .footer-col{font-size:13px;line-height:1.9;}
+  .footer-col b{display:block;color:#fff;font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px;}
+  .footer-col a{color:rgba(255,255,255,.8);text-decoration:none;}
+  .footer-col a:hover{color:#fff;text-decoration:underline;}
+  .footer-legal{max-width:1280px;margin:30px auto 0;font-size:11px;color:rgba(255,255,255,.5);}
+
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr;}
+    .hero-media{order:-1;aspect-ratio:4/3;}
+    .hero-text{padding:32px 20px 40px;}
+    .feature{grid-template-columns:1fr;gap:22px;}
+    .cats-grid{grid-template-columns:1fr;}
+    .duo{grid-template-columns:1fr;}
+    .trust{grid-template-columns:1fr;gap:16px;}
+    .home section{padding:0 16px;}
+  }
+
   /* ---------- main nav (mega menu) ---------- */
   .main-nav{
     background:var(--bg);
@@ -799,9 +945,37 @@
 <div class="promo-bar">Livraison offerte dès <b>60 €</b> d'achat pour les licenciés du club</div>
 
 <main>
-  <section id="view-plp"></section>
+  <div id="view-home" class="home" hidden></div>
+  <section id="view-plp" hidden></section>
   <section id="view-pdp" hidden></section>
 </main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Les Implacables</div>
+      <div class="footer-col" style="margin-top:8px">Boutique officielle du club</div>
+    </div>
+    <div class="footer-col">
+      <b>La boutique</b>
+      <a href="#/boutique">Tous les articles</a><br>
+      <a href="#/boutique">Nouveautés</a><br>
+      <a href="#/boutique">Guide des tailles</a>
+    </div>
+    <div class="footer-col">
+      <b>Le club</b>
+      <a href="https://ffse.implacables.fr" target="_blank" rel="noopener">Classement FFSE</a><br>
+      <a href="mailto:contact@implacables.fr">Nous écrire</a>
+    </div>
+    <div class="footer-col">
+      <b>Commandes</b>
+      Retrait au club house<br>
+      Livraison 3 à 7 jours<br>
+      Échange sous 30 jours
+    </div>
+  </div>
+  <div class="footer-legal">© Les Implacables — commandes traitées par le bureau du club.</div>
+</footer>
 
 <div class="scrim" id="scrim"></div>
 
@@ -865,6 +1039,7 @@
 
   var PRODUCTS = [
     { id:"maillot-domicile", cat:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, label:"Nouveauté", icon:"icon-shirt",
+      hero:true, heroTitle:"Maillot Domicile 26/27", heroText:"Le maillot officiel des Implacables, porté en championnat FFSE. Motif feuille de vigne tissé, blason brodé.", heroCta:"Découvrir",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"],
       photo:"assets/maillot-domicile.jpg", photos:["assets/maillot-domicile.jpg","assets/maillot-domicile-dos.jpg"],
       desc:"Le maillot officiel porté en championnat, coupe ajustée et tissu technique respirant. Motif feuille de vigne tissé, blason club et sponsors brodés sur la poitrine." },
@@ -1160,7 +1335,7 @@
     }).join("");
 
     document.getElementById("view-plp").innerHTML =
-      '<nav class="breadcrumb"><a href="#/">Boutique</a> / Vêtements</nav>' +
+      '<nav class="breadcrumb"><a href="#/">Accueil</a> / Vêtements</nav>' +
       '<div class="plp-head">' +
         '<h1>Vêtements Club<span class="plp-count">('+list.length+')</span></h1>' +
         '<div class="plp-toolbar">' +
@@ -1442,7 +1617,7 @@
       if(all){
         closeMenus();
         state.cats = all.getAttribute("data-cats").split("|");
-        if(location.hash && location.hash !== "#/") location.hash = "#/"; else route();
+        if(location.hash === "#/boutique") route(); else location.hash = "#/boutique";
         window.scrollTo(0,0);
       }
     });
@@ -1562,7 +1737,7 @@
       if(all){
         closeOverlays();
         state.cats = all.getAttribute("data-cats").split("|");
-        if(location.hash && location.hash !== "#/") location.hash = "#/"; else route();
+        if(location.hash === "#/boutique") route(); else location.hash = "#/boutique";
         window.scrollTo(0,0);
       }
     });
@@ -1570,6 +1745,182 @@
     MOBILE_Q.addEventListener("change", function(){
       closeOverlays();
       if(!document.getElementById("view-plp").hidden) renderPLP();
+    });
+  }
+
+  /* ---------------- page d'accueil ---------------- */
+  /* Contenu editable depuis le backoffice (onglet Page d'accueil). Le
+     backoffice ecrit la meme cle de stockage ; a defaut, ces valeurs
+     servent de contenu par defaut. Le produit mis en avant, lui, vient
+     du catalogue : c'est la fiche produit qui porte l'option "hero". */
+  var HOME_DEFAULT = {
+    heroEyebrow: "Collection 26/27",
+    cats: [
+      { label:"Vêtements rugby", filter:["Maillots","Shorts"], id:"maillot-domicile" },
+      { label:"Lifestyle",       filter:["Sweats","T-shirts"], id:"sweat-capuche" },
+      { label:"Accessoires",     filter:["Accessoires","Chaussettes"], id:"sac-sport" }
+    ],
+    railTitle: "Les plus demandés",
+    railSub: "Ce que le vestiaire commande le plus cette saison.",
+    duo: [
+      { title:"Le kit de match", text:"Maillot, short et chaussettes du kit officiel, assortis.", cta:"Découvrir", filter:["Maillots","Shorts","Chaussettes"], id:"maillot-domicile" },
+      { title:"Le vestiaire",    text:"Sweats, polos et vestes pour les jours sans crampons.", cta:"Découvrir", filter:["Sweats","T-shirts"], id:"maillot-exterieur" }
+    ],
+    trust: [
+      { title:"Retrait au club house", text:"Sous 3 à 5 jours, sans frais." },
+      { title:"Livraison à domicile",  text:"En 3 à 7 jours ouvrés." },
+      { title:"Échange sous 30 jours", text:"Article non porté, étiquette d'origine." }
+    ]
+  };
+  var HOME = HOME_DEFAULT;
+  try {
+    var savedHome = JSON.parse(localStorage.getItem("implacables-home") || "null");
+    if(savedHome && typeof savedHome === "object"){
+      HOME = Object.assign({}, HOME_DEFAULT, savedHome);
+    }
+  } catch(e){}
+
+  /* Le produit mis en avant vient du backoffice (option cochee sur la fiche
+     produit, avec son visuel et ses textes). A defaut, on retombe sur le
+     produit marque hero dans le catalogue de cette page. */
+  function heroProduct(){
+    var h = HOME.hero || {};
+    var p = PRODUCTS.filter(function(x){ return x.id === h.id; })[0]
+         || PRODUCTS.filter(function(x){ return x.hero; })[0]
+         || PRODUCTS[0];
+    return {
+      id: p.id, name: p.name, desc: p.desc, price: p.price, sizes: p.sizes,
+      colors: p.colors, icon: p.icon, photo: p.photo,
+      heroTitle: h.title || p.heroTitle || p.name,
+      heroText:  h.text  || p.heroText  || p.desc,
+      heroCta:   h.cta   || p.heroCta   || "Découvrir",
+      heroImage: h.image || p.heroImage
+    };
+  }
+  function mediaOf(p, cls){
+    if(p && p.photo) return '<img src="'+p.photo+'" alt="'+esc(p.name)+'" loading="lazy">';
+    var color = p ? p.colors[0].h : "#0B1F3D";
+    return '<svg class="'+(cls||"")+'" style="color:'+color+'"><use href="#'+(p ? p.icon : "icon-shirt")+'"/></svg>';
+  }
+  var TRUST_ICONS = [
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10h18"/><path d="M5 10V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M4 10h16v9H4z"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 20v-5h5"/></svg>'
+  ];
+
+  function renderHome(){
+    var p = heroProduct();
+    var heroVisual = p.heroImage
+      ? '<img src="'+p.heroImage+'" alt="'+esc(p.heroTitle || p.name)+'">'
+      : (p.photo ? '<img src="'+p.photo+'" alt="'+esc(p.name)+'">'
+                 : '<div class="hero-fallback"><svg style="color:'+p.colors[0].h+'"><use href="#'+p.icon+'"/></svg></div>');
+
+    var rail = PRODUCTS.slice(0, 8).map(cardHTML).join("");
+
+    var cats = HOME.cats.map(function(c){
+      var ref = PRODUCTS.filter(function(x){ return x.id === c.id; })[0];
+      var visual = c.image
+        ? '<img src="'+c.image+'" alt="'+esc(c.label)+'">'
+        : (ref && ref.photo ? '<img src="'+ref.photo+'" alt="'+esc(c.label)+'">'
+                            : '<div class="cat-icon">'+mediaOf(ref)+'</div>');
+      return '<button type="button" class="cat-tile" data-cats="'+(c.filter||[]).join("|")+'">'+
+               visual + '<span class="cat-label">'+esc(c.label)+'</span>' +
+             '</button>';
+    }).join("");
+
+    var duo = HOME.duo.map(function(d){
+      var ref = PRODUCTS.filter(function(x){ return x.id === d.id; })[0];
+      var bg = d.image ? '<img src="'+d.image+'" alt="">'
+                       : (ref && ref.photo ? '<img src="'+ref.photo+'" alt="">' : "");
+      return '<div class="duo-block">'+ bg +
+               '<div class="duo-inner">'+
+                 '<h3>'+esc(d.title)+'</h3>'+
+                 '<p>'+esc(d.text)+'</p>'+
+                 '<button type="button" class="duo-cta" data-cats="'+(d.filter||[]).join("|")+'">'+esc(d.cta || "Découvrir")+'</button>'+
+               '</div></div>';
+    }).join("");
+
+    var trust = HOME.trust.map(function(t, i){
+      return '<div class="trust-item">'+ TRUST_ICONS[i % TRUST_ICONS.length] +
+               '<div><b>'+esc(t.title)+'</b><span>'+esc(t.text)+'</span></div></div>';
+    }).join("");
+
+    document.getElementById("view-home").innerHTML =
+      '<section class="full">' +
+        '<div class="hero">' +
+          '<div class="hero-text">' +
+            '<span class="hero-eyebrow">'+esc(HOME.heroEyebrow || "")+'</span>' +
+            '<h1 class="hero-title">'+esc(p.heroTitle || p.name)+'</h1>' +
+            '<p class="hero-baseline">'+esc(p.heroText || p.desc)+'</p>' +
+            '<button type="button" class="hero-cta" data-goto="'+p.id+'">'+esc(p.heroCta || "Découvrir")+'</button>' +
+          '</div>' +
+          '<div class="hero-media">'+heroVisual+'</div>' +
+        '</div>' +
+      '</section>' +
+
+      '<section style="margin-top:64px">' +
+        '<div class="feature">' +
+          '<div class="feature-media">'+mediaOf(p)+'</div>' +
+          '<div>' +
+            '<p class="feature-eyebrow">Le produit du moment</p>' +
+            '<h2>'+esc(p.name)+'</h2>' +
+            '<p class="feature-price">'+euro(p.price)+'</p>' +
+            '<p class="feature-desc">'+esc(p.desc)+'</p>' +
+            '<div class="feature-sizes" id="homeSizes">' +
+              p.sizes.map(function(sz){
+                return '<button type="button" class="quick-size" data-home-size="'+sz+'" aria-pressed="false">'+sz+'</button>';
+              }).join("") +
+            '</div>' +
+            '<div class="feature-actions">' +
+              '<button type="button" class="quick-submit" id="homeAdd" style="padding:14px 28px">Ajouter au panier</button>' +
+              '<button type="button" class="btn-ghost" data-goto="'+p.id+'">Voir la fiche</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</section>' +
+
+      '<section style="margin-top:72px"><div class="cats-grid">'+cats+'</div></section>' +
+
+      '<section style="margin-top:72px">' +
+        '<div class="home-head">' +
+          '<div><h2 class="home-title">'+esc(HOME.railTitle)+'</h2><p class="home-sub">'+esc(HOME.railSub)+'</p></div>' +
+          '<button type="button" class="link-all" data-cats="">Tout afficher</button>' +
+        '</div>' +
+        '<div class="rail">'+rail+'</div>' +
+      '</section>' +
+
+      '<section style="margin-top:72px"><div class="duo">'+duo+'</div></section>' +
+
+      '<section style="margin-top:72px"><div class="trust">'+trust+'</div></section>';
+
+    wireCards(document.getElementById("view-home"));
+
+    var home = document.getElementById("view-home");
+    home.querySelectorAll("[data-cats]").forEach(function(btn){
+      if(btn.closest(".card")) return;   // deja gere par wireCards
+      btn.addEventListener("click", function(){
+        var v = btn.getAttribute("data-cats");
+        state.cats = v ? v.split("|") : [];
+        location.hash = "#/boutique";
+        window.scrollTo(0, 0);
+      });
+    });
+    home.querySelectorAll("[data-goto]").forEach(function(btn){
+      if(btn.closest(".card")) return;
+      btn.addEventListener("click", function(){ openProduct(btn.getAttribute("data-goto")); });
+    });
+    home.querySelectorAll("[data-home-size]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        home.querySelectorAll("[data-home-size]").forEach(function(b){ b.setAttribute("aria-pressed", b === btn); });
+      });
+    });
+    document.getElementById("homeAdd").addEventListener("click", function(){
+      var sel = home.querySelector('[data-home-size][aria-pressed="true"]');
+      if(!sel){ toast("Choisis une taille"); return; }
+      addToCart({
+        id: p.id, article: p.name, reference: "IMP-"+p.id.toUpperCase(),
+        couleur: p.colors[0].n, taille: sel.getAttribute("data-home-size"), prix: p.price
+      });
     });
   }
 
@@ -1695,16 +2046,22 @@
   function route(){
     var hash = location.hash || "#/";
     var m = hash.match(/^#\/produit\/(.+)$/);
+    var isShop = /^#\/boutique/.test(hash);
     closeOverlays();
-    filterBar.classList.toggle("hide", !!m);
+    // la barre de filtres n'a de sens que sur la grille
+    filterBar.classList.toggle("hide", !isShop);
+    document.getElementById("view-home").hidden = true;
+    document.getElementById("view-plp").hidden = true;
+    document.getElementById("view-pdp").hidden = true;
     if(m){
-      document.getElementById("view-plp").hidden = true;
       document.getElementById("view-pdp").hidden = false;
       renderPDP(m[1]);
-    } else {
-      document.getElementById("view-pdp").hidden = true;
+    } else if(isShop){
       document.getElementById("view-plp").hidden = false;
       renderPLP();
+    } else {
+      document.getElementById("view-home").hidden = false;
+      renderHome();
     }
   }
 
