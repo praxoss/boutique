@@ -8,8 +8,7 @@
       "price": 64.99,
       "ref": "IMP-MAILLOT-DOM",
       "icon": "icon-shirt",
-      "status": "actif",
-      "label": "Nouveauté",
+      "photo": "assets/maillot-domicile.jpg",
       "colors": [
         {
           "n": "Bleu marine",
@@ -27,17 +26,16 @@
         "XL",
         "XXL"
       ],
-      "photo": "assets/maillot-domicile.jpg",
-      "photos": [
-        "assets/maillot-domicile.jpg",
-        "assets/maillot-domicile-dos.jpg"
-      ],
+      "status": "actif",
       "desc": "Le maillot officiel porté en championnat, coupe ajustée et tissu technique respirant. Motif feuille de vigne tissé, blason club et sponsors brodés sur la poitrine.",
-      "hero": true,
-      "heroImage": "assets/hero-maillot.jpg",
+      "label": "Nouveauté",
+      "hero": false,
       "heroTitle": "Maillot Domicile 26/27",
       "heroText": "Le maillot officiel des Implacables, porté en championnat FFSE. Motif feuille de vigne tissé, blason brodé.",
-      "heroCta": "Découvrir"
+      "heroCta": "Découvrir",
+      "heroImage": "assets/hero-maillot.jpg",
+      "heroFit": "auto",
+      "heroFocus": 50
     },
     {
       "id": "maillot-exterieur",
@@ -70,7 +68,8 @@
         "assets/maillot-exterieur.jpg",
         "assets/maillot-exterieur-dos.jpg"
       ],
-      "desc": "Version extérieure du maillot officiel, coloris rouge. Même coupe technique que le maillot domicile, blason club au dos et sponsors partenaires."
+      "desc": "Version extérieure du maillot officiel, coloris rouge. Même coupe technique que le maillot domicile, blason club au dos et sponsors partenaires.",
+      "hero": false
     },
     {
       "id": "tshirt-training",
@@ -102,7 +101,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Le t-shirt du quotidien, porté à l'entraînement comme en dehors du terrain. Coton peigné 220 g, logo club sérigraphié."
+      "desc": "Le t-shirt du quotidien, porté à l'entraînement comme en dehors du terrain. Coton peigné 220 g, logo club sérigraphié.",
+      "hero": false
     },
     {
       "id": "polo-club",
@@ -131,7 +131,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Polo piqué pour les jours de match côté touche et les déplacements officiels. Blason club brodé sur la poitrine."
+      "desc": "Polo piqué pour les jours de match côté touche et les déplacements officiels. Blason club brodé sur la poitrine.",
+      "hero": false
     },
     {
       "id": "sweat-capuche",
@@ -160,7 +161,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Sweat à capuche épais pour les matins d'entraînement frais. Molleton gratté à l'intérieur, cordons ton sur ton."
+      "desc": "Sweat à capuche épais pour les matins d'entraînement frais. Molleton gratté à l'intérieur, cordons ton sur ton.",
+      "hero": false
     },
     {
       "id": "veste-survetement",
@@ -184,7 +186,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Veste d'échauffement zippée, portée avant match sur le maillot. Doublure légère coupe-vent."
+      "desc": "Veste d'échauffement zippée, portée avant match sur le maillot. Doublure légère coupe-vent.",
+      "hero": false
     },
     {
       "id": "vareuse-entrainement",
@@ -212,7 +215,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Vareuse d'entraînement en maille technique, col zippé, portée par-dessus le maillot ou le t-shirt les jours de fraîcheur."
+      "desc": "Vareuse d'entraînement en maille technique, col zippé, portée par-dessus le maillot ou le t-shirt les jours de fraîcheur.",
+      "hero": false
     },
     {
       "id": "short-match",
@@ -240,7 +244,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Short officiel assorti au maillot, renforts aux coutures pour résister au contact."
+      "desc": "Short officiel assorti au maillot, renforts aux coutures pour résister au contact.",
+      "hero": false
     },
     {
       "id": "short-entrainement",
@@ -268,7 +273,8 @@
         "XL",
         "XXL"
       ],
-      "desc": "Short polyvalent pour l'entraînement, tissu léger et poches zippées pour les clés et le téléphone."
+      "desc": "Short polyvalent pour l'entraînement, tissu léger et poches zippées pour les clés et le téléphone.",
+      "hero": false
     },
     {
       "id": "chaussettes-match",
@@ -294,7 +300,8 @@
         "40-43",
         "44-47"
       ],
-      "desc": "Chaussettes hautes du kit officiel, maintien renforcé à la cheville et au tibia, assorties au maillot."
+      "desc": "Chaussettes hautes du kit officiel, maintien renforcé à la cheville et au tibia, assorties au maillot.",
+      "hero": false
     },
     {
       "id": "bonnet-club",
@@ -318,7 +325,8 @@
       "sizes": [
         "Taille unique"
       ],
-      "desc": "Bonnet côtelé avec patch club brodé, pour les matchs d'hiver en tribune comme sur le terrain."
+      "desc": "Bonnet côtelé avec patch club brodé, pour les matchs d'hiver en tribune comme sur le terrain.",
+      "hero": false
     },
     {
       "id": "sac-sport",
@@ -338,7 +346,36 @@
       "sizes": [
         "Taille unique"
       ],
-      "desc": "Sac de sport 40 litres avec compartiment ventilé dédié aux crampons, logo club floqué."
+      "desc": "Sac de sport 40 litres avec compartiment ventilé dédié aux crampons, logo club floqué.",
+      "hero": false
+    },
+    {
+      "id": "casquette-trucker-implacs",
+      "typ": "Accessoires",
+      "name": "Casquette trucker Implacs",
+      "sub": "Collection feuile de vigne",
+      "price": 25,
+      "ref": "IMP-CASQUETTE-TRUCKER-",
+      "icon": "icon-bag",
+      "colors": [
+        {
+          "n": "Navy blue",
+          "h": "#003585"
+        }
+      ],
+      "sizes": [
+        "Taille unique"
+      ],
+      "status": "actif",
+      "desc": "",
+      "hero": true,
+      "heroTitle": "Casquette trucker",
+      "heroText": "Collection feuille de vigne",
+      "heroCta": "Découvrir",
+      "heroImage": "assets/casquette-trucker-implacs-hero.jpg",
+      "heroFit": "auto",
+      "heroFocus": 50,
+      "photo": "assets/casquette-trucker-implacs.jpg"
     }
   ],
   "home": {
@@ -350,7 +387,8 @@
           "Maillots",
           "Shorts"
         ],
-        "id": "maillot-domicile"
+        "id": "maillot-domicile",
+        "image": null
       },
       {
         "label": "Lifestyle",
@@ -358,7 +396,8 @@
           "Sweats",
           "T-shirts"
         ],
-        "id": "sweat-capuche"
+        "id": "sweat-capuche",
+        "image": null
       },
       {
         "label": "Accessoires",
@@ -366,7 +405,8 @@
           "Accessoires",
           "Chaussettes"
         ],
-        "id": "sac-sport"
+        "id": "sac-sport",
+        "image": null
       }
     ],
     "railTitle": "Les plus demandés",
@@ -381,7 +421,8 @@
           "Shorts",
           "Chaussettes"
         ],
-        "id": "maillot-domicile"
+        "id": "maillot-domicile",
+        "image": null
       },
       {
         "title": "Le vestiaire",
@@ -391,7 +432,8 @@
           "Sweats",
           "T-shirts"
         ],
-        "id": "maillot-exterieur"
+        "id": "maillot-exterieur",
+        "image": null
       }
     ],
     "trust": [
@@ -407,6 +449,15 @@
         "title": "Échange sous 30 jours",
         "text": "Article non porté, étiquette d'origine."
       }
-    ]
+    ],
+    "hero": {
+      "id": "casquette-trucker-implacs",
+      "title": "Casquette trucker",
+      "text": "Collection feuille de vigne",
+      "cta": "Découvrir",
+      "image": "assets/casquette-trucker-implacs-hero.jpg",
+      "fit": "auto",
+      "focus": 50
+    }
   }
 }
