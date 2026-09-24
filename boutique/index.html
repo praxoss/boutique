@@ -146,8 +146,10 @@
   .hero{
     display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);
     background:var(--navy);color:#fff;
-    height:calc(100svh - var(--hero-offset, 210px));
-    min-height:320px;
+    /* on laisse depasser le haut du bloc suivant : il sert d'accroche
+       et montre qu'il y a quelque chose sous le hero. */
+    height:calc(100svh - var(--hero-offset, 210px) - clamp(76px, 13vh, 136px));
+    min-height:280px;
     overflow:hidden;
   }
   .hero-text{
@@ -177,6 +179,7 @@
   }
   .hero-media .hero-fallback svg{width:46%;height:46%;color:var(--navy);}
 
+  .after-hero{margin-top:36px;}
   /* produit en vedette */
   .feature{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:center;}
   .feature-media{background:var(--surface);aspect-ratio:4/5;overflow:hidden;display:flex;align-items:center;justify-content:center;}
@@ -1871,11 +1874,14 @@
         '</div>' +
       '</section>' +
 
-      '<section style="margin-top:64px">' +
+      '<section class="after-hero">' +
+        '<div class="home-head">' +
+          '<div><h2 class="home-title">Le produit du moment</h2>' +
+          '<p class="home-sub">Disponible à la commande, retrait au club house.</p></div>' +
+        '</div>' +
         '<div class="feature">' +
           '<div class="feature-media">'+mediaOf(p)+'</div>' +
           '<div>' +
-            '<p class="feature-eyebrow">Le produit du moment</p>' +
             '<h2>'+esc(p.name)+'</h2>' +
             '<p class="feature-price">'+euro(p.price)+'</p>' +
             '<p class="feature-desc">'+esc(p.desc)+'</p>' +
