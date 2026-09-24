@@ -23,6 +23,7 @@
   /* American Captain is not available on an allowed CSP host; Anton (Google Fonts) stands in for it below. */
   *{box-sizing:border-box;}
   body{
+    margin:0;
     background:var(--bg);
     color:var(--ink);
     font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;
@@ -121,6 +122,7 @@
   .promo-bar b{color:var(--navy);}
 
   /* ---------- page d'accueil ---------- */
+  main.home-mode{max-width:none;padding:0;}
   .home section{max-width:1280px;margin:0 auto;padding:0 24px;}
   .home .full{max-width:none;padding:0;}
   .home-title{
@@ -139,14 +141,19 @@
   .link-all:hover{opacity:.7;}
 
   /* hero : texte a gauche, visuel a droite */
+  /* Le hero tient dans ce qui reste de l'ecran sous l'en-tete collant :
+     --hero-offset est mesure en JS (en-tete + nav + bandeau promo). */
   .hero{
     display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);
     background:var(--navy);color:#fff;
-    min-height:420px;
+    height:calc(100svh - var(--hero-offset, 210px));
+    min-height:320px;
+    overflow:hidden;
   }
   .hero-text{
     display:flex;flex-direction:column;justify-content:center;
-    gap:14px;padding:56px clamp(24px,5vw,72px);
+    gap:14px;padding:clamp(24px,4vh,52px) clamp(24px,5vw,72px);
+    overflow:hidden;
   }
   .hero-eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62);}
   .hero-title{
@@ -162,7 +169,7 @@
     padding:14px 30px;cursor:pointer;
   }
   .hero-cta:hover{background:transparent;color:#fff;}
-  .hero-media{background:var(--surface);overflow:hidden;}
+  .hero-media{background:var(--surface);overflow:hidden;min-height:0;}
   .hero-media img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block;}
   .hero-media .hero-fallback{
     width:100%;height:100%;min-height:320px;
@@ -256,9 +263,15 @@
   .footer-legal{max-width:1280px;margin:30px auto 0;font-size:11px;color:rgba(255,255,255,.5);}
 
   @media (max-width:860px){
-    .hero{grid-template-columns:1fr;}
-    .hero-media{order:-1;aspect-ratio:4/3;}
-    .hero-text{padding:32px 20px 40px;}
+    .hero{
+      grid-template-columns:1fr;
+      grid-template-rows:minmax(0,1fr) auto;
+      max-height:none;
+    }
+    .hero-media{order:-1;min-height:140px;}
+    .hero-text{padding:24px 20px 28px;gap:10px;}
+    .hero-title{font-size:clamp(24px,7vw,34px);}
+    .hero-baseline{font-size:14px;}
     .feature{grid-template-columns:1fr;gap:22px;}
     .cats-grid{grid-template-columns:1fr;}
     .duo{grid-template-columns:1fr;}
@@ -1039,7 +1052,7 @@
 
   var PRODUCTS = [
     { id:"maillot-domicile", cat:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, label:"Nouveauté", icon:"icon-shirt",
-      hero:true, heroTitle:"Maillot Domicile 26/27", heroText:"Le maillot officiel des Implacables, porté en championnat FFSE. Motif feuille de vigne tissé, blason brodé.", heroCta:"Découvrir",
+      hero:true, heroImage:"assets/hero-maillot.jpg", heroTitle:"Maillot Domicile 26/27", heroText:"Le maillot officiel des Implacables, porté en championnat FFSE. Motif feuille de vigne tissé, blason brodé.", heroCta:"Découvrir",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"],
       photo:"assets/maillot-domicile.jpg", photos:["assets/maillot-domicile.jpg","assets/maillot-domicile-dos.jpg"],
       desc:"Le maillot officiel porté en championnat, coupe ajustée et tissu technique respirant. Motif feuille de vigne tissé, blason club et sponsors brodés sur la poitrine." },
@@ -2050,6 +2063,7 @@
     closeOverlays();
     // la barre de filtres n'a de sens que sur la grille
     filterBar.classList.toggle("hide", !isShop);
+    document.querySelector("main").classList.toggle("home-mode", !m && !isShop);
     document.getElementById("view-home").hidden = true;
     document.getElementById("view-plp").hidden = true;
     document.getElementById("view-pdp").hidden = true;
@@ -2062,6 +2076,7 @@
     } else {
       document.getElementById("view-home").hidden = false;
       renderHome();
+      if(typeof syncTopbar === "function") syncTopbar();
     }
   }
 
@@ -2071,11 +2086,24 @@
      haut, moitie moins des le premier defilement. La hauteur reelle est
      publiee en variable CSS pour caler les colonnes collantes dessous. */
   var topbar = document.getElementById("topbar");
+  var promoBar = document.querySelector(".promo-bar");
   function syncTopbar(){
     topbar.classList.toggle("shrunk", window.scrollY > 8);
-    document.documentElement.style.setProperty("--topbar-h", topbar.offsetHeight + "px");
+    var root = document.documentElement;
+    root.style.setProperty("--topbar-h", topbar.offsetHeight + "px");
+    // hauteur du hero : l'ecran moins ce qui le surplombe. On mesure la
+    // position reelle du hero plutot que d'additionner les blocs, sinon le
+    // chargement de la police (qui change la hauteur de l'en-tete) fausse le
+    // calcul. Uniquement en haut de page : une fois defile, l'en-tete a
+    // retreci et la mesure ne vaut plus.
+    var hero = document.querySelector(".hero");
+    if(hero && window.scrollY <= 8){
+      root.style.setProperty("--hero-offset", Math.ceil(hero.getBoundingClientRect().top) + "px");
+    }
   }
   window.addEventListener("scroll", syncTopbar, { passive:true });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(syncTopbar);
+  window.addEventListener("load", syncTopbar);
   window.addEventListener("resize", syncTopbar);
   topbar.addEventListener("transitionend", syncTopbar);
 
