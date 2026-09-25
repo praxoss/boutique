@@ -102,31 +102,46 @@ function updateOrder(id, patch){
   const list = loadOrders();
   const o = list.find(x => x.id === id);
   if(!o) return null;
+  const before = o.statut;
   Object.assign(o, patch);
   saveOrders(list);
-  pushToSheet([o]);
+  if(o.statut !== before) pushToSheet([o]);   // le Sheet n'affiche que le statut
   return o;
 }
 
-/* Copie vers le Google Sheet. Jamais bloquant pour la commande : en cas
-   d'echec on le note, et "Renvoyer au Sheet" (backoffice) rattrape tout. */
-function pushToSheet(orders){
-  if(!SHEETS_URL || !SHEETS_TOKEN || !orders.length) return Promise.resolve({ ok:false, erreur:"Google Sheet non configure" });
+/* Copie vers le Google Sheet. Jamais bloquant pour la commande. Les envois
+   partent un par un (deux envois simultanes pour la meme commande faisaient
+   echouer Apps Script) et sont retentes deux fois ; en dernier recours,
+   "Renvoyer toutes les commandes" (backoffice) rattrape tout. */
+let sheetQueue = Promise.resolve();
+
+function sendToSheet(orders){
   return fetch(SHEETS_URL, {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({ token:SHEETS_TOKEN, commandes:orders }),
     redirect:"follow"
-  })
-    .then(r => r.text().then(txt => {
-      let j; try { j = JSON.parse(txt); } catch(e){ j = { ok:false, erreur:"reponse " + r.status }; }
-      if(!j.ok) throw new Error(j.erreur || "refus");
-      return j;
-    }))
-    .catch(err => {
-      console.error("Google Sheet :", err.message, "(" + orders.map(o => o.id).join(", ") + ")");
-      return { ok:false, erreur:err.message };
-    });
+  }).then(r => r.text().then(txt => {
+    let j; try { j = JSON.parse(txt); } catch(e){ j = { ok:false, erreur:"reponse " + r.status }; }
+    if(!j.ok) throw new Error(j.erreur || "refus");
+    return j;
+  }));
+}
+
+function pushToSheet(orders){
+  if(!SHEETS_URL || !SHEETS_TOKEN || !orders.length) return Promise.resolve({ ok:false, erreur:"Google Sheet non configure" });
+  const ids = orders.map(o => o.id).join(", ");
+  const attempt = n => sendToSheet(orders).catch(err => {
+    if(n >= 3) throw err;
+    console.error("Google Sheet : " + err.message + ", nouvel essai (" + ids + ")");
+    return new Promise(res => setTimeout(res, 4000 * n)).then(() => attempt(n + 1));
+  });
+  const run = sheetQueue.then(() => attempt(1)).catch(err => {
+    console.error("Google Sheet : abandon apres 3 essais :", err.message, "(" + ids + ")");
+    return { ok:false, erreur:err.message };
+  });
+  sheetQueue = run;
+  return run;
 }
 
 function newOrderId(){
