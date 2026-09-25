@@ -682,7 +682,7 @@
   .btn-primary:disabled{background:var(--sub);cursor:default;}
   /* dans l'accueil, le bloc suit le defilement normal et ne remonte pas
      sous l'en-tete : pas de galerie collante */
-  .home-product .pdp-layout{padding:0;}
+  .home-product .pdp-layout{padding:0;align-items:center;}
   .home-product .pdp-gallery{position:static;}
   .pdp-delivery{margin-top:22px;font-size:13px;color:var(--sub);line-height:1.6;}
   .pdp-delivery b{color:var(--ink);}
@@ -1487,8 +1487,9 @@
 
   /* Bloc produit : galerie + infos + achat. C'est la fiche produit, et le
      meme bloc sert au "produit du moment" de l'accueil. Tout est cherche
-     dans root (pas d'id) : les deux vues coexistent dans la page. */
-  function productBlockHTML(p){
+     dans root (pas d'id) : les deux vues coexistent dans la page.
+     compact : version accueil, arretee au bouton "Ajouter au panier". */
+  function productBlockHTML(p, compact){
     var views = ["Face","Dos","Detail","Porte"];
     var hasPhotos = !!(p.photos && p.photos.length);
     var mediaList = hasPhotos ? p.photos : views;
@@ -1531,8 +1532,9 @@
             (p.status === "rupture"
               ? '<button class="btn-primary add-to-cart" disabled>Rupture de stock</button>'
               : '<button class="btn-primary add-to-cart">Ajouter au panier</button>') +
-            '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>' +
+            (compact ? '' : '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>') +
           '</div>' +
+          (compact ? '' :
           '<div class="pdp-delivery"><b>Retrait gratuit</b> au club house sous 3 à 5 jours.<br>Livraison à domicile disponible au paiement.</div>' +
           '<ul class="pdp-meta">' +
             '<li>Reference : IMP-'+p.id.toUpperCase()+'</li>' +
@@ -1541,7 +1543,7 @@
             '<details class="accordion-item" open><summary>Description</summary><p>'+esc(p.desc)+'</p></details>' +
             '<details class="accordion-item"><summary>Livraison et retours</summary><p>Retrait gratuit au club house. Livraison à domicile en 3 à 7 jours ouvrés. Retours et échanges acceptés sous 30 jours, article non porté avec étiquette.</p></details>' +
             '<details class="accordion-item"><summary>Composition et entretien</summary><p>100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge.</p></details>' +
-          '</div>' +
+          '</div>') +
         '</div>' +
       '</div>';
   }
@@ -2010,7 +2012,7 @@
           '<div><h2 class="home-title">Le produit du moment</h2>' +
           '<p class="home-sub">Disponible à la commande, retrait au club house.</p></div>' +
         '</div>' +
-        '<div class="home-product">' + productBlockHTML(f) + '</div>' +
+        '<div class="home-product">' + productBlockHTML(f, true) + '</div>' +
       '</section>' +
 
       '<section style="margin-top:72px"><div class="cats-grid">'+cats+'</div></section>' +
