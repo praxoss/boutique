@@ -677,6 +677,13 @@
   }
   .btn-secondary svg{width:17px;height:17px;}
 
+  .pdp-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px;}
+  .pdp-actions > button{width:100%;}
+  .btn-primary:disabled{background:var(--sub);cursor:default;}
+  /* dans l'accueil, le bloc suit le defilement normal et ne remonte pas
+     sous l'en-tete : pas de galerie collante */
+  .home-product .pdp-layout{padding:0;}
+  .home-product .pdp-gallery{position:static;}
   .pdp-delivery{margin-top:22px;font-size:13px;color:var(--sub);line-height:1.6;}
   .pdp-delivery b{color:var(--ink);}
 
@@ -883,6 +890,7 @@
     .product-grid{grid-template-columns:repeat(2,1fr);}
     .pdp-layout{grid-template-columns:1fr;gap:0;}
     .pdp-gallery{position:static;margin:0 -24px;}
+    .home-product .pdp-gallery{margin:0 -16px;}
     .gallery-frame{aspect-ratio:4/5;}
     .pdp-info{padding-top:22px;}
     .related-grid{grid-template-columns:repeat(2,1fr);}
@@ -1469,7 +1477,6 @@
   }
 
   /* ---------------- PDP ---------------- */
-  var pdpState = {};
 
   function relatedHTML(current){
     var others = PRODUCTS.filter(function(p){return p.id!==current.id;});
@@ -1478,32 +1485,24 @@
     return pool.slice(0,3).map(cardHTML).join("");
   }
 
-  function renderPDP(id){
-    var p = PRODUCTS.filter(function(x){return x.id===id;})[0];
-    if(!p){ location.hash = "#/"; return; }
-    pdpState = { color: p.colors[0], size: null, view: 0, added:false };
-    if(pendingSize && pendingSize.id === id && p.sizes.indexOf(pendingSize.size) !== -1){
-      pdpState.size = pendingSize.size;
-    }
-    pendingSize = null;
-
+  /* Bloc produit : galerie + infos + achat. C'est la fiche produit, et le
+     meme bloc sert au "produit du moment" de l'accueil. Tout est cherche
+     dans root (pas d'id) : les deux vues coexistent dans la page. */
+  function productBlockHTML(p){
     var views = ["Face","Dos","Detail","Porte"];
     var hasPhotos = !!(p.photos && p.photos.length);
     var mediaList = hasPhotos ? p.photos : views;
-
-    document.getElementById("view-pdp").innerHTML =
-      '<button class="pdp-back" id="pdpBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Retour</button>' +
-      '<div class="pdp-layout">' +
+    return '<div class="pdp-layout">' +
         '<div class="pdp-gallery">' +
-          '<div class="gallery-frame" id="galleryFrame">' +
+          '<div class="gallery-frame">' +
             (hasPhotos
-              ? '<img id="galleryImg" src="'+p.photos[0]+'" alt="'+esc(p.name)+'">'
-              : '<span class="gallery-badge" id="galleryBadge">'+views[0]+'</span>' +
-                '<svg id="gallerySvg" style="color:'+p.colors[0].h+'"><use href="#'+p.icon+'"/></svg>'
+              ? '<img class="gallery-img" src="'+p.photos[0]+'" alt="'+esc(p.name)+'">'
+              : '<span class="gallery-badge">'+views[0]+'</span>' +
+                '<svg class="gallery-svg" style="color:'+p.colors[0].h+'"><use href="#'+p.icon+'"/></svg>'
             ) +
           '</div>' +
           (mediaList.length > 1
-            ? '<div class="gallery-dots" id="galleryDots">' +
+            ? '<div class="gallery-dots">' +
                 mediaList.map(function(v,i){return '<button type="button" aria-current="'+(i===0)+'" data-i="'+i+'" aria-label="Vue '+(i+1)+' sur '+mediaList.length+'"></button>';}).join("") +
               '</div>'
             : ''
@@ -1515,7 +1514,7 @@
           '<div class="pdp-sub">'+esc(p.sub)+'</div>' +
           '<div class="pdp-price">'+euro(p.price)+'</div>' +
           '<div class="pdp-colors">' +
-            '<div class="pdp-section-title">Couleur <span class="muted" id="colorName">'+esc(p.colors[0].n)+'</span></div>' +
+            '<div class="pdp-section-title">Couleur <span class="muted color-name">'+esc(p.colors[0].n)+'</span></div>' +
             '<div class="color-thumbs">' +
               p.colors.map(function(c,i){
                 return '<button type="button" class="color-thumb" data-i="'+i+'" aria-pressed="'+(i===0)+'" aria-label="'+esc(c.n)+'"><span class="swatch-fill" style="background:'+c.h+'"></span></button>';
@@ -1525,13 +1524,13 @@
           '<div class="pdp-sizes">' +
             '<div class="pdp-section-title">Sélectionner la taille <button class="size-guide-link" type="button">Guide des tailles</button></div>' +
             '<div class="pdp-size-row">' +
-              p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="'+(pdpState.size===s)+'">'+s+'</button>';}).join("") +
+              p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="false">'+s+'</button>';}).join("") +
             '</div>' +
           '</div>' +
           '<div class="pdp-actions">' +
             (p.status === "rupture"
-              ? '<button class="btn-primary" id="addToCart" disabled>Rupture de stock</button>'
-              : '<button class="btn-primary" id="addToCart">Ajouter au panier</button>') +
+              ? '<button class="btn-primary add-to-cart" disabled>Rupture de stock</button>'
+              : '<button class="btn-primary add-to-cart">Ajouter au panier</button>') +
             '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>' +
           '</div>' +
           '<div class="pdp-delivery"><b>Retrait gratuit</b> au club house sous 3 à 5 jours.<br>Livraison à domicile disponible au paiement.</div>' +
@@ -1544,57 +1543,59 @@
             '<details class="accordion-item"><summary>Composition et entretien</summary><p>100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge.</p></details>' +
           '</div>' +
         '</div>' +
-      '</div>' +
-      '<section class="related">' +
-        '<h2>Vous aimerez aussi</h2>' +
-        '<div class="related-grid">'+relatedHTML(p)+'</div>' +
-      '</section>';
+      '</div>';
+  }
 
-    document.getElementById("pdpBack").addEventListener("click", function(){ location.hash = "#/"; });
+  function wireProductBlock(root, p, preset){
+    var views = ["Face","Dos","Detail","Porte"];
+    var hasPhotos = !!(p.photos && p.photos.length);
+    var st = { color: p.colors[0], size: null };
+    if(preset && p.sizes.indexOf(preset) !== -1){
+      st.size = preset;
+      root.querySelectorAll("[data-size]").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-size") === preset); });
+    }
 
-    document.getElementById("view-pdp").querySelectorAll(".color-thumb").forEach(function(btn){
+    root.querySelectorAll(".color-thumb").forEach(function(btn){
       btn.addEventListener("click", function(){
         var i = parseInt(btn.getAttribute("data-i"),10);
-        pdpState.color = p.colors[i];
-        document.getElementById("view-pdp").querySelectorAll(".color-thumb").forEach(function(b,bi){ b.setAttribute("aria-pressed", bi===i); });
-        document.getElementById("colorName").textContent = p.colors[i].n;
-        if(!hasPhotos){
-          document.getElementById("gallerySvg").style.color = p.colors[i].h;
-        }
+        st.color = p.colors[i];
+        root.querySelectorAll(".color-thumb").forEach(function(b,bi){ b.setAttribute("aria-pressed", bi===i); });
+        root.querySelector(".color-name").textContent = p.colors[i].n;
+        if(!hasPhotos) root.querySelector(".gallery-svg").style.color = p.colors[i].h;
       });
     });
 
-    document.getElementById("view-pdp").querySelectorAll("[data-size]").forEach(function(btn){
+    root.querySelectorAll("[data-size]").forEach(function(btn){
       btn.addEventListener("click", function(){
-        pdpState.size = btn.getAttribute("data-size");
-        document.getElementById("view-pdp").querySelectorAll("[data-size]").forEach(function(b){ b.setAttribute("aria-pressed", b===btn); });
+        st.size = btn.getAttribute("data-size");
+        root.querySelectorAll("[data-size]").forEach(function(b){ b.setAttribute("aria-pressed", b===btn); });
       });
     });
 
-    var galleryDotsEl = document.getElementById("galleryDots");
-    if(galleryDotsEl){
-      galleryDotsEl.querySelectorAll("button").forEach(function(btn){
+    var dots = root.querySelector(".gallery-dots");
+    if(dots){
+      dots.querySelectorAll("button").forEach(function(btn){
         btn.addEventListener("click", function(){
           var i = parseInt(btn.getAttribute("data-i"),10);
-          galleryDotsEl.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
+          dots.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
           if(hasPhotos){
-            document.getElementById("galleryImg").src = p.photos[i];
+            root.querySelector(".gallery-img").src = p.photos[i];
           } else {
-            document.getElementById("galleryBadge").textContent = views[i];
-            document.getElementById("gallerySvg").style.transform = i===1 ? "scaleX(-1)" : i===2 ? "scale(1.35)" : "none";
+            root.querySelector(".gallery-badge").textContent = views[i];
+            root.querySelector(".gallery-svg").style.transform = i===1 ? "scaleX(-1)" : i===2 ? "scale(1.35)" : "none";
           }
         });
       });
     }
 
-    document.getElementById("addToCart").addEventListener("click", function(){
-      if(!pdpState.size){ toast("Choisis une taille avant d'ajouter au panier"); return; }
+    root.querySelector(".add-to-cart").addEventListener("click", function(){
+      if(!st.size){ toast("Choisis une taille avant d'ajouter au panier"); return; }
       addToCart({
         id: p.id,
         article: p.name,
         reference: "IMP-"+p.id.toUpperCase(),
-        couleur: pdpState.color.n,
-        taille: pdpState.size,
+        couleur: st.color.n,
+        taille: st.size,
         prix: p.price
       });
       var self = this;
@@ -1602,9 +1603,26 @@
       self.setAttribute("data-added","true");
       setTimeout(function(){ self.textContent = "Ajouter au panier"; self.removeAttribute("data-added"); }, 1600);
     });
+  }
 
-    wireCards(document.getElementById("view-pdp"));
+  function renderPDP(id){
+    var p = PRODUCTS.filter(function(x){return x.id===id;})[0];
+    if(!p){ location.hash = "#/"; return; }
+    var preset = pendingSize && pendingSize.id === id ? pendingSize.size : null;
+    pendingSize = null;
 
+    var view = document.getElementById("view-pdp");
+    view.innerHTML =
+      '<button class="pdp-back" id="pdpBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg> Retour</button>' +
+      productBlockHTML(p) +
+      '<section class="related">' +
+        '<h2>Vous aimerez aussi</h2>' +
+        '<div class="related-grid">'+relatedHTML(p)+'</div>' +
+      '</section>';
+
+    document.getElementById("pdpBack").addEventListener("click", function(){ location.hash = "#/"; });
+    wireProductBlock(view.querySelector(".pdp-layout"), p, preset);
+    wireCards(view);
     window.scrollTo(0,0);
   }
 
@@ -1992,23 +2010,7 @@
           '<div><h2 class="home-title">Le produit du moment</h2>' +
           '<p class="home-sub">Disponible à la commande, retrait au club house.</p></div>' +
         '</div>' +
-        '<div class="feature">' +
-          '<div class="feature-media">'+mediaOf(f)+'</div>' +
-          '<div>' +
-            '<h2>'+esc(f.name)+'</h2>' +
-            '<p class="feature-price">'+euro(f.price)+'</p>' +
-            '<p class="feature-desc">'+esc(f.desc)+'</p>' +
-            '<div class="feature-sizes" id="homeSizes">' +
-              f.sizes.map(function(sz){
-                return '<button type="button" class="quick-size" data-home-size="'+sz+'" aria-pressed="false">'+sz+'</button>';
-              }).join("") +
-            '</div>' +
-            '<div class="feature-actions">' +
-              '<button type="button" class="quick-submit" id="homeAdd" style="padding:14px 28px">Ajouter au panier</button>' +
-              '<button type="button" class="btn-ghost" data-goto="'+f.id+'">Voir la fiche</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
+        '<div class="home-product">' + productBlockHTML(f) + '</div>' +
       '</section>' +
 
       '<section style="margin-top:72px"><div class="cats-grid">'+cats+'</div></section>' +
@@ -2043,19 +2045,7 @@
       if(btn.closest(".card")) return;
       btn.addEventListener("click", function(){ openProduct(btn.getAttribute("data-goto")); });
     });
-    home.querySelectorAll("[data-home-size]").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        home.querySelectorAll("[data-home-size]").forEach(function(b){ b.setAttribute("aria-pressed", b === btn); });
-      });
-    });
-    document.getElementById("homeAdd").addEventListener("click", function(){
-      var sel = home.querySelector('[data-home-size][aria-pressed="true"]');
-      if(!sel){ toast("Choisis une taille"); return; }
-      addToCart({
-        id: f.id, article: f.name, reference: "IMP-"+f.id.toUpperCase(),
-        couleur: f.colors[0].n, taille: sel.getAttribute("data-home-size"), prix: f.price
-      });
-    });
+    wireProductBlock(home.querySelector(".home-product .pdp-layout"), f);
   }
 
   /* ---------------- panier ---------------- */
