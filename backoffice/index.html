@@ -538,6 +538,17 @@
         <span class="status-pill" id="gsheetPill"></span>
       </div>
 
+      <div class="gsheet-note">
+        <div class="copy">
+          <b>Google Sheet</b>
+          <span id="sheetStatus"></span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="button" class="btn-ghost" id="sheetSyncBtn" hidden>Renvoyer toutes les commandes</button>
+          <span class="status-pill" id="sheetPill"></span>
+        </div>
+      </div>
+
       <table class="orders-table">
         <thead>
           <tr><th>Client</th><th>Articles</th><th>Total</th><th>Date</th><th>Statut</th></tr>
@@ -741,7 +752,7 @@
   /* Commandes passees sur la boutique, lues sur l'API du serveur
      (server/api.js), derriere le meme identifiant que ce backoffice. */
   var ORDERS_API = "../api/commandes";
-  var paymentState = { stripe:false, webhook:false };
+  var paymentState = { stripe:false, webhook:false, sheets:false };
 
   function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
   function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
@@ -1097,6 +1108,14 @@
       status.textContent = "Les commandes sont enregistrees « A regler au retrait » tant que Stripe n'est pas configure sur le serveur.";
     }
 
+    var sheetPill = document.getElementById("sheetPill");
+    sheetPill.className = "status-pill " + (paymentState.sheets ? "actif" : "rupture");
+    sheetPill.textContent = paymentState.sheets ? "Branche" : "Non branche";
+    document.getElementById("sheetStatus").textContent = paymentState.sheets
+      ? "Chaque commande et chaque changement de statut sont copies automatiquement dans le Google Sheet du club."
+      : "Les commandes ne sont pas encore copiees dans un Google Sheet. Mise en place : GOOGLE_SHEETS.md.";
+    document.getElementById("sheetSyncBtn").hidden = !paymentState.sheets;
+
     document.getElementById("thresholdInput").value = state.threshold;
     var counted = ORDERS.filter(countsForRestock).map(function(o){ return { date:o.date.slice(0,10) }; });
     var count = reapproCountSince(counted, state.lastRestock);
@@ -1141,7 +1160,7 @@
       .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
       .then(function(res){
         ORDERS = res.commandes || [];
-        paymentState = { stripe:!!res.stripe, webhook:!!res.webhook };
+        paymentState = { stripe:!!res.stripe, webhook:!!res.webhook, sheets:!!res.sheets };
         state.ordersLoading = false;
         renderOrders();
       })
@@ -1497,6 +1516,18 @@
     var v = parseInt(e.target.value,10);
     state.threshold = (isNaN(v) || v<1) ? 1 : v;
     renderOrders();
+  });
+
+  document.getElementById("sheetSyncBtn").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true; btn.textContent = "Envoi…";
+    fetch("../api/sheet-sync", { method:"POST", credentials:"same-origin" })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        toast(res.ok ? res.commandes + " commande(s) envoyee(s) au Sheet" : "Echec : " + (res.erreur || "Google Sheet injoignable"));
+      })
+      .catch(function(){ toast("Echec : serveur injoignable"); })
+      .then(function(){ btn.disabled = false; btn.textContent = "Renvoyer toutes les commandes"; });
   });
 
   document.getElementById("restockBtn").addEventListener("click", function(){

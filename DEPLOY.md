@@ -74,7 +74,9 @@ ssh -t root@178.104.195.46 'read -rsp "Cle Stripe (sk_... ou rk_...) : " K; echo
 La derniere ligne affichee dit si Stripe est en TEST ou en LIVE. Sans ce
 fichier, les commandes sont enregistrees « a regler au retrait ».
 
-Commandes enregistrees : `/var/www/boutique/data/commandes.json`.
+Commandes enregistrees : `/var/www/boutique/data/commandes.json`. Copie
+dans le Google Sheet du club si `/etc/boutique/sheets.env` existe : voir
+[`GOOGLE_SHEETS.md`](./GOOGLE_SHEETS.md).
 
 ## Sur le serveur
 

@@ -8,6 +8,7 @@
 // Backoffice (nginx exige l'identifiant avant de transmettre) :
 //   POST /api/publier           catalogue exporte par le backoffice
 //   GET  /api/commandes         commandes enregistrees
+//   POST /api/sheet-sync        renvoie toutes les commandes au Google Sheet
 //   GET  /api/sante
 //
 // Donnees dans DATA (hors depot) : catalogue.json + assets/ + historique/
@@ -18,6 +19,11 @@
 //   STRIPE_SECRET_KEY       cle secrete ou restreinte (sk_... / rk_...)
 //   STRIPE_WEBHOOK_SECRET   secret de signature du webhook (whsec_...)
 // Sans cle, les commandes sont enregistrees "a regler au retrait".
+//
+// Google Sheet (facultatif, /etc/boutique/sheets.env) : copie de chaque
+// commande, a chaque changement, vers le script google-apps-script/Code.gs.
+//   SHEETS_URL     URL de l'application Web Apps Script (.../exec)
+//   SHEETS_TOKEN   jeton partage, identique a la propriete TOKEN du script
 "use strict";
 const http = require("http");
 const fs = require("fs");
@@ -32,6 +38,8 @@ const SCRIPT = path.join(__dirname, "..", "scripts", "integrer-catalogue.py");
 const ORDERS = path.join(DATA, "commandes.json");
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WHSEC = process.env.STRIPE_WEBHOOK_SECRET || "";
+const SHEETS_URL = process.env.SHEETS_URL || "";
+const SHEETS_TOKEN = process.env.SHEETS_TOKEN || "";
 const MAX_CATALOGUE = 40 * 1024 * 1024;
 const MAX_SMALL = 256 * 1024;
 
@@ -96,7 +104,29 @@ function updateOrder(id, patch){
   if(!o) return null;
   Object.assign(o, patch);
   saveOrders(list);
+  pushToSheet([o]);
   return o;
+}
+
+/* Copie vers le Google Sheet. Jamais bloquant pour la commande : en cas
+   d'echec on le note, et "Renvoyer au Sheet" (backoffice) rattrape tout. */
+function pushToSheet(orders){
+  if(!SHEETS_URL || !SHEETS_TOKEN || !orders.length) return Promise.resolve({ ok:false, erreur:"Google Sheet non configure" });
+  return fetch(SHEETS_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ token:SHEETS_TOKEN, commandes:orders }),
+    redirect:"follow"
+  })
+    .then(r => r.text().then(txt => {
+      let j; try { j = JSON.parse(txt); } catch(e){ j = { ok:false, erreur:"reponse " + r.status }; }
+      if(!j.ok) throw new Error(j.erreur || "refus");
+      return j;
+    }))
+    .catch(err => {
+      console.error("Google Sheet :", err.message, "(" + orders.map(o => o.id).join(", ") + ")");
+      return { ok:false, erreur:err.message };
+    });
 }
 
 function newOrderId(){
@@ -183,6 +213,7 @@ function createOrder(body, res){
   };
   const list = loadOrders(); list.push(order); saveOrders(list);
   console.log("commande", order.id, order.total, "EUR", order.statut);
+  pushToSheet([order]);
 
   if(!STRIPE_KEY) return send(res, 200, { ok:true, id:order.id, sansPaiement:true });
   stripeCheckout(order)
@@ -242,7 +273,10 @@ http.createServer((req, res) => {
 
   if(req.method === "GET" && url === "/api/sante") return send(res, 200, { ok:true, stripe:!!STRIPE_KEY });
   if(req.method === "GET" && url === "/api/commandes"){
-    return send(res, 200, { ok:true, stripe:!!STRIPE_KEY, webhook:!!STRIPE_WHSEC, commandes:loadOrders() });
+    return send(res, 200, { ok:true, stripe:!!STRIPE_KEY, webhook:!!STRIPE_WHSEC, sheets:!!(SHEETS_URL && SHEETS_TOKEN), commandes:loadOrders() });
+  }
+  if(req.method === "POST" && url === "/api/sheet-sync"){
+    return pushToSheet(loadOrders()).then(r => send(res, r.ok ? 200 : 502, r));
   }
   if(req.method !== "POST") return send(res, 404, { ok:false, erreur:"Inconnu" });
 
@@ -261,5 +295,6 @@ http.createServer((req, res) => {
 }).listen(PORT, "127.0.0.1", () => {
   console.log("API boutique sur 127.0.0.1:" + PORT + ", donnees dans " + DATA +
     ", Stripe " + (STRIPE_KEY ? (STRIPE_KEY.indexOf("_test_") > -1 ? "TEST" : "LIVE") : "non configure") +
-    (STRIPE_KEY && !STRIPE_WHSEC ? " (webhook non configure : les paiements ne seront pas confirmes)" : ""));
+    (STRIPE_KEY && !STRIPE_WHSEC ? " (webhook non configure : les paiements ne seront pas confirmes)" : "") +
+    ", Google Sheet " + (SHEETS_URL && SHEETS_TOKEN ? "branche" : "non configure"));
 });

@@ -26,6 +26,10 @@ les commandes s'affichent dans l'onglet Commandes du backoffice. Sans cle
 Stripe sur le serveur, les commandes sont enregistrees « a regler au
 retrait ». Reglage : [`DEPLOY.md`](./DEPLOY.md).
 
+Les commandes sont aussi copiees dans un Google Sheet du club (onglets
+Commandes et Articles), a chaque changement : voir
+[`GOOGLE_SHEETS.md`](./GOOGLE_SHEETS.md) et `google-apps-script/Code.gs`.
+
 ## Hebergement
 
 En ligne sur https://boutique.implacables.fr (backoffice :
