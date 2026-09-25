@@ -2154,16 +2154,16 @@
      paiement en ligne. Le panier est vide a ce moment-la seulement. */
   function showOrderDone(id, paid){
     cart = [];
-    saveCart(); refreshCartBadge(); renderCart();
+    saveCart(); refreshCartBadge();
     cartForm.hidden = true;
     var btn = document.getElementById("cartConfirm");
     btn.disabled = false;
     btn.textContent = "Commander et payer";
     document.getElementById("cartCheckout").hidden = false;
+    openCart();   // redessine le panier (vide) : le message vient apres
     cartBody.innerHTML = '<p class="cart-empty">' + (paid
       ? 'Merci, ton paiement est bien reçu ! Commande <b>' + esc(id) + '</b>. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house.'
       : 'Commande <b>' + esc(id) + '</b> enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte.') + '</p>';
-    openCart();
   }
 
   document.getElementById("cartClose").addEventListener("click", closeOverlays);
