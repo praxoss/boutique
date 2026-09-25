@@ -72,6 +72,9 @@
     font-size:13px;line-height:1.6;color:var(--sub);display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;
   }
   .publish-note b{color:var(--ink);}
+  .publish-actions{display:flex;gap:10px;align-items:center;}
+  .publish-note.error{border-color:var(--red);background:#FBE9EC;}
+  .btn-navy:disabled{opacity:.6;cursor:default;}
   .publish-note.draft{border-color:var(--amber);background:var(--amber-bg);}
   .publish-note .btn-ghost{background:var(--bg);}
 
@@ -427,7 +430,10 @@
         <h1>Catalogue &amp; commandes</h1>
         <p class="bo-sub" id="pageSubtitle"></p>
       </div>
-      <button class="btn-navy" id="exportBtn" type="button">Exporter pour publication</button>
+      <div class="publish-actions">
+        <button class="btn-ghost" id="exportBtn" type="button">Exporter</button>
+        <button class="btn-navy" id="publishBtn" type="button">Publier</button>
+      </div>
     </div>
 
     <div class="publish-note" id="publishNote"></div>
@@ -703,9 +709,8 @@
 
   /* La boutique lit ../boutique/catalogue.json : c'est le catalogue publie,
      le meme pour tous les visiteurs. Ce backoffice le charge, et garde les
-     modifications en cours dans un brouillon local a ce navigateur, jusqu'a
-     l'export (bouton "Exporter pour publication") et au commit du fichier
-     dans le depot. Les chemins d'images du catalogue sont relatifs a la
+     modifications en cours dans un brouillon local a ce navigateur, jusqu'au
+     bouton "Publier" (API du serveur, voir server/publier.js). Les chemins d'images du catalogue sont relatifs a la
      boutique, d'ou assetUrl() pour les afficher ici. */
   var BOUTIQUE_BASE = "../boutique/";
   var DRAFT_KEY = "implacables-bo-draft";
@@ -1332,7 +1337,7 @@
     el.classList.toggle("draft", hasDraft);
     el.innerHTML = hasDraft
       ? '<span><b>Modifications non publiees.</b> Elles ne sont visibles que dans ce navigateur. ' +
-        'Clique sur « Exporter pour publication » : un fichier catalogue.json, photos comprises, a deposer dans le depot (dossier boutique/).</span>' +
+        'Clique sur « Publier » pour les mettre en ligne sur la boutique.</span>' +
         '<button type="button" class="btn-ghost" id="dropDraftBtn">Abandonner le brouillon</button>'
       : '<span><b>Catalogue publie.</b> Ce que tu vois ici est ce que voit la boutique.</span>';
     var drop = document.getElementById("dropDraftBtn");
@@ -1356,7 +1361,7 @@
      chargees ici restent en data URL dans le JSON ; la boutique sait les
      afficher telles quelles, et a l'integration dans le depot on les sort
      en fichiers assets/<id>.jpg pour alleger le catalogue. */
-  function exportCatalogue(){
+  function cataloguePayload(){
     collectHome();
     var skus = SKUS.map(function(s){
       var o = JSON.parse(JSON.stringify(s));
@@ -1365,9 +1370,47 @@
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    var json = JSON.stringify({ skus:skus, home:home }, null, 2);
-    download("catalogue.json", new Blob([json], { type:"application/json" }));
+    return JSON.stringify({ skus:skus, home:home }, null, 2);
+  }
+
+  /* Secours : le meme contenu en fichier, a integrer a la main dans le depot
+     (scripts/integrer-catalogue.py). */
+  function exportCatalogue(){
+    download("catalogue.json", new Blob([cataloguePayload()], { type:"application/json" }));
     toast("catalogue.json telecharge");
+  }
+
+  /* Publication directe : l'API du serveur (derriere le meme identifiant que
+     ce backoffice) integre le catalogue et ses images ; la boutique le sert
+     aussitot. Le brouillon local n'a alors plus lieu d'etre. */
+  function publishCatalogue(){
+    var btn = document.getElementById("publishBtn");
+    if(!confirm("Publier le catalogue ? La boutique en ligne sera mise a jour immediatement.")) return;
+    btn.disabled = true;
+    btn.textContent = "Publication…";
+    fetch("../api/publier", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"same-origin",
+      body:cataloguePayload()
+    })
+      .then(function(r){
+        return r.json().catch(function(){ return { ok:false, erreur:"Reponse inattendue du serveur (" + r.status + ")" }; });
+      })
+      .then(function(res){
+        if(!res.ok) throw new Error(res.erreur || "Echec de la publication");
+        try { localStorage.removeItem(DRAFT_KEY); } catch(e){}
+        toast("Publie : " + res.articles + " articles en ligne");
+        setTimeout(function(){ location.reload(); }, 1200);
+      })
+      .catch(function(err){
+        btn.disabled = false;
+        btn.textContent = "Publier";
+        var el = document.getElementById("publishNote");
+        el.classList.add("error");
+        el.innerHTML = '<span><b>Publication impossible.</b> ' + esc(err.message) +
+          '. Tes modifications sont toujours dans le brouillon ; en secours, « Exporter » te donne le fichier.</span>';
+      });
   }
 
 
@@ -1399,6 +1442,7 @@
   });
 
   document.getElementById("exportBtn").addEventListener("click", exportCatalogue);
+  document.getElementById("publishBtn").addEventListener("click", publishCatalogue);
 
   document.querySelectorAll(".bo-tab").forEach(function(b){
     b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); });
