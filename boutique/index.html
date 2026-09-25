@@ -1048,7 +1048,8 @@
       <input type="text" id="coName" placeholder="Nom complet" autocomplete="name" required>
       <input type="tel" id="coPhone" placeholder="Téléphone" autocomplete="tel" required>
       <input type="email" id="coEmail" placeholder="E-mail" autocomplete="email" required>
-      <button type="submit" class="cart-cta" id="cartConfirm">Valider la commande</button>
+      <button type="submit" class="cart-cta" id="cartConfirm">Commander et payer</button>
+      <p class="cart-form-hint cart-pay-hint">Paiement sécurisé par carte sur la page Stripe, puis retrait au club house.</p>
     </form>
     <button type="button" class="cart-cta" id="cartCheckout">Passer la commande</button>
   </div>
@@ -1174,9 +1175,11 @@
 
   var state = { cats:[], sizes:[], colors:[], price:"all", sort:"new" };
 
-  /* Paste your deployed Google Apps Script web app URL here to log real orders to a Sheet.
-     Left empty, orders are only logged to the browser console (demo mode). */
-  var ORDERS_ENDPOINT = "";
+  /* Commandes : l'API du serveur (server/api.js) recalcule les prix a partir
+     du catalogue publie, enregistre la commande et renvoie la page de
+     paiement Stripe. Sans Stripe configure, la commande est enregistree
+     "a regler au retrait". */
+  var ORDER_API = "/api/commande";
 
   /* Panier : garde les lignes choisies (tuile ou fiche). Les coordonnees
      ne sont demandees qu'a la validation, pas a l'ajout. Le stockage
@@ -1219,21 +1222,6 @@
     refreshCartBadge();
     renderCart();
     toast(line.article + " (" + line.taille + ") ajouté au panier");
-  }
-
-  /* Envoi d'une commande : une requete par ligne, le Sheet attend une ligne
-     par article. Sans endpoint configure, la commande est seulement loguee. */
-  function sendOrder(order, onSuccess, onError){
-    if(ORDERS_ENDPOINT){
-      fetch(ORDERS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(order)
-      }).then(onSuccess).catch(onError);
-    } else {
-      console.log("Commande (mode démo, ORDERS_ENDPOINT non configuré) :", order);
-      onSuccess();
-    }
   }
 
   function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
@@ -2132,38 +2120,51 @@
 
     var btn = document.getElementById("cartConfirm");
     btn.disabled = true;
-    btn.textContent = "Envoi...";
-
-    /* Une requete par ligne : le Sheet attend une ligne par article. On
-       attend la fin de toutes les lignes avant de vider le panier, pour ne
-       rien perdre si l'une d'elles echoue. */
-    var pending = cart.length, failed = false;
-    cart.forEach(function(l){
-      sendOrder({
-        client: name, telephone: phone, email: email,
-        article: l.article, reference: l.reference,
-        couleur: l.couleur, taille: l.taille,
-        prix: l.prix, quantite: l.qty
-      }, done, function(){ failed = true; done(); });
-    });
-
-    function done(){
-      if(--pending > 0) return;
+    btn.textContent = "Un instant…";
+    function fail(msg){
       btn.disabled = false;
-      btn.textContent = "Valider la commande";
-      if(failed){
-        toast("Commande non envoyée, vérifie ta connexion et réessaie");
-        return;
-      }
-      rememberBuyer({ name:name, phone:phone, email:email });
-      cart = [];
-      saveCart(); refreshCartBadge(); renderCart();
-      cartForm.hidden = true;
-      document.getElementById("cartCheckout").hidden = false;
-      cartBody.innerHTML = '<p class="cart-empty">Commande enregistrée, merci ! On te recontacte pour le retrait au club house.</p>';
-      toast("Commande enregistrée");
+      btn.textContent = "Commander et payer";
+      toast(msg || "Commande non envoyée, vérifie ta connexion et réessaie");
     }
+
+    fetch(ORDER_API, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        client:{ nom:name, telephone:phone, email:email },
+        lignes:cart.map(function(l){ return { id:l.id, couleur:l.couleur, taille:l.taille, quantite:l.qty }; })
+      })
+    })
+      .then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+      .then(function(res){
+        if(!res.ok) return fail(res.erreur);
+        rememberBuyer({ name:name, phone:phone, email:email });
+        if(res.url){
+          // le panier est garde tant que le paiement n'est pas fait :
+          // il est vide au retour sur #/merci/<commande>
+          location.href = res.url;
+          return;
+        }
+        showOrderDone(res.id, false);
+      })
+      .catch(function(){ fail(); });
   });
+
+  /* Fin de commande : retour de Stripe (#/merci/<id>) ou commande sans
+     paiement en ligne. Le panier est vide a ce moment-la seulement. */
+  function showOrderDone(id, paid){
+    cart = [];
+    saveCart(); refreshCartBadge(); renderCart();
+    cartForm.hidden = true;
+    var btn = document.getElementById("cartConfirm");
+    btn.disabled = false;
+    btn.textContent = "Commander et payer";
+    document.getElementById("cartCheckout").hidden = false;
+    cartBody.innerHTML = '<p class="cart-empty">' + (paid
+      ? 'Merci, ton paiement est bien reçu ! Commande <b>' + esc(id) + '</b>. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house.'
+      : 'Commande <b>' + esc(id) + '</b> enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte.') + '</p>';
+    openCart();
+  }
 
   document.getElementById("cartClose").addEventListener("click", closeOverlays);
   document.getElementById("cartBtn").addEventListener("click", openCart);
@@ -2171,6 +2172,13 @@
   /* ---------------- router ---------------- */
   function route(){
     var hash = location.hash || "#/";
+    var done = hash.match(/^#\/merci\/([A-Z0-9-]+)$/);
+    if(done){ history.replaceState(null, "", "#/"); route(); showOrderDone(done[1], true); return; }
+    if(hash === "#/paiement-annule"){
+      history.replaceState(null, "", "#/"); route();
+      openCart(); toast("Paiement annulé : ton panier t'attend");
+      return;
+    }
     var m = hash.match(/^#\/produit\/(.+)$/);
     var isShop = /^#\/boutique/.test(hash);
     closeOverlays();

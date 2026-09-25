@@ -12,18 +12,19 @@ commandes.
 - **`backoffice/`** — gestion du catalogue SKU par typologie d'article
   (Maillots, T-shirts, Sweats, Shorts, Accessoires) et suivi des commandes /
   seuil de reassort fournisseur. Meme principe : `index.html` autonome.
-- **`google-apps-script/`** — le script qui transforme un Google Sheet en API
-  d'enregistrement des commandes, utilise par les deux pages ci-dessus.
-- **`GOOGLE_SHEETS.md`** — comment deployer ce script et brancher les deux
-  pages dessus (5 minutes, quelques clics obligatoires cote Google).
+- **`server/api.js`** — l'API du serveur : publication du catalogue depuis
+  le backoffice, enregistrement des commandes et paiement Stripe.
+- **`scripts/integrer-catalogue.py`** — sort les photos d'un catalogue
+  exporte en fichiers (utilise par la publication).
 
-## Etat actuel
+## Commandes et paiement
 
-Les deux pages sont fonctionnelles en local (navigateur) : filtrage,
-selection taille/couleur, creation/edition de SKU, etc. Sans Google Sheets
-branche (`ORDERS_ENDPOINT` vide dans les deux fichiers), les commandes
-passees sur la boutique ne sont loguees que dans la console du navigateur,
-et le backoffice affiche des commandes de demonstration.
+Le panier envoie la commande a l'API, qui recalcule les prix a partir du
+catalogue publie, l'enregistre et renvoie le client vers la page de
+paiement Stripe. Stripe confirme ensuite le paiement au serveur (webhook) ;
+les commandes s'affichent dans l'onglet Commandes du backoffice. Sans cle
+Stripe sur le serveur, les commandes sont enregistrees « a regler au
+retrait ». Reglage : [`DEPLOY.md`](./DEPLOY.md).
 
 ## Hebergement
 

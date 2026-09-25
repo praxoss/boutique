@@ -532,7 +532,7 @@
 
       <div class="gsheet-note">
         <div class="copy">
-          <b>Journal des commandes</b>
+          <b>Paiement en ligne</b>
           <span id="gsheetStatus"></span>
         </div>
         <span class="status-pill" id="gsheetPill"></span>
@@ -540,7 +540,7 @@
 
       <table class="orders-table">
         <thead>
-          <tr><th>Client</th><th>Article</th><th>Taille</th><th>Date</th><th>Statut</th></tr>
+          <tr><th>Client</th><th>Articles</th><th>Total</th><th>Date</th><th>Statut</th></tr>
         </thead>
         <tbody id="ordersTbody"></tbody>
       </table>
@@ -710,7 +710,7 @@
   /* La boutique lit ../boutique/catalogue.json : c'est le catalogue publie,
      le meme pour tous les visiteurs. Ce backoffice le charge, et garde les
      modifications en cours dans un brouillon local a ce navigateur, jusqu'au
-     bouton "Publier" (API du serveur, voir server/publier.js). Les chemins d'images du catalogue sont relatifs a la
+     bouton "Publier" (API du serveur, voir server/api.js). Les chemins d'images du catalogue sont relatifs a la
      boutique, d'ou assetUrl() pour les afficher ici. */
   var BOUTIQUE_BASE = "../boutique/";
   var DRAFT_KEY = "implacables-bo-draft";
@@ -734,28 +734,14 @@
   }
   function persistSkus(){ return persistDraft(); }
 
-  var ORDERS = [
-    { client:"Thomas Girard",     sku:"maillot-domicile",     taille:"L",   date:"2026-08-21", statut:"confirmee" },
-    { client:"Lucas Bernard",     sku:"short-match",           taille:"M",   date:"2026-08-23", statut:"confirmee" },
-    { client:"Maxime Petit",      sku:"tshirt-training",       taille:"XL",  date:"2026-08-25", statut:"confirmee" },
-    { client:"Antoine Roux",      sku:"sweat-capuche",         taille:"L",   date:"2026-08-28", statut:"confirmee" },
-    { client:"Julien Faure",      sku:"maillot-exterieur",     taille:"M",   date:"2026-08-29", statut:"confirmee" },
-    { client:"Nicolas Blanc",     sku:"bonnet-club",           taille:"Taille unique", date:"2026-08-30", statut:"confirmee" },
-    { client:"Romain Leroy",      sku:"polo-club",             taille:"L",   date:"2026-09-01", statut:"confirmee" },
-    { client:"Kevin Morel",       sku:"maillot-domicile",      taille:"XL",  date:"2026-09-02", statut:"confirmee" },
-    { client:"Alexandre Simon",   sku:"short-entrainement",    taille:"M",   date:"2026-09-04", statut:"confirmee" },
-    { client:"Hugo Girard",       sku:"sac-sport",             taille:"Taille unique", date:"2026-09-06", statut:"confirmee" },
-    { client:"Pierre Lambert",    sku:"maillot-domicile",      taille:"M",   date:"2026-09-09", statut:"confirmee" },
-    { client:"Mathieu Fontaine",  sku:"tshirt-training",       taille:"L",   date:"2026-09-11", statut:"confirmee" },
-    { client:"Clement Dubois",    sku:"maillot-exterieur",     taille:"XXL", date:"2026-09-14", statut:"attente" },
-    { client:"Remi Vidal",        sku:"short-match",           taille:"S",   date:"2026-09-15", statut:"attente" }
-  ];
+  var ORDERS = [];
 
   var state = { activeTyp:"all", search:"", tab:"catalogue", editingId:null, threshold:20, lastRestock:"2026-08-02", photoDataUrl:null, heroDataUrl:null, ordersLoaded:false, ordersLoading:false };
 
-  /* Paste the same Google Apps Script web app URL as in boutique.html to pull real orders from the Sheet.
-     Left empty, this tab shows the seeded demo orders below. */
-  var ORDERS_ENDPOINT = "";
+  /* Commandes passees sur la boutique, lues sur l'API du serveur
+     (server/api.js), derriere le meme identifiant que ce backoffice. */
+  var ORDERS_API = "../api/commandes";
+  var paymentState = { stripe:false, webhook:false };
 
   function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
   function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
@@ -1087,70 +1073,81 @@
     return list.filter(function(o){ return o.date > since; }).length;
   }
 
+  var ORDER_STATUS = {
+    payee:            { label:"Payee",                cls:"confirmee" },
+    a_regler:         { label:"A regler au retrait",  cls:"attente" },
+    attente_paiement: { label:"Paiement en cours",    cls:"attente" },
+    expiree:          { label:"Paiement abandonne",   cls:"attente" },
+    erreur_paiement:  { label:"Erreur de paiement",   cls:"attente" }
+  };
+  // commandes qui comptent pour le reassort : payees ou a regler au retrait
+  function countsForRestock(o){ return o.statut === "payee" || o.statut === "a_regler"; }
+
   function renderOrders(){
     var pill = document.getElementById("gsheetPill");
-    if(ORDERS_ENDPOINT){
-      pill.className = "status-pill actif";
-      pill.textContent = "Connecte";
-      document.getElementById("gsheetStatus").textContent = "Chaque commande passee sur la boutique est ecrite ici en direct depuis votre Google Sheet.";
+    var status = document.getElementById("gsheetStatus");
+    if(paymentState.stripe && paymentState.webhook){
+      pill.className = "status-pill actif"; pill.textContent = "Stripe connecte";
+      status.textContent = "Les clients paient par carte sur Stripe ; une commande passe en « Payee » des que Stripe confirme le paiement.";
+    } else if(paymentState.stripe){
+      pill.className = "status-pill rupture"; pill.textContent = "Webhook manquant";
+      status.textContent = "La cle Stripe est installee mais pas le secret du webhook : les paiements ne seront pas confirmes ici. Voir DEPLOY.md.";
     } else {
-      pill.className = "status-pill rupture";
-      pill.textContent = "Non connecte";
-      document.getElementById("gsheetStatus").textContent = "Ces commandes sont simulees. Deployez le script Apps Script (voir GOOGLE_SHEETS.md) et collez son URL dans ORDERS_ENDPOINT ici et dans boutique.html.";
+      pill.className = "status-pill rupture"; pill.textContent = "Paiement en ligne non branche";
+      status.textContent = "Les commandes sont enregistrees « A regler au retrait » tant que Stripe n'est pas configure sur le serveur.";
     }
+
     document.getElementById("thresholdInput").value = state.threshold;
-    var count = reapproCountSince(ORDERS, state.lastRestock);
+    var counted = ORDERS.filter(countsForRestock).map(function(o){ return { date:o.date.slice(0,10) }; });
+    var count = reapproCountSince(counted, state.lastRestock);
     document.getElementById("reapproCount").textContent = count;
     document.getElementById("reapproTarget").textContent = state.threshold;
     var pct = Math.max(0, Math.min(100, Math.round((count/state.threshold)*100)));
     document.getElementById("reapproFill").style.width = pct + "%";
     document.getElementById("reapproMeta").textContent =
-      "Derniere commande fournisseur passee le " + fmtDate(state.lastRestock) + ". Alternative : tous les X semaines si le seuil n'est pas atteint avant." +
-      (ORDERS_ENDPOINT ? "" : " Donnees de demonstration — branchez le Google Sheet pour les vraies commandes.");
+      "Derniere commande fournisseur passee le " + fmtDate(state.lastRestock) + ". Sont comptees les commandes payees ou a regler au retrait.";
 
     var tbody = document.getElementById("ordersTbody");
     if(state.ordersLoading){
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--sub);padding:22px 0;">Chargement des commandes...</td></tr>';
       return;
     }
+    if(!ORDERS.length){
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--sub);padding:22px 0;">Aucune commande pour l\'instant.</td></tr>';
+      return;
+    }
     tbody.innerHTML = ORDERS.slice().reverse().map(function(o){
-      var s = skuById(o.sku);
-      var artName = s ? s.name : o.sku;
+      var st = ORDER_STATUS[o.statut] || { label:o.statut, cls:"attente" };
+      var items = o.lignes.map(function(l){
+        return esc(l.article) + ' <span style="color:var(--sub)">' + esc(l.taille) + (l.couleur ? ' · ' + esc(l.couleur) : '') + (l.quantite > 1 ? ' ×' + l.quantite : '') + '</span>';
+      }).join("<br>");
       return (
         '<tr>' +
-          '<td data-label="Client">'+esc(o.client)+'</td>' +
-          '<td data-label="Article">'+esc(artName)+'</td>' +
-          '<td data-label="Taille">'+esc(o.taille)+'</td>' +
-          '<td data-label="Date">'+fmtDate(o.date)+'</td>' +
-          '<td data-label="Statut"><span class="order-status '+(o.statut==="confirmee"?"confirmee":"attente")+'">'+(o.statut==="confirmee"?"Confirmee":"En attente")+'</span></td>' +
+          '<td data-label="Client"><b>'+esc(o.client.nom)+'</b><br><span style="color:var(--sub);font-size:12.5px">'+esc(o.client.telephone)+' · '+esc(o.client.email)+'</span></td>' +
+          '<td data-label="Articles">'+items+'</td>' +
+          '<td data-label="Total"><span class="sku-price">'+euro(o.total)+'</span></td>' +
+          '<td data-label="Date">'+fmtDate(o.date.slice(0,10))+'<br><span style="color:var(--sub);font-size:12px">'+esc(o.id)+'</span></td>' +
+          '<td data-label="Statut"><span class="order-status '+st.cls+'">'+st.label+'</span></td>' +
         '</tr>'
       );
     }).join("");
   }
 
   function fetchOrders(){
-    if(!ORDERS_ENDPOINT || state.ordersLoaded || state.ordersLoading){ renderOrders(); return; }
+    if(state.ordersLoading) return;
     state.ordersLoading = true;
     renderOrders();
-    fetch(ORDERS_ENDPOINT)
-      .then(function(r){ return r.json(); })
-      .then(function(rows){
-        ORDERS = rows.map(function(r){
-          return {
-            client: r.Client || r.client || "",
-            sku: r.Article || r.article || "",
-            taille: r.Taille || r.taille || "",
-            date: String(r.Date || r.date || "").slice(0,10),
-            statut: /confirm/i.test(r.Statut || r.statut || "") ? "confirmee" : "attente"
-          };
-        });
-        state.ordersLoaded = true;
+    fetch(ORDERS_API, { credentials:"same-origin", cache:"no-store" })
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(res){
+        ORDERS = res.commandes || [];
+        paymentState = { stripe:!!res.stripe, webhook:!!res.webhook };
         state.ordersLoading = false;
         renderOrders();
       })
       .catch(function(){
         state.ordersLoading = false;
-        toast("Impossible de charger le Google Sheet, affichage des donnees de demonstration");
+        toast("Impossible de charger les commandes");
         renderOrders();
       });
   }
