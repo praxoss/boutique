@@ -1399,6 +1399,22 @@
   var openGroups = { cat:true, size:true, color:true, price:false };
   function op(g){ return openGroups[g] ? " open" : ""; }
 
+  /* Titre de la liste : la rubrique du menu (ou la tuile de l'accueil) dont
+     les categories cochees correspondent, sinon la ou les categories. Il
+     suit donc aussi les cases que l'on coche a la main. */
+  function plpTitle(){
+    var c = state.cats;
+    if(!c.length) return "Toute la boutique";
+    function same(list){ return list && list.length === c.length && list.every(function(x){ return c.indexOf(x) !== -1; }); }
+    var menu = MENUS.filter(function(m){ return same(m.cats); })[0];
+    if(menu) return menu.label;
+    var tile = (HOME.cats || []).filter(function(x){ return same(x.filter); })[0];
+    if(tile) return tile.label;
+    var block = (HOME.duo || []).filter(function(x){ return same(x.filter); })[0];
+    if(block) return block.title;
+    return c.length <= 3 ? c.join(" · ") : "Sélection";
+  }
+
   function renderPLP(){
     var list = filteredProducts();
     var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
@@ -1423,10 +1439,11 @@
       return '<label class="chk"><input type="radio" name="price" data-filter="price" value="'+b.id+'" '+(checked?"checked":"")+'> '+b.label+'</label>';
     }).join("");
 
+    var title = plpTitle();
     document.getElementById("view-plp").innerHTML =
-      '<nav class="breadcrumb"><a href="#/">Accueil</a> / Vêtements</nav>' +
+      '<nav class="breadcrumb"><a href="#/">Accueil</a> / '+esc(title)+'</nav>' +
       '<div class="plp-head">' +
-        '<h1>Vêtements Club<span class="plp-count">('+list.length+')</span></h1>' +
+        '<h1>'+esc(title)+'<span class="plp-count">('+list.length+')</span></h1>' +
         '<div class="plp-toolbar">' +
           '<select class="sort-select" id="sortSelect">' +
             '<option value="new"'+(state.sort==="new"?" selected":"")+'>Nouveautés</option>' +
