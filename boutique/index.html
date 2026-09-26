@@ -1028,7 +1028,7 @@
       <b>Commandes</b>
       Retrait en main propre au club<br>
       Commandes groupées par 20<br>
-      Échange sous 30 jours
+      Ni reprise ni échange
     </div>
   </div>
   <div class="footer-legal">© Les Implacables — commandes traitées par le bureau du club.</div>
@@ -1542,7 +1542,7 @@
           '</ul>' +
           '<div class="accordion">' +
             '<details class="accordion-item" open><summary>Description</summary><p>'+esc(p.desc)+'</p></details>' +
-            '<details class="accordion-item"><summary>Retrait et échanges</summary><p>Retrait gratuit en main propre au club. Les commandes sont groupées : elles partent chez le fournisseur dès qu\'on en a 20, et on te prévient quand ton article est arrivé. Échanges acceptés sous 30 jours, article non porté avec étiquette.</p></details>' +
+            '<details class="accordion-item"><summary>Retrait</summary><p>Retrait gratuit en main propre au club. Les commandes sont groupées : elles partent chez le fournisseur dès qu\'on en a 20, et on te prévient quand ton article est arrivé. Les articles ne sont ni repris ni échangés : vérifie bien ta taille avant de commander.</p></details>' +
             '<details class="accordion-item"><summary>Composition et entretien</summary><p>100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge.</p></details>' +
           '</div>') +
         '</div>' +
@@ -1880,7 +1880,7 @@
     trust: [
       { title:"Retrait au club",       text:"En main propre, sans frais." },
       { title:"Commandes groupées",    text:"Envoyées au fournisseur par lots de 20." },
-      { title:"Échange sous 30 jours", text:"Article non porté, étiquette d'origine." }
+      { title:"Paiement sécurisé",     text:"Par carte bancaire, via Stripe." }
     ]
   };
   var HOME = HOME_DEFAULT;
