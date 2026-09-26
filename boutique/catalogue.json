@@ -487,12 +487,12 @@
     ],
     "trust": [
       {
-        "title": "Retrait au club house",
-        "text": "Sous 3 à 5 jours, sans frais."
+        "title": "Retrait au club",
+        "text": "En main propre, sans frais."
       },
       {
-        "title": "Livraison à domicile",
-        "text": "En 3 à 7 jours ouvrés."
+        "title": "Commandes groupées",
+        "text": "Envoyées au fournisseur par lots de 20."
       },
       {
         "title": "Échange sous 30 jours",
