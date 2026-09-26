@@ -344,6 +344,7 @@
   .main-nav-item.open .main-nav-link::after,
   .main-nav-link:hover::after{ transform:scaleX(1); }
   .main-nav-item.open .main-nav-link{ color:var(--navy); }
+  .main-nav-link.no-target{ cursor:default; }
 
   .mega-panel{
     position:absolute;
@@ -1673,7 +1674,8 @@
         panel = '<div class="mega-col"><p class="mega-empty">'+esc(menu.note||"")+'</p></div>';
       }
       return '<li class="main-nav-item" data-menu="'+i+'">'+
-               '<button type="button" class="main-nav-link" aria-expanded="false">'+esc(menu.label)+'</button>'+
+               '<button type="button" class="main-nav-link'+(menu.cats ? '' : ' no-target')+'" aria-expanded="false"'+
+                 (menu.cats ? ' data-cats="'+menu.cats.join("|")+'"' : '')+'>'+esc(menu.label)+'</button>'+
                '<div class="mega-panel"><div class="mega-inner">'+panel+'</div>'+foot+'</div>'+
              '</li>';
     }).join("");
@@ -1699,8 +1701,15 @@
 
     nav.querySelectorAll(".main-nav-item").forEach(function(li){
       var link = li.querySelector(".main-nav-link");
-      link.addEventListener("click", function(){
-        if(li.classList.contains("open")) closeMenus(); else openMenu(li);
+      /* Le nom de la rubrique mene a sa liste (comme "Voir tout"). Sur
+         ecran tactile sans survol, le premier appui ouvre le menu et le
+         second suit le lien. Une rubrique sans liste (Enfant) ne fait
+         qu'ouvrir son menu. */
+      link.addEventListener("click", function(e){
+        var cats = link.getAttribute("data-cats");
+        if(cats && (hoverable || li.classList.contains("open"))) return;   // gere plus bas, comme "Voir tout"
+        e.stopPropagation();
+        if(li.classList.contains("open") && !hoverable) closeMenus(); else openMenu(li);
       });
       if(hoverable){
         li.addEventListener("mouseenter", function(){ openMenu(li); });
