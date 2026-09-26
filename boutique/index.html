@@ -11,6 +11,8 @@
   :root{
     --navy:#0B1F3D;
     --red:#C8102E;
+    /* le rouge du club, eclairci pour rester lisible en petit sur le marine */
+    --red-on-navy:#FF5566;
     --ink:#15171B;
     --sub:#6E7278;
     --line:#E3E3E1;
@@ -130,6 +132,11 @@
     margin:0 0 4px;color:var(--ink);
   }
   .home-sub{margin:0 0 22px;font-size:14px;color:var(--sub);}
+  /* touche de rouge : un trait devant les titres de section */
+  .home-title,.related h2,.plp-head h1{display:flex;align-items:center;gap:.45em;}
+  .home-title::before,.related h2::before,.plp-head h1::before{
+    content:"";flex:none;width:1.05em;height:.2em;background:var(--red);
+  }
   .home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
   .home-head .home-sub{margin:0;}
   .link-all{
@@ -156,7 +163,12 @@
     gap:14px;padding:clamp(24px,4vh,52px) clamp(24px,5vw,72px);
     overflow:hidden;
   }
-  .hero-eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.62);}
+  .hero-eyebrow{
+    display:flex;align-items:center;gap:10px;
+    font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--red-on-navy);
+  }
+  .hero-eyebrow::before{content:"";width:22px;height:3px;background:var(--red-on-navy);flex:none;}
+  .hero-eyebrow:empty{display:none;}
   .hero-title{
     font-family:"Anton","Helvetica Neue",sans-serif;
     font-size:clamp(30px,4.4vw,52px);line-height:1.04;letter-spacing:.01em;
@@ -165,11 +177,11 @@
   .hero-baseline{margin:0;font-size:15px;line-height:1.6;color:rgba(255,255,255,.82);max-width:46ch;}
   .hero-cta{
     align-self:flex-start;margin-top:8px;
-    background:#fff;color:var(--navy);border:1px solid #fff;
-    font-family:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
-    padding:14px 30px;cursor:pointer;
+    background:var(--red);color:#fff;border:1px solid var(--red);
+    font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    padding:14px 30px;cursor:pointer;transition:background .15s ease,border-color .15s ease;
   }
-  .hero-cta:hover{background:transparent;color:#fff;}
+  .hero-cta:hover{background:#A50D26;border-color:#A50D26;}
   .hero-media{background:var(--surface);overflow:hidden;min-height:0;}
   .hero-media img{
     width:100%;height:100%;display:block;
