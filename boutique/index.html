@@ -949,7 +949,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
 
 <!-- garment icon set (shared silhouettes, tinted per colorway) -->
-<svg style="display:none" aria-hidden="true">
+<svg id="iconSprite" style="display:none" aria-hidden="true">
   <symbol id="icon-shirt" viewBox="0 0 120 120">
     <polygon points="42,8 78,8 78,18 100,26 92,44 78,36 78,112 42,112 42,36 28,44 20,26 42,18" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
     <ellipse cx="60" cy="9" rx="11" ry="4" fill="var(--surface)" />
@@ -1141,6 +1141,48 @@
      le backoffice puis commite dans le depot. S'il manque ou ne se charge
      pas, la liste ci-dessus sert de secours. On conserve les champs enrichis
      (photos multiples, heroImage, label) des produits deja connus. */
+  /* Pictogrammes publies par le backoffice (catalogue.json, "icons") :
+     { id, name, viewBox, svg } (dessin SVG, deja nettoye a l'import) ou
+     { id, name, image } (PNG). Ils remplacent ou completent les symboles
+     ecrits plus haut dans la page ; une entree sans dessin garde le sien. */
+  function cleanSvgMarkup(markup){
+    var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">'+markup+'</svg>', "image/svg+xml");
+    var root = doc.documentElement;
+    if(root.nodeName !== "svg") return "";
+    root.querySelectorAll("script,foreignObject,iframe,style").forEach(function(n){ n.remove(); });
+    root.querySelectorAll("*").forEach(function(n){
+      Array.prototype.slice.call(n.attributes).forEach(function(a){
+        var href = /(^|:)href$/i.test(a.name);
+        if(/^on/i.test(a.name) || (href && !/^#/.test(a.value) && !/^(assets\/|data:image\/(png|jpeg|webp);)/.test(a.value))) n.removeAttribute(a.name);
+      });
+    });
+    return root.innerHTML;
+  }
+  function installIcons(list, base){
+    var NS = "http://www.w3.org/2000/svg";
+    var sprite = document.getElementById("iconSprite");
+    list.forEach(function(ic){
+      if(!ic || !/^icon-[a-z0-9-]+$/.test(ic.id) || (!ic.svg && !ic.image)) return;
+      var old = document.getElementById(ic.id);
+      if(old) old.remove();
+      var sym = document.createElementNS(NS, "symbol");
+      sym.setAttribute("id", ic.id);
+      if(ic.svg){
+        sym.setAttribute("viewBox", ic.viewBox || "0 0 120 120");
+        sym.setAttribute("fill", "currentColor");
+        sym.innerHTML = cleanSvgMarkup(ic.svg);
+      } else {
+        sym.setAttribute("viewBox", "0 0 100 100");
+        var img = document.createElementNS(NS, "image");
+        img.setAttribute("href", (base || "") + ic.image);
+        img.setAttribute("width", "100"); img.setAttribute("height", "100");
+        img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        sym.appendChild(img);
+      }
+      sprite.appendChild(sym);
+    });
+  }
+
   function applySkus(saved){
     if(!saved || !Array.isArray(saved) || saved.length === 0) return;
     var enriched = {};
@@ -2291,6 +2333,7 @@
         CATS = data.categories.map(function(c){ return c.id; });
       }
       if(Array.isArray(data.menu)) MENUS = data.menu;
+      if(Array.isArray(data.icons)) installIcons(data.icons, "");
     })
     .catch(function(){ /* catalogue injoignable : liste de secours */ })
     .then(start);

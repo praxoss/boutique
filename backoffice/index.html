@@ -201,6 +201,19 @@
   .cat-row input:focus,.cat-row select:focus,.menu-card input:focus,.menu-card textarea:focus{outline:none;border-color:var(--navy);}
   .cat-count{font-size:12px;color:var(--sub);white-space:nowrap;padding-bottom:10px;}
   .row-tools{display:flex;gap:2px;padding-bottom:3px;}
+  .picto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .picto-tile{border:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--bg);}
+  .picto-prev{height:72px;background:var(--surface);display:flex;align-items:center;justify-content:center;color:var(--navy);}
+  .picto-prev svg{width:52px;height:52px;}
+  .picto-tile input{display:block;width:100%;box-sizing:border-box;font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);}
+  .picto-tile input:focus{outline:none;border-color:var(--navy);}
+  .picto-use{font-size:11.5px;color:var(--sub);min-height:15px;}
+  .picto-actions{display:flex;gap:6px;}
+  .picto-actions button{flex:1;background:none;border:1px solid var(--line);font-family:inherit;font-size:12px;padding:6px 4px;cursor:pointer;color:var(--ink);}
+  .picto-actions button:hover{border-color:var(--navy);}
+  .picto-actions button.danger:hover{border-color:var(--red);color:var(--red);}
+  .picto-add{border:1.5px dashed var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:172px;cursor:pointer;font-family:inherit;font-size:13px;color:var(--sub);}
+  .picto-add:hover{border-color:var(--navy);color:var(--navy);}
   .menu-card{border:1px solid var(--line);padding:16px;margin-top:14px;background:var(--surface);}
   .menu-card:first-child{margin-top:0;}
   .menu-head{display:flex;gap:10px;align-items:end;}
@@ -421,7 +434,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
 
 <!-- garment icon set, shared with the boutique -->
-<svg style="display:none" aria-hidden="true">
+<svg id="iconSprite" style="display:none" aria-hidden="true">
   <symbol id="icon-shirt" viewBox="0 0 120 120">
     <polygon points="42,8 78,8 78,18 100,26 92,44 78,36 78,112 42,112 42,36 28,44 20,26 42,18" fill="currentColor" stroke="rgba(0,0,0,.14)" stroke-width="1.5" stroke-linejoin="round" />
     <ellipse cx="60" cy="9" rx="11" ry="4" fill="var(--surface)" />
@@ -506,6 +519,13 @@
 
     <section id="tab-categories" hidden>
       <div class="home-admin">
+        <div class="home-card">
+          <h2>Pictogrammes</h2>
+          <p class="home-hint">Ils illustrent chaque catégorie : dans le menu déroulant de la boutique, et à la place de la photo pour un article qui n'en a pas. Importe un SVG d'une seule couleur pour qu'il prenne automatiquement la couleur de l'article ; un PNG s'affiche tel quel. Un pictogramme utilisé par une catégorie ne peut pas être supprimé.</p>
+          <div class="picto-grid" id="pictoGrid"></div>
+          <input type="file" id="pictoFile" accept=".svg,image/svg+xml,image/png,image/webp" hidden>
+        </div>
+
         <div class="home-card">
           <h2>Catégories</h2>
           <p class="home-hint">Chaque article appartient à une catégorie, qui sert aussi de filtre dans la boutique. Les tailles indiquées ici sont celles proposées à la création d'un article (les articles existants gardent les leurs). Renommer une catégorie met à jour ses articles, le menu et la page d'accueil.</p>
@@ -763,13 +783,17 @@
       ] }
   ];
 
-  var ICON_CHOICES = [
-    { id:"icon-shirt",  n:"Haut" },
-    { id:"icon-hoodie", n:"Sweat, veste" },
-    { id:"icon-shorts", n:"Short" },
-    { id:"icon-socks",  n:"Chaussettes" },
-    { id:"icon-cap",    n:"Casquette" },
-    { id:"icon-bag",    n:"Sac, accessoire" }
+  /* Pictogrammes, publies dans catalogue.json ("icons"). Les six de depart
+     n'ont pas de dessin dans la liste : ils utilisent les symboles ecrits
+     dans les pages. Une entree importee porte son dessin : { viewBox, svg }
+     (SVG nettoye, recolore en currentColor) ou { image } (PNG). */
+  var ICONS = [
+    { id:"icon-shirt",  name:"Haut" },
+    { id:"icon-hoodie", name:"Sweat, veste" },
+    { id:"icon-shorts", name:"Short" },
+    { id:"icon-socks",  name:"Chaussettes" },
+    { id:"icon-cap",    name:"Casquette" },
+    { id:"icon-bag",    name:"Sac, accessoire" }
   ];
 
   var SKUS = [
@@ -821,7 +845,7 @@
 
   function persistDraft(){
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, menu:MENU, savedAt:new Date().toISOString() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, menu:MENU, icons:ICONS, savedAt:new Date().toISOString() }));
       hasDraft = true;
       renderPublishNote();
       return true;
@@ -1259,11 +1283,187 @@
       });
   }
 
+  /* ---------------- pictogrammes ---------------- */
+  var SVG_NS = "http://www.w3.org/2000/svg";
+
+  /* Retire d'un dessin SVG tout ce qui peut executer du code ou charger
+     une ressource exterieure. Meme fonction dans la boutique. */
+  function cleanSvgMarkup(markup){
+    var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">'+markup+'</svg>', "image/svg+xml");
+    var root = doc.documentElement;
+    if(root.nodeName !== "svg") return "";
+    root.querySelectorAll("script,foreignObject,iframe,style").forEach(function(n){ n.remove(); });
+    root.querySelectorAll("*").forEach(function(n){
+      Array.prototype.slice.call(n.attributes).forEach(function(a){
+        var href = /(^|:)href$/i.test(a.name);
+        if(/^on/i.test(a.name) || (href && !/^#/.test(a.value) && !/^(assets\/|data:image\/(png|jpeg|webp);)/.test(a.value))) n.removeAttribute(a.name);
+      });
+    });
+    return root.innerHTML;
+  }
+
+  function installIcons(list){
+    var sprite = document.getElementById("iconSprite");
+    list.forEach(function(ic){
+      if(!ic || !/^icon-[a-z0-9-]+$/.test(ic.id) || (!ic.svg && !ic.image)) return;
+      var old = document.getElementById(ic.id);
+      if(old) old.remove();
+      var sym = document.createElementNS(SVG_NS, "symbol");
+      sym.setAttribute("id", ic.id);
+      if(ic.svg){
+        sym.setAttribute("viewBox", ic.viewBox || "0 0 120 120");
+        sym.setAttribute("fill", "currentColor");
+        sym.innerHTML = cleanSvgMarkup(ic.svg);
+      } else {
+        sym.setAttribute("viewBox", "0 0 100 100");
+        var img = document.createElementNS(SVG_NS, "image");
+        img.setAttribute("href", assetUrl(ic.image));
+        img.setAttribute("width", "100"); img.setAttribute("height", "100");
+        img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        sym.appendChild(img);
+      }
+      sprite.appendChild(sym);
+    });
+  }
+
+  /* SVG importe : viewBox, nettoyage, et couleurs remplacees par
+     currentColor pour suivre la couleur de l'article. */
+  function importSvg(text){
+    var doc = new DOMParser().parseFromString(text, "image/svg+xml");
+    var svg = doc.documentElement;
+    if(!svg || svg.nodeName.toLowerCase() !== "svg" || doc.getElementsByTagName("parsererror").length) throw new Error("Ce fichier n'est pas un SVG lisible");
+    var vb = svg.getAttribute("viewBox");
+    if(!vb){
+      var w = parseFloat(svg.getAttribute("width")) || 120, h = parseFloat(svg.getAttribute("height")) || 120;
+      vb = "0 0 " + w + " " + h;
+    }
+    var paint = function(v){ return v && !/^(none|transparent|currentColor)$/i.test(v.trim()) && !/^url\(/i.test(v.trim()); };
+    svg.querySelectorAll("*").forEach(function(n){
+      ["fill","stroke"].forEach(function(k){ if(paint(n.getAttribute(k))) n.setAttribute(k, "currentColor"); });
+      var st = n.getAttribute("style");
+      if(st) n.setAttribute("style", st.replace(/(fill|stroke)\s*:\s*([^;]+)/gi, function(all, k, v){ return paint(v) ? k + ":currentColor" : all; }));
+    });
+    var inner = cleanSvgMarkup(svg.innerHTML);
+    if(!inner.trim()) throw new Error("Ce SVG est vide");
+    if(inner.length > 60000) throw new Error("Ce SVG est trop lourd (60 Ko au plus)");
+    return { viewBox:vb, svg:inner };
+  }
+
+  /* PNG / WebP importe : reduit a 256 px, transparence conservee. */
+  function importBitmap(file, cb, fail){
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var img = new Image();
+      img.onload = function(){
+        var s = Math.min(1, 256 / Math.max(img.width, img.height));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        cb(c.toDataURL("image/png"));
+      };
+      img.onerror = function(){ fail("Image illisible"); };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function iconUsage(id){
+    return {
+      cats:TYPOLOGIES.filter(function(t){ return t.icon === id; }).map(function(t){ return t.id; }),
+      skus:SKUS.filter(function(s){ return s.icon === id; }).length
+    };
+  }
+
+  function renderPictos(){
+    document.getElementById("pictoGrid").innerHTML = ICONS.map(function(ic, i){
+      var u = iconUsage(ic.id);
+      return '<div class="picto-tile" data-i="'+i+'">' +
+        '<div class="picto-prev"><svg><use href="#'+esc(ic.id)+'"/></svg></div>' +
+        '<input type="text" data-picto="name" value="'+esc(ic.name)+'" aria-label="Nom du pictogramme">' +
+        '<div class="picto-use">'+(u.cats.length ? esc(u.cats.join(", ")) : "Non utilisé")+'</div>' +
+        '<div class="picto-actions">' +
+          '<button type="button" data-picto-act="replace">Remplacer</button>' +
+          '<button type="button" class="danger" data-picto-act="del">Supprimer</button>' +
+        '</div>' +
+      '</div>';
+    }).join("") +
+      '<button type="button" class="picto-add" data-picto-act="add">' +
+        '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+        'Ajouter un pictogramme<span style="font-size:11px">SVG ou PNG</span></button>';
+  }
+
+  var pictoTarget = null;   // index a remplacer, ou null pour un ajout
+
+  document.getElementById("pictoGrid").addEventListener("click", function(e){
+    var b = e.target.closest("[data-picto-act]");
+    if(!b) return;
+    var act = b.getAttribute("data-picto-act");
+    var tile = b.closest(".picto-tile"), i = tile ? +tile.getAttribute("data-i") : -1;
+    if(act === "add" || act === "replace"){
+      pictoTarget = act === "add" ? null : i;
+      document.getElementById("pictoFile").click();
+    } else if(act === "del"){
+      var ic = ICONS[i], u = iconUsage(ic.id);
+      if(u.cats.length){ toast("Utilise par : " + u.cats.join(", ") + ". Change leur pictogramme avant de le supprimer"); return; }
+      if(!confirm("Supprimer le pictogramme « "+ic.name+" » ?")) return;
+      ICONS.splice(i, 1);
+      // les articles qui l'avaient reprennent celui de leur categorie
+      SKUS.forEach(function(s){ if(s.icon === ic.id){ var t = typologyOf(s.typ); s.icon = t ? t.icon : "icon-shirt"; } });
+      toast("Pictogramme supprime");
+      catChanged();
+      renderTable();
+    }
+  });
+
+  document.getElementById("pictoGrid").addEventListener("change", function(e){
+    var el = e.target;
+    if(el.getAttribute("data-picto") !== "name") return;
+    var ic = ICONS[+el.closest(".picto-tile").getAttribute("data-i")];
+    var v = el.value.trim();
+    if(!v){ toast("Donne un nom au pictogramme"); el.value = ic.name; return; }
+    ic.name = v;
+    catChanged();
+  });
+
+  document.getElementById("pictoFile").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    var target = pictoTarget;
+    function store(draw){
+      var ic;
+      if(target === null){
+        var base = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Pictogramme";
+        var slug = base.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "picto";
+        var id = "icon-" + slug, n = 2;
+        while(ICONS.some(function(x){ return x.id === id; }) || document.getElementById(id)) id = "icon-" + slug + "-" + (n++);
+        ic = { id:id, name:base.charAt(0).toUpperCase() + base.slice(1) };
+        ICONS.push(ic);
+      } else {
+        ic = ICONS[target];
+      }
+      delete ic.svg; delete ic.viewBox; delete ic.image;
+      Object.assign(ic, draw);
+      installIcons([ic]);
+      toast(target === null ? "Pictogramme ajoute" : "Dessin remplace");
+      catChanged();
+      renderTable();
+    }
+    if(/svg/i.test(file.type) || /\.svg$/i.test(file.name)){
+      file.text().then(function(text){
+        try { store(importSvg(text)); } catch(err){ toast(err.message); }
+      });
+    } else {
+      importBitmap(file, function(dataUrl){ store({ image:dataUrl }); }, toast);
+    }
+  });
+
   /* ---------------- categories et menu ---------------- */
   function catChanged(){
     persistDraft();
     fillTypSelect();
     renderSidebar();
+    renderPictos();
     renderCatsTab();
     renderMenuTab();
   }
@@ -1285,7 +1485,8 @@
 
   function renderCatsTab(){
     var icons = function(sel){
-      return ICON_CHOICES.map(function(o){ return '<option value="'+o.id+'"'+(o.id===sel?' selected':'')+'>'+esc(o.n)+'</option>'; }).join("");
+      var list = ICONS.some(function(o){ return o.id === sel; }) ? ICONS : ICONS.concat([{ id:sel, name:"(supprimé)" }]);
+      return list.map(function(o){ return '<option value="'+esc(o.id)+'"'+(o.id===sel?' selected':'')+'>'+esc(o.name)+'</option>'; }).join("");
     };
     var last = TYPOLOGIES.length - 1;
     document.getElementById("catRows").innerHTML = TYPOLOGIES.map(function(c, i){
@@ -1483,7 +1684,7 @@
     document.getElementById("tab-categories").hidden = tab!=="categories";
     if(tab==="catalogue") renderTable();
     else if(tab==="commandes") fetchOrders();
-    else if(tab==="categories"){ renderCatsTab(); renderMenuTab(); }
+    else if(tab==="categories"){ renderPictos(); renderCatsTab(); renderMenuTab(); }
     else renderHomeTab();
   }
 
@@ -1688,7 +1889,7 @@
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, menu:MENU }, null, 2);
+    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, menu:MENU, icons:ICONS }, null, 2);
   }
 
   /* Secours : le meme contenu en fichier, a integrer a la main dans le depot
@@ -1745,6 +1946,7 @@
   function applyStructure(src){
     if(src && Array.isArray(src.categories) && src.categories.length) TYPOLOGIES = src.categories;
     if(src && Array.isArray(src.menu)) MENU = src.menu;
+    if(src && Array.isArray(src.icons) && src.icons.length){ ICONS = src.icons; installIcons(ICONS); }
   }
   var draft = readDraft();
   hasDraft = !!draft;
@@ -1768,7 +1970,7 @@
     renderSidebar();
     renderTable();
     if(state.tab === "accueil") renderHomeTab();
-    if(state.tab === "categories"){ renderCatsTab(); renderMenuTab(); }
+    if(state.tab === "categories"){ renderPictos(); renderCatsTab(); renderMenuTab(); }
   });
 
   document.getElementById("exportBtn").addEventListener("click", exportCatalogue);

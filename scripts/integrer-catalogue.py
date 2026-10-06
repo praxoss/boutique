@@ -61,6 +61,11 @@ def main(src):
         for k in [k for k, v in s.items() if v is None]:
             del s[k]
 
+    # pictogrammes importes en PNG (les SVG restent dans le catalogue)
+    for ic in cat.get("icons") or []:
+        if ic.get("image"):
+            ic["image"] = extract(ic["image"], "picto-" + ic.get("id", "icon").replace("icon-", ""), written)
+
     home = cat.get("home") or {}
     for i, c in enumerate(home.get("cats") or []):
         c["image"] = extract(c.get("image"), "accueil-univers-%d" % (i + 1), written)
