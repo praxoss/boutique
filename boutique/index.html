@@ -1490,7 +1490,7 @@
         '<h1>'+esc(title)+'<span class="plp-count">('+list.length+')</span></h1>' +
         '<div class="plp-toolbar">' +
           '<select class="sort-select" id="sortSelect">' +
-            '<option value="new"'+(state.sort==="new"?" selected":"")+'>Nouveautés</option>' +
+            '<option value="new"'+(state.sort==="new"?" selected":"")+'>Sélection du club</option>' +
             '<option value="asc"'+(state.sort==="asc"?" selected":"")+'>Prix croissant</option>' +
             '<option value="desc"'+(state.sort==="desc"?" selected":"")+'>Prix décroissant</option>' +
           '</select>' +
@@ -1855,7 +1855,7 @@
 
   function renderSortGroup(){
     sortWrap.innerHTML = '<details class="filter-group" data-group="sort" open><summary>Trier par</summary><div class="filter-body">'+
-      [["new","Nouveautés"],["asc","Prix croissant"],["desc","Prix décroissant"]].map(function(o){
+      [["new","Sélection du club"],["asc","Prix croissant"],["desc","Prix décroissant"]].map(function(o){
         return '<label class="chk"><input type="radio" name="sheetSort" value="'+o[0]+'"'+(state.sort===o[0]?" checked":"")+'> '+o[1]+'</label>';
       }).join("")+
       '</div></details>';

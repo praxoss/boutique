@@ -122,6 +122,20 @@
   .btn-ghost:hover{border-color:var(--ink);}
 
   .bo-count{color:var(--sub);font-size:13px;margin-bottom:10px;}
+  .sort-hint{color:var(--sub);opacity:.8;}
+
+  /* ordre des articles : glisser-deposer par la poignee */
+  .sku-table td.drag-td{width:30px;padding-left:2px;padding-right:0;}
+  .drag-handle{
+    background:none;border:none;color:var(--sub);cursor:grab;touch-action:none;
+    font-size:17px;line-height:1;padding:8px 6px;border-radius:5px;
+  }
+  .drag-handle:hover,.drag-handle:focus-visible{background:var(--surface-2);color:var(--ink);}
+  body.sorting,body.sorting *{cursor:grabbing!important;user-select:none;}
+  .sku-table tr.dragging{opacity:.4;}
+  .sku-table tr.drop-before td{box-shadow:inset 0 2px 0 var(--navy);}
+  .sku-table tr.drop-after td{box-shadow:inset 0 -2px 0 var(--navy);}
+  .sku-table tr.flash td{background:var(--green-bg);transition:background .8s ease;}
 
   /* ---------- table ---------- */
   .sku-table{width:100%;border-collapse:collapse;}
@@ -415,6 +429,10 @@
     .sku-table td{border:none;padding:6px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;}
     .sku-table td[data-label]::before{content:attr(data-label);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--sub);}
     .sku-table td.sku-name-td::before{display:none;}
+    .sku-table td.drag-td{width:auto;justify-content:flex-start;padding:0;}
+    .sku-table tr.drop-before{box-shadow:0 -3px 0 var(--navy);}
+    .sku-table tr.drop-after{box-shadow:0 3px 0 var(--navy);}
+    .sku-table tr.drop-before td,.sku-table tr.drop-after td{box-shadow:none;}
     .row-actions{justify-content:flex-end;width:100%;}
 
     .orders-table thead{display:none;}
@@ -507,7 +525,7 @@
           <table class="sku-table">
             <thead>
               <tr>
-                <th>Article</th><th>Couleurs</th><th>Tailles</th><th>Prix</th><th>Statut</th><th></th>
+                <th aria-label="Ordre"></th><th>Article</th><th>Couleurs</th><th>Tailles</th><th>Prix</th><th>Statut</th><th></th>
               </tr>
             </thead>
             <tbody id="skuTbody"></tbody>
@@ -928,7 +946,8 @@
       ? "Vue d'ensemble du catalogue, toutes typologies confondues."
       : "SKU de la typologie « " + state.activeTyp + " ».";
     document.getElementById("pageSubtitle").textContent = subtitle;
-    document.getElementById("skuCount").textContent = list.length + (list.length>1 ? " articles" : " article");
+    document.getElementById("skuCount").innerHTML = list.length + (list.length>1 ? " articles" : " article") +
+      ' <span class="sort-hint">· glisse ⠿ pour choisir l\'ordre d\'affichage dans la boutique</span>';
     document.getElementById("newSkuBtn").innerHTML = ICON_PLUS + " Nouveau SKU";
 
     var tbody = document.getElementById("skuTbody");
@@ -940,6 +959,7 @@
         : '<svg style="color:'+s.colors[0].h+'"><use href="#'+s.icon+'"/></svg>';
       return (
         '<tr data-id="'+s.id+'">' +
+          '<td class="drag-td"><button type="button" class="drag-handle" aria-label="Déplacer '+esc(s.name)+' (glisser, ou flèches haut et bas)" title="Glisser pour changer l\'ordre">⠿</button></td>' +
           '<td class="sku-name-td" data-label="Article"><div class="sku-name-cell"><div class="sku-thumb">'+media+'</div>' +
             '<div class="sku-name"><b>'+esc(s.name)+'</b><span class="ref">'+esc(s.ref)+'</span></div></div></td>' +
           '<td data-label="Couleurs"><div class="sku-colors">'+s.colors.map(function(c){return '<span style="background:'+c.h+'" title="'+esc(c.n)+'"></span>';}).join("")+'</div></td>' +
@@ -956,11 +976,86 @@
 
     tbody.querySelectorAll("tr").forEach(function(tr){
       var id = tr.getAttribute("data-id");
+      tr.querySelector(".drag-handle").addEventListener("click", function(e){ e.stopPropagation(); });
       tr.querySelector(".edit-btn").addEventListener("click", function(e){ e.stopPropagation(); openPanel(skuById(id)); });
       tr.querySelector(".delete-btn").addEventListener("click", function(e){ e.stopPropagation(); deleteSku(id); });
       tr.addEventListener("click", function(){ openPanel(skuById(id)); });
     });
   }
+
+  /* ---------------- ordre des articles ----------------
+     L'ordre de SKUS est l'ordre d'affichage de la boutique (liste par
+     defaut, "Les plus demandes", "Vous aimerez aussi"). On le change en
+     glissant la poignee d'une ligne (souris ou doigt, via les pointer
+     events : le glisser-deposer HTML5 ne marche pas au doigt), ou au
+     clavier avec les fleches. Avec un filtre actif, l'article se place
+     juste avant ou apres celui vise. */
+  function moveSku(id, refId, before){
+    if(id === refId) return;
+    var from = SKUS.findIndex(function(s){ return s.id === id; });
+    if(from < 0) return;
+    var item = SKUS.splice(from, 1)[0];
+    var at = SKUS.findIndex(function(s){ return s.id === refId; });
+    SKUS.splice(before ? at : at + 1, 0, item);
+    persistDraft();
+    renderTable();
+    var row = document.querySelector('#skuTbody tr[data-id="'+id+'"]');
+    if(row){ row.classList.add("flash"); setTimeout(function(){ row.classList.remove("flash"); }, 900); }
+    return row;
+  }
+
+  (function(){
+    var tbody = document.getElementById("skuTbody");
+    var drag = null;
+    function clearMarks(){
+      tbody.querySelectorAll(".drop-before,.drop-after").forEach(function(r){ r.classList.remove("drop-before","drop-after"); });
+    }
+    tbody.addEventListener("pointerdown", function(e){
+      var h = e.target.closest(".drag-handle");
+      if(!h || e.button > 0) return;
+      e.preventDefault();
+      var row = h.closest("tr");
+      drag = { id:row.getAttribute("data-id"), row:row, handle:h, target:null };
+      h.setPointerCapture(e.pointerId);
+      row.classList.add("dragging");
+      document.body.classList.add("sorting");
+    });
+    tbody.addEventListener("pointermove", function(e){
+      if(!drag) return;
+      if(e.clientY < 70) window.scrollBy(0, -14);
+      else if(e.clientY > window.innerHeight - 70) window.scrollBy(0, 14);
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      var tr = el && el.closest("#skuTbody tr");
+      clearMarks();
+      if(!tr || tr === drag.row){ drag.target = null; return; }
+      var r = tr.getBoundingClientRect();
+      var before = e.clientY < r.top + r.height / 2;
+      tr.classList.add(before ? "drop-before" : "drop-after");
+      drag.target = { id:tr.getAttribute("data-id"), before:before };
+    });
+    function end(){
+      if(!drag) return;
+      var d = drag; drag = null;
+      clearMarks();
+      d.row.classList.remove("dragging");
+      document.body.classList.remove("sorting");
+      if(d.target){ moveSku(d.id, d.target.id, d.target.before); toast("Ordre modifie (pense a publier)"); }
+    }
+    tbody.addEventListener("pointerup", end);
+    tbody.addEventListener("pointercancel", end);
+    tbody.addEventListener("keydown", function(e){
+      var h = e.target.closest(".drag-handle");
+      if(!h || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+      e.preventDefault();
+      var id = h.closest("tr").getAttribute("data-id");
+      var list = filteredSkus();
+      var pos = list.findIndex(function(s){ return s.id === id; });
+      var other = list[e.key === "ArrowUp" ? pos - 1 : pos + 1];
+      if(!other) return;
+      var row = moveSku(id, other.id, e.key === "ArrowUp");
+      if(row) row.querySelector(".drag-handle").focus();
+    });
+  })();
 
   function deleteSku(id){
     var s = skuById(id);
