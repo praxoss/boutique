@@ -158,6 +158,7 @@
   .icon-btn-sm svg{width:16px;height:16px;display:block;}
   .icon-btn-sm:hover{background:var(--surface-2);color:var(--ink);}
   .icon-btn-sm.danger:hover{color:var(--red);}
+  .icon-btn-sm:disabled{opacity:.3;cursor:default;background:none;}
 
   .bo-empty{padding:40px 10px;text-align:center;color:var(--sub);}
 
@@ -188,6 +189,39 @@
   .home-upload:hover{border-color:var(--navy);}
   .home-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
   .home-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;}
+
+  /* ---------- onglet categories et menu ---------- */
+  .cat-row{display:grid;grid-template-columns:minmax(0,1.3fr) 150px minmax(0,1.6fr) auto auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line);}
+  .cat-row:first-child{border-top:none;}
+  .cat-row label{display:block;font-size:11px;color:var(--sub);margin:0 0 5px;}
+  .cat-row input,.cat-row select,.menu-card input,.menu-card textarea,.menu-card select{
+    display:block;width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;
+    padding:9px 11px;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  }
+  .cat-row input:focus,.cat-row select:focus,.menu-card input:focus,.menu-card textarea:focus{outline:none;border-color:var(--navy);}
+  .cat-count{font-size:12px;color:var(--sub);white-space:nowrap;padding-bottom:10px;}
+  .row-tools{display:flex;gap:2px;padding-bottom:3px;}
+  .menu-card{border:1px solid var(--line);padding:16px;margin-top:14px;background:var(--surface);}
+  .menu-card:first-child{margin-top:0;}
+  .menu-head{display:flex;gap:10px;align-items:end;}
+  .menu-head > div:first-child{flex:1;}
+  .menu-card label.sub{display:block;font-size:11px;color:var(--sub);margin:14px 0 6px;}
+  .cat-checks{display:flex;flex-wrap:wrap;gap:6px;}
+  .cat-check{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);padding:6px 10px;font-size:13px;cursor:pointer;}
+  .cat-check input{width:auto;display:inline;margin:0;}
+  .menu-col{border:1px solid var(--line);background:var(--bg);padding:12px;margin-top:8px;}
+  .menu-col-head{display:flex;gap:8px;align-items:center;}
+  .menu-col-head input{flex:1;}
+  .col-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .col-item{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;padding:4px 6px 4px 10px;font-size:13px;}
+  .col-item button{background:none;border:none;color:var(--sub);cursor:pointer;padding:2px 3px;font-size:13px;line-height:1;}
+  .col-item button:hover{color:var(--ink);}
+  .col-item.missing{color:var(--sub);text-decoration:line-through;}
+  .menu-col select{margin-top:10px;}
+  @media (max-width:760px){
+    .cat-row{grid-template-columns:1fr 1fr;}
+    .cat-row .cat-sizes{grid-column:1/-1;}
+  }
 
   /* option hero dans la fiche produit */
   .hero-box{border:1px solid var(--line);padding:16px;background:var(--surface);}
@@ -441,6 +475,7 @@
     <div class="bo-tabs" role="tablist">
       <button class="bo-tab" data-tab="catalogue" aria-selected="true" role="tab">Catalogue SKU</button>
       <button class="bo-tab" data-tab="commandes" aria-selected="false" role="tab">Commandes &amp; reappro</button>
+      <button class="bo-tab" data-tab="categories" aria-selected="false" role="tab">Catégories &amp; menu</button>
       <button class="bo-tab" data-tab="accueil" aria-selected="false" role="tab">Page d'accueil</button>
     </div>
 
@@ -466,6 +501,30 @@
           </table>
           <div class="bo-empty" id="skuEmpty" hidden>Aucun SKU ne correspond a cette recherche.</div>
         </div>
+      </div>
+    </section>
+
+    <section id="tab-categories" hidden>
+      <div class="home-admin">
+        <div class="home-card">
+          <h2>Catégories</h2>
+          <p class="home-hint">Chaque article appartient à une catégorie, qui sert aussi de filtre dans la boutique. Les tailles indiquées ici sont celles proposées à la création d'un article (les articles existants gardent les leurs). Renommer une catégorie met à jour ses articles, le menu et la page d'accueil.</p>
+          <div id="catRows"></div>
+          <div class="home-actions" style="margin-top:16px">
+            <button type="button" class="btn-ghost" id="catAdd">+ Ajouter une catégorie</button>
+          </div>
+        </div>
+
+        <div class="home-card">
+          <h2>Menu de la boutique</h2>
+          <p class="home-hint">Les rubriques du menu, dans l'ordre d'affichage. Le nom de la rubrique mène à la liste des catégories cochées ; les colonnes listent des articles à mettre en avant dans le menu déroulant. Une rubrique sans colonne affiche son message à la place.</p>
+          <div id="menuRows"></div>
+          <div class="home-actions" style="margin-top:16px">
+            <button type="button" class="btn-ghost" id="menuAdd">+ Ajouter une rubrique</button>
+          </div>
+        </div>
+
+        <p class="home-hint">Les modifications sont gardées dans le brouillon : clique sur « Publier » pour les mettre en ligne.</p>
       </div>
     </section>
 
@@ -685,6 +744,34 @@
     { id:"Accessoires", icon:"icon-bag",    sizes:["Taille unique"] }
   ];
 
+  /* Menu de la boutique, publie dans catalogue.json ("menu"). Une rubrique :
+     label, cats (categories ouvertes par son nom, absent si aucune), cols
+     (colonnes { title, ids } d'articles du menu deroulant), note (message
+     quand il n'y a pas de colonne). Valeurs de depart = l'ancien menu code
+     en dur dans la boutique. */
+  var MENU = [
+    { label:"Vêtements rugby", cats:["Maillots","Shorts","Sweats","T-shirts"], cols:[
+        { title:"Maillots", ids:["maillot-domicile","maillot-exterieur","vareuse-entrainement"] },
+        { title:"Entraînement", ids:["short-entrainement","tshirt-training","veste-survetement"] }
+      ] },
+    { label:"Lifestyle", cats:["Sweats","T-shirts"], cols:[
+        { title:"Prêt-à-porter", ids:["sweat-capuche","polo-club"] }
+      ] },
+    { label:"Enfant", cols:[], note:"La collection enfant arrive pour la saison prochaine. Les tailles junior des maillots sont déjà disponibles sur demande auprès du club." },
+    { label:"Accessoires", cats:["Accessoires","Chaussettes"], cols:[
+        { title:"Le sac du joueur", ids:["chaussettes-match","bonnet-club","sac-sport"] }
+      ] }
+  ];
+
+  var ICON_CHOICES = [
+    { id:"icon-shirt",  n:"Haut (maillot, t-shirt)" },
+    { id:"icon-hoodie", n:"Sweat, veste" },
+    { id:"icon-shorts", n:"Short" },
+    { id:"icon-socks",  n:"Chaussettes" },
+    { id:"icon-cap",    n:"Casquette, bonnet" },
+    { id:"icon-bag",    n:"Sac, accessoire" }
+  ];
+
   var SKUS = [
     { id:"maillot-domicile", typ:"Maillots", name:"Maillot Domicile", sub:"Manches courtes, coupe joueur", price:64.99, ref:"IMP-MAILLOT-DOM", icon:"icon-shirt", photo:"assets/maillot-domicile.jpg",
       colors:[{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"}], sizes:["S","M","L","XL","XXL"], status:"actif",
@@ -734,7 +821,7 @@
 
   function persistDraft(){
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, savedAt:new Date().toISOString() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, menu:MENU, savedAt:new Date().toISOString() }));
       hasDraft = true;
       renderPublishNote();
       return true;
@@ -856,6 +943,7 @@
     if(!s) return;
     if(!confirm('Supprimer "'+s.name+'" du catalogue ?')) return;
     SKUS = SKUS.filter(function(x){return x.id!==id;});
+    MENU.forEach(function(m){ (m.cols||[]).forEach(function(c){ c.ids = c.ids.filter(function(x){ return x !== id; }); }); });
     persistSkus();
     renderSidebar();
     renderTable();
@@ -1171,6 +1259,218 @@
       });
   }
 
+  /* ---------------- categories et menu ---------------- */
+  function catChanged(){
+    persistDraft();
+    fillTypSelect();
+    renderSidebar();
+    renderCatsTab();
+    renderMenuTab();
+  }
+
+  function catCount(id){ return SKUS.filter(function(s){ return s.typ === id; }).length; }
+
+  /* Renommer : articles, rubriques du menu et filtres de l'accueil suivent. */
+  function renameCategory(from, to){
+    if(homeTabRendered) collectHomeFields();   // garder ce qui est en cours dans l'onglet Accueil
+    var swap = function(list){ return (list||[]).map(function(x){ return x === from ? to : x; }); };
+    TYPOLOGIES.forEach(function(t){ if(t.id === from) t.id = to; });
+    SKUS.forEach(function(s){ if(s.typ === from) s.typ = to; });
+    MENU.forEach(function(m){ if(m.cats) m.cats = swap(m.cats); });
+    (HOME.cats||[]).forEach(function(c){ c.filter = swap(c.filter); });
+    (HOME.duo||[]).forEach(function(d){ d.filter = swap(d.filter); });
+    if(state.activeTyp === from) state.activeTyp = to;
+    if(homeTabRendered) renderHomeTab();
+  }
+
+  function renderCatsTab(){
+    var icons = function(sel){
+      return ICON_CHOICES.map(function(o){ return '<option value="'+o.id+'"'+(o.id===sel?' selected':'')+'>'+esc(o.n)+'</option>'; }).join("");
+    };
+    var last = TYPOLOGIES.length - 1;
+    document.getElementById("catRows").innerHTML = TYPOLOGIES.map(function(c, i){
+      var n = catCount(c.id);
+      return '<div class="cat-row" data-i="'+i+'">' +
+        '<div><label>Nom</label><input type="text" data-cat="name" value="'+esc(c.id)+'"></div>' +
+        '<div><label>Pictogramme</label><select data-cat="icon">'+icons(c.icon)+'</select></div>' +
+        '<div class="cat-sizes"><label>Tailles (séparées par des virgules)</label><input type="text" data-cat="sizes" value="'+esc((c.sizes||[]).join(", "))+'"></div>' +
+        '<div class="cat-count">'+n+' article'+(n>1?'s':'')+'</div>' +
+        '<div class="row-tools">' +
+          '<button type="button" class="icon-btn-sm" data-cat-act="up" aria-label="Monter"'+(i===0?' disabled':'')+'>↑</button>' +
+          '<button type="button" class="icon-btn-sm" data-cat-act="down" aria-label="Descendre"'+(i===last?' disabled':'')+'>↓</button>' +
+          '<button type="button" class="icon-btn-sm danger" data-cat-act="del" aria-label="Supprimer">'+ICON_TRASH+'</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  document.getElementById("catRows").addEventListener("change", function(e){
+    var el = e.target, row = el.closest(".cat-row");
+    if(!row) return;
+    var c = TYPOLOGIES[+row.getAttribute("data-i")];
+    var what = el.getAttribute("data-cat");
+    if(what === "name"){
+      var v = el.value.trim();
+      var taken = TYPOLOGIES.some(function(t){ return t !== c && t.id.toLowerCase() === v.toLowerCase(); });
+      if(!v || taken){ toast(v ? "Une categorie porte deja ce nom" : "Donne un nom a la categorie"); el.value = c.id; return; }
+      if(v !== c.id){ var from = c.id; renameCategory(from, v); toast("« "+from+" » renommee en « "+v+" »"); }
+    } else if(what === "icon"){
+      c.icon = el.value;
+      SKUS.forEach(function(s){ if(s.typ === c.id) s.icon = c.icon; });
+    } else if(what === "sizes"){
+      var sizes = el.value.split(/[,;]/).map(function(x){ return x.trim(); }).filter(Boolean);
+      if(!sizes.length){ toast("Indique au moins une taille (ou « Taille unique »)"); el.value = (c.sizes||[]).join(", "); return; }
+      c.sizes = sizes;
+    }
+    catChanged();
+  });
+
+  document.getElementById("catRows").addEventListener("click", function(e){
+    var b = e.target.closest("[data-cat-act]");
+    if(!b) return;
+    var i = +b.closest(".cat-row").getAttribute("data-i"), c = TYPOLOGIES[i];
+    var act = b.getAttribute("data-cat-act");
+    if(act === "up" || act === "down"){
+      var j = act === "up" ? i - 1 : i + 1;
+      TYPOLOGIES.splice(j, 0, TYPOLOGIES.splice(i, 1)[0]);
+    } else if(act === "del"){
+      var n = catCount(c.id);
+      if(n){ toast(n+" article"+(n>1?"s utilisent":" utilise")+" « "+c.id+" » : change-"+(n>1?"les":"le")+" de categorie avant de la supprimer"); return; }
+      if(TYPOLOGIES.length === 1){ toast("Il faut garder au moins une categorie"); return; }
+      if(!confirm("Supprimer la categorie « "+c.id+" » ?")) return;
+      TYPOLOGIES.splice(i, 1);
+      MENU.forEach(function(m){ if(m.cats){ m.cats = m.cats.filter(function(x){ return x !== c.id; }); if(!m.cats.length) delete m.cats; } });
+      if(homeTabRendered) collectHomeFields();
+      (HOME.cats||[]).forEach(function(x){ x.filter = (x.filter||[]).filter(function(f){ return f !== c.id; }); });
+      (HOME.duo||[]).forEach(function(x){ x.filter = (x.filter||[]).filter(function(f){ return f !== c.id; }); });
+      if(homeTabRendered) renderHomeTab();
+      if(state.activeTyp === c.id) state.activeTyp = "all";
+      toast("Categorie supprimee");
+    }
+    catChanged();
+  });
+
+  document.getElementById("catAdd").addEventListener("click", function(){
+    var name = "Nouvelle catégorie", n = 2;
+    while(TYPOLOGIES.some(function(t){ return t.id === name; })) name = "Nouvelle catégorie " + (n++);
+    TYPOLOGIES.push({ id:name, icon:"icon-shirt", sizes:["S","M","L","XL","XXL"] });
+    catChanged();
+    var inputs = document.querySelectorAll('#catRows [data-cat="name"]');
+    var last = inputs[inputs.length - 1];
+    last.focus(); last.select();
+  });
+
+  function renderMenuTab(){
+    var lastM = MENU.length - 1;
+    var skuOptions = function(col){
+      return '<option value="">+ Ajouter un article…</option>' +
+        SKUS.filter(function(s){ return col.ids.indexOf(s.id) === -1; })
+          .map(function(s){ return '<option value="'+esc(s.id)+'">'+esc(s.name)+' ('+esc(s.typ)+')</option>'; }).join("");
+    };
+    document.getElementById("menuRows").innerHTML = MENU.map(function(m, i){
+      var cats = m.cats || [];
+      var cols = m.cols || [];
+      return '<div class="menu-card" data-m="'+i+'">' +
+        '<div class="menu-head">' +
+          '<div><label class="sub" style="margin-top:0">Nom de la rubrique</label><input type="text" data-menu="label" value="'+esc(m.label)+'"></div>' +
+          '<div class="row-tools">' +
+            '<button type="button" class="icon-btn-sm" data-menu-act="up" aria-label="Monter"'+(i===0?' disabled':'')+'>↑</button>' +
+            '<button type="button" class="icon-btn-sm" data-menu-act="down" aria-label="Descendre"'+(i===lastM?' disabled':'')+'>↓</button>' +
+            '<button type="button" class="icon-btn-sm danger" data-menu-act="del" aria-label="Supprimer la rubrique">'+ICON_TRASH+'</button>' +
+          '</div>' +
+        '</div>' +
+        '<label class="sub">Le nom mène à la liste de ces catégories</label>' +
+        '<div class="cat-checks">' + TYPOLOGIES.map(function(c){
+          return '<label class="cat-check"><input type="checkbox" data-menu="cat" value="'+esc(c.id)+'"'+(cats.indexOf(c.id)>-1?' checked':'')+'> '+esc(c.id)+'</label>';
+        }).join("") + '</div>' +
+        (cats.length ? '' : '<p class="home-hint" style="margin-top:6px">Aucune : le nom de la rubrique ouvre seulement son menu déroulant.</p>') +
+        '<label class="sub">Colonnes du menu déroulant</label>' +
+        cols.map(function(col, j){
+          return '<div class="menu-col" data-c="'+j+'">' +
+            '<div class="menu-col-head">' +
+              '<input type="text" data-menu="coltitle" value="'+esc(col.title)+'" placeholder="Titre de la colonne">' +
+              '<button type="button" class="icon-btn-sm" data-menu-act="colup" aria-label="Colonne vers la gauche"'+(j===0?' disabled':'')+'>←</button>' +
+              '<button type="button" class="icon-btn-sm" data-menu-act="coldown" aria-label="Colonne vers la droite"'+(j===cols.length-1?' disabled':'')+'>→</button>' +
+              '<button type="button" class="icon-btn-sm danger" data-menu-act="coldel" aria-label="Supprimer la colonne">'+ICON_TRASH+'</button>' +
+            '</div>' +
+            '<div class="col-items">' + (col.ids.length ? col.ids.map(function(id, k){
+              var s = skuById(id);
+              return '<span class="col-item'+(s?'':' missing')+'" data-k="'+k+'">' + esc(s ? s.name : id) +
+                (k>0 ? '<button type="button" data-menu-act="itemup" aria-label="Avancer">‹</button>' : '') +
+                (k<col.ids.length-1 ? '<button type="button" data-menu-act="itemdown" aria-label="Reculer">›</button>' : '') +
+                '<button type="button" data-menu-act="itemdel" aria-label="Retirer">×</button></span>';
+            }).join("") : '<span class="home-hint">Aucun article dans cette colonne.</span>') + '</div>' +
+            '<select data-menu="additem">'+skuOptions(col)+'</select>' +
+          '</div>';
+        }).join("") +
+        '<button type="button" class="btn-ghost" data-menu-act="coladd" style="margin-top:8px">+ Ajouter une colonne</button>' +
+        '<label class="sub">Message affiché si la rubrique n\'a pas de colonne</label>' +
+        '<textarea rows="2" data-menu="note" placeholder="Ex. La collection arrive bientôt.">'+esc(m.note||"")+'</textarea>' +
+      '</div>';
+    }).join("");
+  }
+
+  function menuChanged(){ persistDraft(); renderMenuTab(); }
+
+  document.getElementById("menuRows").addEventListener("change", function(e){
+    var el = e.target, card = el.closest(".menu-card");
+    if(!card) return;
+    var m = MENU[+card.getAttribute("data-m")];
+    var colEl = el.closest(".menu-col"), col = colEl ? m.cols[+colEl.getAttribute("data-c")] : null;
+    var what = el.getAttribute("data-menu");
+    if(what === "label"){
+      var v = el.value.trim();
+      if(!v){ toast("Donne un nom a la rubrique"); el.value = m.label; return; }
+      m.label = v;
+    } else if(what === "cat"){
+      var cats = Array.prototype.map.call(card.querySelectorAll('[data-menu="cat"]:checked'), function(x){ return x.value; });
+      if(cats.length) m.cats = cats; else delete m.cats;   // la boutique teste la presence de cats
+    } else if(what === "coltitle"){
+      col.title = el.value.trim();
+    } else if(what === "additem"){
+      if(!el.value) return;
+      col.ids.push(el.value);
+    } else if(what === "note"){
+      var note = el.value.trim();
+      if(note) m.note = note; else delete m.note;
+    }
+    menuChanged();
+  });
+
+  document.getElementById("menuRows").addEventListener("click", function(e){
+    var b = e.target.closest("[data-menu-act]");
+    if(!b) return;
+    var i = +b.closest(".menu-card").getAttribute("data-m"), m = MENU[i];
+    var colEl = b.closest(".menu-col"), j = colEl ? +colEl.getAttribute("data-c") : -1;
+    var itemEl = b.closest(".col-item"), k = itemEl ? +itemEl.getAttribute("data-k") : -1;
+    var move = function(list, from, to){ list.splice(to, 0, list.splice(from, 1)[0]); };
+    switch(b.getAttribute("data-menu-act")){
+      case "up": move(MENU, i, i - 1); break;
+      case "down": move(MENU, i, i + 1); break;
+      case "del":
+        if(!confirm("Supprimer la rubrique « "+m.label+" » du menu ?")) return;
+        MENU.splice(i, 1); break;
+      case "coladd": m.cols = m.cols || []; m.cols.push({ title:"Nouvelle colonne", ids:[] }); break;
+      case "colup": move(m.cols, j, j - 1); break;
+      case "coldown": move(m.cols, j, j + 1); break;
+      case "coldel":
+        if(m.cols[j].ids.length && !confirm("Supprimer la colonne « "+(m.cols[j].title||"sans titre")+" » ?")) return;
+        m.cols.splice(j, 1); break;
+      case "itemup": move(m.cols[j].ids, k, k - 1); break;
+      case "itemdown": move(m.cols[j].ids, k, k + 1); break;
+      case "itemdel": m.cols[j].ids.splice(k, 1); break;
+    }
+    menuChanged();
+  });
+
+  document.getElementById("menuAdd").addEventListener("click", function(){
+    MENU.push({ label:"Nouvelle rubrique", cols:[] });
+    menuChanged();
+    var inputs = document.querySelectorAll('#menuRows [data-menu="label"]');
+    var last = inputs[inputs.length - 1];
+    last.focus(); last.select();
+  });
+
   /* ---------------- tabs ---------------- */
   function switchTab(tab){
     state.tab = tab;
@@ -1180,8 +1480,10 @@
     document.getElementById("tab-catalogue").hidden = tab!=="catalogue";
     document.getElementById("tab-commandes").hidden = tab!=="commandes";
     document.getElementById("tab-accueil").hidden = tab!=="accueil";
+    document.getElementById("tab-categories").hidden = tab!=="categories";
     if(tab==="catalogue") renderTable();
     else if(tab==="commandes") fetchOrders();
+    else if(tab==="categories"){ renderCatsTab(); renderMenuTab(); }
     else renderHomeTab();
   }
 
@@ -1386,7 +1688,7 @@
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    return JSON.stringify({ skus:skus, home:home }, null, 2);
+    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, menu:MENU }, null, 2);
   }
 
   /* Secours : le meme contenu en fichier, a integrer a la main dans le depot
@@ -1433,28 +1735,40 @@
   /* ---------------- wiring ---------------- */
   fillTypSelect();
 
-  function loadDraft(){
+  function readDraft(){
     try {
       var d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
-      if(d && Array.isArray(d.skus) && d.skus.length){ SKUS = d.skus; applyHome(d.home); return true; }
+      if(d && Array.isArray(d.skus) && d.skus.length) return d;
     } catch(e){}
-    return false;
+    return null;
   }
-  hasDraft = loadDraft();
-  var loading = hasDraft ? Promise.resolve() :
-    fetch(BOUTIQUE_BASE + "catalogue.json", { cache:"no-cache" })
+  function applyStructure(src){
+    if(src && Array.isArray(src.categories) && src.categories.length) TYPOLOGIES = src.categories;
+    if(src && Array.isArray(src.menu)) MENU = src.menu;
+  }
+  var draft = readDraft();
+  hasDraft = !!draft;
+  if(draft){ SKUS = draft.skus; applyHome(draft.home); }
+  /* Le catalogue publie est toujours lu : un brouillon d'avant l'onglet
+     Categories et menu n'en a pas, il les reprend alors de la version en ligne. */
+  var loading = fetch(BOUTIQUE_BASE + "catalogue.json", { cache:"no-cache" })
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(data){
-        if(!data) return;
-        if(Array.isArray(data.skus) && data.skus.length) SKUS = data.skus;
-        applyHome(data.home);
+        if(data && !draft){
+          if(Array.isArray(data.skus) && data.skus.length) SKUS = data.skus;
+          applyHome(data.home);
+        }
+        applyStructure(data);
+        if(draft && draft.categories) applyStructure(draft);
       })
-      .catch(function(){});
+      .catch(function(){ if(draft) applyStructure(draft); });
   loading.then(function(){
+    fillTypSelect();
     renderPublishNote();
     renderSidebar();
     renderTable();
     if(state.tab === "accueil") renderHomeTab();
+    if(state.tab === "categories"){ renderCatsTab(); renderMenuTab(); }
   });
 
   document.getElementById("exportBtn").addEventListener("click", exportCatalogue);

@@ -1176,6 +1176,8 @@
       });
   }
 
+  /* Categories et menu : publies par le backoffice dans catalogue.json
+     ("categories", "menu") ; ces valeurs ne servent que de secours. */
   var CATS = ["Maillots","T-shirts","Sweats","Shorts","Chaussettes","Accessoires"];
   var SIZES = ["S","M","L","XL","XXL"];
   var COLOR_SWATCHES = [{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"},{n:"Blanc",h:"#FFFFFF"},{n:"Gris",h:"#8A8D93"}];
@@ -2285,6 +2287,10 @@
       if(!data) return;
       applySkus(data.skus);
       applyHome(data.home);
+      if(Array.isArray(data.categories) && data.categories.length){
+        CATS = data.categories.map(function(c){ return c.id; });
+      }
+      if(Array.isArray(data.menu)) MENUS = data.menu;
     })
     .catch(function(){ /* catalogue injoignable : liste de secours */ })
     .then(start);
