@@ -510,15 +510,20 @@
     padding:0;display:block;width:100%;
     color:inherit;
   }
+  /* Tuile en portrait (3:4, le format des photos du club). Avec une photo,
+     pas de fond : la photo n'est jamais recadree, et la petite marge d'une
+     photo plus etroite reste blanche, donc invisible. Le fond gris ne sert
+     qu'au pictogramme des articles sans photo. */
   .card-media{
     background:var(--surface);
-    aspect-ratio:1/1;
+    aspect-ratio:3/4;
     display:flex;align-items:center;justify-content:center;
     position:relative;
     overflow:hidden;
     transition:background .2s ease;
   }
   .card:hover .card-media{background:var(--surface-2);}
+  .card-media:has(img),.card:hover .card-media:has(img){background:none;}
   .card-media svg{width:56%;height:56%;transition:transform .25s ease;}
   .card:hover .card-media svg{transform:scale(1.05);}
   .card-badge{
