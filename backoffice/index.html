@@ -1456,6 +1456,7 @@
     if(cat != null){
       cat = String(cat).trim();
       var known = TYPOLOGIES.filter(function(t){ return t.id.toLowerCase() === cat.toLowerCase(); })[0];
+      if(!known) cat = cat.charAt(0).toUpperCase() + cat.slice(1);
       f.typ = known ? known.id : cat;
       if(!known) f._newCat = cat;
     }
@@ -1522,7 +1523,8 @@
     var rows = [], newCats = {}, seen = {};
     items.forEach(function(raw, i){
       var r = normalizeImport(raw), line = "Article " + (i + 1);
-      if(r.error){ rows.push({ kind:"err", label:line, note:r.error }); return; }
+      var rawName = raw && typeof raw === "object" && (raw.name || raw.nom);
+      if(r.error){ rows.push({ kind:"err", label:rawName ? String(rawName) : line, note:r.error }); return; }
       var f = r.fields;
       var existing = (f.id && skuById(f.id)) || (f.ref && SKUS.filter(function(s){ return s.ref && s.ref.toLowerCase() === f.ref.toLowerCase(); })[0]) || null;
       var key = existing ? existing.id : (f.id || f.ref || f.name);
@@ -1562,7 +1564,13 @@
         '<div class="imp-list">' + p.rows.map(function(r){
           var tag = { "new":"Nouveau", upd:"Mise à jour", err:"Erreur" }[r.kind];
           var detail = r.kind === "err" ? r.note : (r.kind === "upd"
-            ? "champs remplacés : " + Object.keys(r.fields).filter(function(k){ return k !== "id" && k.charAt(0) !== "_"; }).join(", ")
+            ? (function(){
+                var LABEL = { name:"nom", typ:"catégorie", price:"prix", sub:"sous-titre", ref:"référence", desc:"description", colors:"couleurs", sizes:"tailles", status:"statut", photo:"photo", photos:"photos" };
+                var changed = Object.keys(r.fields).filter(function(k){
+                  return k !== "id" && k.charAt(0) !== "_" && k !== "photos" && JSON.stringify(r.fields[k]) !== JSON.stringify(r.target[k]);
+                }).map(function(k){ return LABEL[k] || k; });
+                return changed.length ? "modifié : " + changed.join(", ") : "aucun changement";
+              })()
             : [r.fields.typ, r.fields.price != null ? euro(r.fields.price) : ""].filter(Boolean).join(" · "));
           return '<div class="imp-row"><span class="imp-tag '+r.kind+'">'+tag+'</span><div class="who"><b>'+esc(r.label || "")+'</b>' +
             '<div class="note">'+esc(detail)+'</div>' +
