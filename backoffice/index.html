@@ -122,6 +122,25 @@
   .btn-ghost:hover{border-color:var(--ink);}
 
   .bo-count{color:var(--sub);font-size:13px;margin-bottom:10px;}
+
+  /* import d'articles par lot */
+  .import-panel{width:min(560px,100vw);}
+  .imp-summary{display:flex;gap:8px;flex-wrap:wrap;}
+  .imp-stat{border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--sub);}
+  .imp-stat b{display:block;font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .imp-stat.err b{color:var(--red);}
+  .imp-list{display:flex;flex-direction:column;border-top:1px solid var(--line);}
+  .imp-row{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .imp-tag{flex:none;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;border-radius:12px;}
+  .imp-tag.new{color:var(--green);background:var(--green-bg);}
+  .imp-tag.upd{color:var(--navy);background:var(--surface-2);}
+  .imp-tag.err{color:var(--red);background:#FBE9EC;}
+  .imp-row .who{flex:1;min-width:0;}
+  .imp-row .who b{display:block;}
+  .imp-row .note{color:var(--sub);font-size:12px;margin-top:2px;}
+  .imp-row .note.warn{color:var(--amber);}
+  .imp-help{font-size:12.5px;color:var(--sub);line-height:1.6;}
+  .imp-help code{background:var(--surface);padding:1px 5px;border-radius:3px;font-size:12px;}
   .sort-hint{color:var(--sub);opacity:.8;}
 
   /* ordre des articles : glisser-deposer par la poignee */
@@ -519,7 +538,9 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" id="searchInput" placeholder="Rechercher un SKU, une reference...">
             </div>
+            <button class="btn-ghost" id="importBtn" type="button">Importer (JSON)</button>
             <button class="btn-navy" id="newSkuBtn"></button>
+            <input type="file" id="importFile" accept=".json,application/json" hidden>
           </div>
           <div class="bo-count" id="skuCount"></div>
           <table class="sku-table">
@@ -657,6 +678,20 @@
 </main>
 
 <div class="panel-overlay" id="panelOverlay" hidden></div>
+<aside class="sku-panel import-panel" id="importPanel" aria-hidden="true" hidden>
+  <div class="panel-head">
+    <h2>Importer des articles</h2>
+    <button class="icon-btn-sm" id="importClose" aria-label="Fermer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="panel-body" id="importBody"></div>
+  <div class="panel-foot">
+    <button class="btn-navy" id="importApply" style="flex:1;justify-content:center;">Importer</button>
+    <button class="btn-ghost" id="importCancel">Annuler</button>
+  </div>
+</aside>
+
 <aside class="sku-panel" id="skuPanel" aria-hidden="true" hidden>
   <div class="panel-head">
     <h2 id="panelTitle">Nouveau SKU</h2>
@@ -1377,6 +1412,238 @@
         renderOrders();
       });
   }
+
+  /* ---------------- import d'articles (JSON) ----------------
+     Fichier accepte : une liste d'articles, ou un objet { skus: [...] }
+     (un catalogue exporte convient donc). Un article dont l'id ou la
+     reference existe deja est mis a jour avec les seuls champs fournis ;
+     sinon il est cree. Rien n'est applique avant validation de l'apercu,
+     et le resultat part dans le brouillon comme une saisie a la main. */
+  var NAMED_COLORS = {
+    "bleu marine":"#0B1F3D", "marine":"#0B1F3D", "rouge":"#C8102E", "blanc":"#FFFFFF",
+    "gris":"#8A8D93", "noir":"#15171B", "bordeaux":"#7A1E2C", "bleu":"#1F4E9C", "vert":"#1E7B4D"
+  };
+  var importPlan = null;
+
+  function importTemplate(){
+    return JSON.stringify([
+      {
+        "name":"T-shirt Exemple",
+        "categorie":"T-shirts",
+        "price":15,
+        "sub":"Coton, coupe régulière",
+        "ref":"IMP-TSHIRT-EXEMPLE",
+        "colors":["Bleu marine", { "n":"Rouge club", "h":"#C8102E" }],
+        "sizes":["S","M","L","XL","XXL"],
+        "status":"actif",
+        "desc":"Description affichée sur la fiche produit.",
+        "photo":""
+      }
+    ], null, 2);
+  }
+
+  function pick(o, keys){ for(var i = 0; i < keys.length; i++){ if(o[keys[i]] != null && o[keys[i]] !== "") return o[keys[i]]; } return undefined; }
+
+  /* Valide une entree du fichier. Renvoie { fields } (champs fournis,
+     normalises) ou { error }, et des avertissements. */
+  function normalizeImport(raw){
+    var warn = [];
+    if(!raw || typeof raw !== "object" || Array.isArray(raw)) return { error:"Ce n'est pas un article (objet attendu)" };
+    var f = {};
+    var name = pick(raw, ["name","nom"]);
+    if(name != null){ name = String(name).trim().slice(0, 120); if(name) f.name = name; }
+    var cat = pick(raw, ["typ","categorie","catégorie","category","cat"]);
+    if(cat != null){
+      cat = String(cat).trim();
+      var known = TYPOLOGIES.filter(function(t){ return t.id.toLowerCase() === cat.toLowerCase(); })[0];
+      f.typ = known ? known.id : cat;
+      if(!known) f._newCat = cat;
+    }
+    var price = pick(raw, ["price","prix"]);
+    if(price != null){
+      var n = typeof price === "number" ? price : parseFloat(String(price).replace(/\s|€/g, "").replace(",", "."));
+      if(isNaN(n) || n < 0) return { error:"Prix illisible : " + price };
+      f.price = Math.round(n * 100) / 100;
+    }
+    ["sub","ref","desc"].forEach(function(k){
+      var alias = { sub:["sub","sous-titre","soustitre"], ref:["ref","reference","référence"], desc:["desc","description"] }[k];
+      var v = pick(raw, alias);
+      if(v != null) f[k] = String(v).trim().slice(0, k === "desc" ? 2000 : 160);
+    });
+    var colors = pick(raw, ["colors","couleurs"]);
+    if(colors != null){
+      if(!Array.isArray(colors)) colors = String(colors).split(",");
+      f.colors = colors.map(function(c){
+        if(c && typeof c === "object") {
+          var h = String(c.h || c.hex || "").trim(), nm = String(c.n || c.nom || c.name || h).trim();
+          if(!/^#[0-9a-f]{6}$/i.test(h)){ h = NAMED_COLORS[nm.toLowerCase()] || "#8A8D93"; if(!NAMED_COLORS[nm.toLowerCase()]) warn.push("couleur « "+nm+" » sans code, mise en gris"); }
+          return { n:nm, h:h };
+        }
+        var s = String(c).trim();
+        if(/^#[0-9a-f]{6}$/i.test(s)) return { n:s, h:s };
+        var hex = NAMED_COLORS[s.toLowerCase()];
+        if(!hex) warn.push("couleur « "+s+" » inconnue, mise en gris");
+        return { n:s, h:hex || "#8A8D93" };
+      }).filter(function(c){ return c.n; });
+      if(!f.colors.length) delete f.colors;
+    }
+    var sizes = pick(raw, ["sizes","tailles"]);
+    if(sizes != null){
+      if(!Array.isArray(sizes)) sizes = String(sizes).split(/[,;]/);
+      f.sizes = sizes.map(function(s){ return String(s).trim(); }).filter(Boolean);
+      if(!f.sizes.length) delete f.sizes;
+    }
+    var status = pick(raw, ["status","statut"]);
+    if(status != null){
+      var st = String(status).toLowerCase();
+      f.status = /rupture|epuis|épuis|out/.test(st) ? "rupture" : "actif";
+    }
+    var photos = pick(raw, ["photos"]);
+    var photo = pick(raw, ["photo","image"]);
+    var list = (Array.isArray(photos) ? photos : []).concat(photo && !(Array.isArray(photos) && photos.indexOf(photo) > -1) ? [photo] : []);
+    var ok = list.map(String).filter(function(u){
+      if(/^data:image\/(png|jpe?g|webp);base64,/i.test(u) || /^assets\/[\w.\-]+$/.test(u)) return true;
+      warn.push("photo ignorée (" + (/^https?:/i.test(u) ? "lien externe" : "format inconnu") + ") : ajoute-la ensuite depuis la fiche");
+      return false;
+    });
+    if(ok.length){ f.photos = ok; f.photo = ok[0]; }
+    var id = pick(raw, ["id"]);
+    if(id != null) f.id = String(id).trim();
+    return { fields:f, warn:warn };
+  }
+
+  function planImport(text){
+    var data;
+    try { data = JSON.parse(text); } catch(e){ return { fatal:"Le fichier n'est pas un JSON valide : " + e.message }; }
+    var items = Array.isArray(data) ? data : (data && Array.isArray(data.skus) ? data.skus : null);
+    if(!items) return { fatal:"Le fichier doit contenir une liste d'articles, ou un objet avec une liste « skus »." };
+    if(!items.length) return { fatal:"Le fichier ne contient aucun article." };
+    if(items.length > 500) return { fatal:"500 articles au plus par import." };
+    var rows = [], newCats = {}, seen = {};
+    items.forEach(function(raw, i){
+      var r = normalizeImport(raw), line = "Article " + (i + 1);
+      if(r.error){ rows.push({ kind:"err", label:line, note:r.error }); return; }
+      var f = r.fields;
+      var existing = (f.id && skuById(f.id)) || (f.ref && SKUS.filter(function(s){ return s.ref && s.ref.toLowerCase() === f.ref.toLowerCase(); })[0]) || null;
+      var key = existing ? existing.id : (f.id || f.ref || f.name);
+      if(key && seen[key]){ rows.push({ kind:"err", label:f.name || line, note:"en double dans le fichier (même id, référence ou nom que l'" + seen[key] + ")" }); return; }
+      if(key) seen[key] = line.toLowerCase();
+      if(!existing){
+        var miss = ["name","typ","price"].filter(function(k){ return f[k] == null; })
+          .map(function(k){ return { name:"nom", typ:"catégorie", price:"prix" }[k]; });
+        if(miss.length){ rows.push({ kind:"err", label:f.name || line, note:"pour créer un article, il manque : " + miss.join(", ") }); return; }
+      }
+      if(f._newCat) newCats[f._newCat] = true;
+      rows.push({ kind:existing ? "upd" : "new", label:f.name || (existing && existing.name), target:existing, fields:f, note:r.warn.join(" · ") });
+    });
+    return { rows:rows, newCats:Object.keys(newCats) };
+  }
+
+  function renderImportPlan(fileName){
+    var p = importPlan, body = document.getElementById("importBody");
+    var apply = document.getElementById("importApply");
+    var help = '<p class="imp-help">Fichier attendu : une liste d\'articles en JSON (ou un catalogue exporté). Champs : <code>name</code>, <code>categorie</code>, <code>price</code> obligatoires pour créer ; <code>sub</code>, <code>ref</code>, <code>colors</code>, <code>sizes</code>, <code>status</code>, <code>desc</code>, <code>photo</code> facultatifs. Un article dont l\'<code>id</code> ou la <code>ref</code> existe déjà est mis à jour. <a href="#" id="importTemplate">Télécharger un modèle</a></p>';
+    if(!p || p.fatal){
+      body.innerHTML = (p && p.fatal ? '<p class="imp-help" style="color:var(--red)"><b>'+esc(p.fatal)+'</b></p>' : '') + help +
+        '<button type="button" class="btn-navy" id="importPick" style="align-self:flex-start">Choisir un fichier JSON</button>';
+      apply.disabled = true; apply.textContent = "Importer";
+    } else {
+      var n = { "new":0, upd:0, err:0 };
+      p.rows.forEach(function(r){ n[r.kind]++; });
+      var ok = n["new"] + n.upd;
+      body.innerHTML =
+        '<p class="imp-help">Fichier : <b>'+esc(fileName)+'</b> · <a href="#" id="importPickLink">en choisir un autre</a></p>' +
+        '<div class="imp-summary">' +
+          '<div class="imp-stat"><b>'+n["new"]+'</b>à créer</div>' +
+          '<div class="imp-stat"><b>'+n.upd+'</b>à mettre à jour</div>' +
+          '<div class="imp-stat'+(n.err?' err':'')+'"><b>'+n.err+'</b>en erreur (ignorés)</div>' +
+        '</div>' +
+        (p.newCats.length ? '<p class="imp-help">Catégories créées au passage : <b>'+p.newCats.map(esc).join(", ")+'</b> (modifiables dans l\'onglet Catégories &amp; menu).</p>' : '') +
+        '<div class="imp-list">' + p.rows.map(function(r){
+          var tag = { "new":"Nouveau", upd:"Mise à jour", err:"Erreur" }[r.kind];
+          var detail = r.kind === "err" ? r.note : (r.kind === "upd"
+            ? "champs remplacés : " + Object.keys(r.fields).filter(function(k){ return k !== "id" && k.charAt(0) !== "_"; }).join(", ")
+            : [r.fields.typ, r.fields.price != null ? euro(r.fields.price) : ""].filter(Boolean).join(" · "));
+          return '<div class="imp-row"><span class="imp-tag '+r.kind+'">'+tag+'</span><div class="who"><b>'+esc(r.label || "")+'</b>' +
+            '<div class="note">'+esc(detail)+'</div>' +
+            (r.kind !== "err" && r.note ? '<div class="note warn">'+esc(r.note)+'</div>' : '') + '</div></div>';
+        }).join("") + '</div>' + help;
+      apply.disabled = !ok;
+      apply.textContent = ok ? "Importer " + ok + " article" + (ok > 1 ? "s" : "") : "Rien à importer";
+    }
+    var pick2 = function(e){ e.preventDefault(); document.getElementById("importFile").click(); };
+    ["importPick","importPickLink"].forEach(function(id){ var el = document.getElementById(id); if(el) el.addEventListener("click", pick2); });
+    document.getElementById("importTemplate").addEventListener("click", function(e){
+      e.preventDefault();
+      download("modele-import-articles.json", new Blob([importTemplate()], { type:"application/json" }));
+    });
+  }
+
+  function openImport(){
+    importPlan = null;
+    renderImportPlan("");
+    document.getElementById("panelOverlay").hidden = false;
+    var panel = document.getElementById("importPanel");
+    panel.hidden = false;
+    panel.setAttribute("aria-hidden","false");
+    requestAnimationFrame(function(){ panel.classList.add("open"); });
+  }
+  function closeImport(){
+    var panel = document.getElementById("importPanel");
+    if(panel.hidden) return;
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden","true");
+    document.getElementById("panelOverlay").hidden = true;
+    setTimeout(function(){ panel.hidden = true; }, 250);
+  }
+
+  function applyImport(){
+    if(!importPlan || importPlan.fatal) return;
+    var created = 0, updated = 0;
+    importPlan.newCats.forEach(function(c){
+      if(!typologyOf(c)) TYPOLOGIES.push({ id:c, icon:"icon-shirt", sizes:["S","M","L","XL","XXL"] });
+    });
+    importPlan.rows.forEach(function(r){
+      if(r.kind === "err") return;
+      var f = {};
+      Object.keys(r.fields).forEach(function(k){ if(k.charAt(0) !== "_" && k !== "id") f[k] = r.fields[k]; });
+      if(r.kind === "upd"){
+        Object.assign(r.target, f);
+        if(f.typ){ var t1 = typologyOf(f.typ); if(t1) r.target.icon = t1.icon; }
+        updated++;
+      } else {
+        var typ = typologyOf(f.typ);
+        var id = r.fields.id && !skuById(r.fields.id) && /^[a-z0-9-]+$/.test(r.fields.id) ? r.fields.id : uniqueId(f.name);
+        SKUS.push(Object.assign({
+          id:id, ref:slugRef(f.name, f.typ), sub:"", desc:"", status:"actif",
+          colors:[{ n:"Bleu marine", h:"#0B1F3D" }],
+          sizes:(typ && typ.sizes || ["Taille unique"]).slice(),
+          icon:typ ? typ.icon : "icon-shirt", hero:false, feature:false
+        }, f));
+        created++;
+      }
+    });
+    closeImport();
+    catChanged();
+    renderTable();
+    toast(created + " créé" + (created>1?"s":"") + ", " + updated + " mis à jour (pense à publier)");
+  }
+
+  document.getElementById("importBtn").addEventListener("click", openImport);
+  document.getElementById("importClose").addEventListener("click", closeImport);
+  document.getElementById("importCancel").addEventListener("click", closeImport);
+  document.getElementById("importApply").addEventListener("click", applyImport);
+  document.getElementById("panelOverlay").addEventListener("click", closeImport);
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    e.target.value = "";
+    if(!file) return;
+    if(file.size > 30 * 1024 * 1024){ importPlan = { fatal:"Fichier trop lourd (30 Mo au plus)." }; renderImportPlan(file.name); return; }
+    file.text().then(function(text){
+      importPlan = planImport(text);
+      renderImportPlan(file.name);
+    });
+  });
 
   /* ---------------- pictogrammes ---------------- */
   var SVG_NS = "http://www.w3.org/2000/svg";
@@ -2175,6 +2442,7 @@
 
   document.addEventListener("keydown", function(e){
     if(e.key==="Escape" && !document.getElementById("skuPanel").hidden) closePanel();
+    if(e.key==="Escape") closeImport();
   });
 })();
 </script>
