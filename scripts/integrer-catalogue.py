@@ -58,6 +58,11 @@ def main(src):
         s["photo"] = s["photos"][0] if photos and s.get("photo") == photos[0] \
             else extract(s.get("photo"), s["id"], written)
         s["heroImage"] = extract(s.get("heroImage"), s["id"] + "-hero", written)
+        # photo reliee a une couleur : meme fichier que dans la galerie
+        moved = dict(zip(photos, s["photos"] or []))
+        for c in s.get("colors") or []:
+            if c.get("photo"):
+                c["photo"] = moved.get(c["photo"]) or extract(c["photo"], s["id"], written)
         for k in [k for k, v in s.items() if v is None]:
             del s[k]
 

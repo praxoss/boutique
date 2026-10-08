@@ -1624,15 +1624,31 @@
       root.querySelectorAll("[data-size]").forEach(function(b){ b.setAttribute("aria-pressed", b.getAttribute("data-size") === preset); });
     }
 
+    /* Couleur et photo vont ensemble quand le backoffice a relie une photo
+       a une couleur (colors[i].photo) : choisir la couleur montre sa photo,
+       et arriver sur cette photo dans la galerie choisit la couleur. */
+    var dots = root.querySelector(".gallery-dots");
+    function selectColor(i){
+      st.color = p.colors[i];
+      root.querySelectorAll(".color-thumb").forEach(function(b,bi){ b.setAttribute("aria-pressed", bi===i); });
+      root.querySelector(".color-name").textContent = p.colors[i].n;
+      if(!hasPhotos) root.querySelector(".gallery-svg").style.color = p.colors[i].h;
+    }
+    function showPhoto(i){
+      if(dots) dots.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
+      root.querySelector(".gallery-img").src = p.photos[i];
+    }
+    function photoOfColor(i){ return hasPhotos && p.colors[i] && p.colors[i].photo ? p.photos.indexOf(p.colors[i].photo) : -1; }
+
     root.querySelectorAll(".color-thumb").forEach(function(btn){
       btn.addEventListener("click", function(){
         var i = parseInt(btn.getAttribute("data-i"),10);
-        st.color = p.colors[i];
-        root.querySelectorAll(".color-thumb").forEach(function(b,bi){ b.setAttribute("aria-pressed", bi===i); });
-        root.querySelector(".color-name").textContent = p.colors[i].n;
-        if(!hasPhotos) root.querySelector(".gallery-svg").style.color = p.colors[i].h;
+        selectColor(i);
+        var j = photoOfColor(i);
+        if(j > -1) showPhoto(j);
       });
     });
+    if(photoOfColor(0) > 0) showPhoto(photoOfColor(0));   // la photo de la couleur affichee par defaut
 
     root.querySelectorAll("[data-size]").forEach(function(btn){
       btn.addEventListener("click", function(){
@@ -1641,14 +1657,15 @@
       });
     });
 
-    var dots = root.querySelector(".gallery-dots");
     if(dots){
       dots.querySelectorAll("button").forEach(function(btn){
         btn.addEventListener("click", function(){
           var i = parseInt(btn.getAttribute("data-i"),10);
           dots.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
           if(hasPhotos){
-            root.querySelector(".gallery-img").src = p.photos[i];
+            showPhoto(i);
+            var c = p.colors.findIndex(function(x){ return x.photo && x.photo === p.photos[i]; });
+            if(c > -1) selectColor(c);
           } else {
             root.querySelector(".gallery-badge").textContent = views[i];
             root.querySelector(".gallery-svg").style.transform = i===1 ? "scaleX(-1)" : i===2 ? "scale(1.35)" : "none";

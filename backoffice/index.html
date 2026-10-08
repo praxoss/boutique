@@ -343,6 +343,9 @@
     cursor:pointer;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;
   }
   .photo-tile .tile-actions button:hover{background:var(--navy);color:#fff;}
+  .photo-cell{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .photo-color{width:100%;font-family:inherit;font-size:11.5px;padding:4px 5px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);}
+  .photo-tile .color-badge{position:absolute;right:4px;top:4px;width:14px;height:14px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15);}
   .photo-add{
     aspect-ratio:1/1;border:1.5px dashed var(--line);border-radius:6px;background:var(--surface);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -707,7 +710,7 @@
     <div class="field">
       <label>Photos produit</label>
       <div class="photo-grid" id="photoGrid"></div>
-      <span class="hint">La premiere photo sert de vignette dans la boutique ; les suivantes s'affichent dans la galerie de la fiche produit. Tu peux en choisir plusieurs d'un coup.</span>
+      <span class="hint">La premiere photo sert de vignette dans la boutique ; les suivantes s'affichent dans la galerie de la fiche produit. Tu peux en choisir plusieurs d'un coup. Indique sous chaque photo la couleur qu'elle montre : sur la fiche, choisir cette couleur affichera sa photo.</span>
       <input type="file" id="f-photo" accept="image/*" multiple style="display:none;">
     </div>
     <div class="field">
@@ -1125,6 +1128,7 @@
         renderColorChips();
       });
     });
+    updatePhotoPreview();   // la liste "Couleur" des photos suit les couleurs
   }
 
   function renderSizeGrid(){
@@ -1191,7 +1195,7 @@
     document.getElementById("heroFocusVal").textContent = focus + " %";
     state.heroDataUrl = null;
     updateHeroPreview();
-    panelColors = sku ? sku.colors.slice() : [];
+    panelColors = sku ? sku.colors.map(function(c){ return Object.assign({}, c); }) : [];   // copie : le lien photo se modifie ici
     panelSizes = sku ? sku.sizes.slice() : [];
     setPanelStatus(sku ? sku.status : "actif");
     updatePhotoPreview();
@@ -1237,19 +1241,41 @@
   function updatePhotoPreview(){
     var grid = document.getElementById("photoGrid");
     grid.innerHTML = panelPhotos.map(function(u, i){
-      return '<div class="photo-tile"><img src="'+assetUrl(u)+'" alt="">' +
+      var linked = panelColors.findIndex(function(c){ return c.photo === u; });
+      var colorPick = panelColors.length
+        ? '<select class="photo-color" data-pc="'+i+'" aria-label="Couleur montrée sur cette photo">' +
+            '<option value="">Couleur…</option>' +
+            panelColors.map(function(c, k){ return '<option value="'+k+'"'+(k===linked?' selected':'')+'>'+esc(c.n)+'</option>'; }).join("") +
+          '</select>'
+        : '';
+      return '<div class="photo-cell"><div class="photo-tile"><img src="'+assetUrl(u)+'" alt="">' +
         (i === 0 ? '<span class="main-badge">Principale</span>' : '') +
+        (linked > -1 ? '<span class="color-badge" style="background:'+panelColors[linked].h+'" title="'+esc(panelColors[linked].n)+'"></span>' : '') +
         '<div class="tile-actions">' +
           (i > 0 ? '<button type="button" data-first="'+i+'" title="Mettre en premier" aria-label="Mettre en premier">&#9733;</button>' : '') +
           '<button type="button" data-drop="'+i+'" title="Retirer" aria-label="Retirer la photo">&times;</button>' +
-        '</div></div>';
+        '</div></div>' + colorPick + '</div>';
     }).join("") +
       '<button type="button" class="photo-add" id="photoAdd">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
         'Ajouter</button>';
     document.getElementById("photoAdd").addEventListener("click", function(){ document.getElementById("f-photo").click(); });
     grid.querySelectorAll("[data-drop]").forEach(function(b){
-      b.addEventListener("click", function(){ panelPhotos.splice(+b.getAttribute("data-drop"), 1); updatePhotoPreview(); });
+      b.addEventListener("click", function(){
+        var u = panelPhotos.splice(+b.getAttribute("data-drop"), 1)[0];
+        panelColors.forEach(function(c){ if(c.photo === u) delete c.photo; });
+        updatePhotoPreview();
+      });
+    });
+    /* Une couleur montre une photo, une photo montre une couleur : choisir
+       ici remplace l'ancien lien de part et d'autre. */
+    grid.querySelectorAll("[data-pc]").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var u = panelPhotos[+sel.getAttribute("data-pc")];
+        panelColors.forEach(function(c){ if(c.photo === u) delete c.photo; });
+        if(sel.value !== "") panelColors[+sel.value].photo = u;
+        updatePhotoPreview();
+      });
     });
     grid.querySelectorAll("[data-first]").forEach(function(b){
       b.addEventListener("click", function(){
