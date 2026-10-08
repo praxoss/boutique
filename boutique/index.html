@@ -1666,7 +1666,11 @@
         if(j > -1) showPhoto(j);
       });
     });
-    if(photoOfColor(0) > 0) showPhoto(photoOfColor(0));   // la photo de la couleur affichee par defaut
+    // on ouvre sur la photo principale ; si elle montre une couleur, c'est celle-ci qu'on selectionne
+    if(hasPhotos){
+      var first = p.colors.findIndex(function(x){ return x.photo && x.photo === p.photos[0]; });
+      if(first > 0) selectColor(first);
+    }
 
     root.querySelectorAll("[data-size]").forEach(function(btn){
       btn.addEventListener("click", function(){
