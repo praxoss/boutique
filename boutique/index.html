@@ -305,10 +305,14 @@
       /* minmax(0,...) : sinon la colonne prend la largeur de l'image (plus de
          1000 px) et le hero deborde de l'ecran du telephone */
       grid-template-columns:minmax(0,1fr);
-      grid-template-rows:minmax(0,1fr) auto;
+      grid-template-rows:auto auto;
       max-height:none;
+      /* sur telephone, le visuel a son propre format et le texte suit a sa
+         hauteur : calibre sur la hauteur de l'ecran, le visuel n'avait plus
+         que ~180 px */
+      height:auto;min-height:0;
     }
-    .hero-media{order:-1;min-height:140px;min-width:0;}
+    .hero-media{order:-1;min-width:0;aspect-ratio:5/4;}
     .hero-text{padding:24px 20px 28px;gap:10px;}
     .hero-title{font-size:clamp(24px,7vw,34px);}
     .hero-baseline{font-size:14px;}
