@@ -302,11 +302,13 @@
 
   @media (max-width:860px){
     .hero{
-      grid-template-columns:1fr;
+      /* minmax(0,...) : sinon la colonne prend la largeur de l'image (plus de
+         1000 px) et le hero deborde de l'ecran du telephone */
+      grid-template-columns:minmax(0,1fr);
       grid-template-rows:minmax(0,1fr) auto;
       max-height:none;
     }
-    .hero-media{order:-1;min-height:140px;}
+    .hero-media{order:-1;min-height:140px;min-width:0;}
     .hero-text{padding:24px 20px 28px;gap:10px;}
     .hero-title{font-size:clamp(24px,7vw,34px);}
     .hero-baseline{font-size:14px;}
