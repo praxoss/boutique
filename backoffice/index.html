@@ -344,6 +344,16 @@
   }
   .photo-tile .tile-actions button:hover{background:var(--navy);color:#fff;}
   .photo-cell{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .photo-cell.dragging{opacity:.4;}
+  .photo-cell.drop-before .photo-tile{box-shadow:-3px 0 0 var(--navy);}
+  .photo-cell.drop-after .photo-tile{box-shadow:3px 0 0 var(--navy);}
+  .photo-handle{position:absolute;left:3px;top:3px;width:24px;height:24px;border:none;border-radius:4px;background:rgba(255,255,255,.92);color:var(--ink);cursor:grab;touch-action:none;font-size:14px;line-height:1;padding:0;}
+  .photo-handle:hover,.photo-handle:focus-visible{background:var(--navy);color:#fff;}
+  .photo-main{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--sub);cursor:pointer;}
+  .photo-main input{margin:0;accent-color:var(--navy);}
+  .photo-main:has(input:checked){color:var(--navy);font-weight:700;}
+  .photo-tools{margin-bottom:8px;}
+  .photo-tools .btn-ghost{font-size:12px;padding:7px 12px;}
   .photo-color{width:100%;font-family:inherit;font-size:11.5px;padding:4px 5px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink);}
   .photo-tile .color-badge{position:absolute;right:4px;top:4px;width:14px;height:14px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15);}
   .photo-add{
@@ -709,8 +719,11 @@
     </div>
     <div class="field">
       <label>Photos produit</label>
+      <div class="photo-tools" id="photoTools" hidden>
+        <button type="button" class="btn-ghost" id="photoAutoColors">Associer les couleurs automatiquement</button>
+      </div>
       <div class="photo-grid" id="photoGrid"></div>
-      <span class="hint">La premiere photo sert de vignette dans la boutique ; les suivantes s'affichent dans la galerie de la fiche produit. Tu peux en choisir plusieurs d'un coup. Indique sous chaque photo la couleur qu'elle montre : sur la fiche, choisir cette couleur affichera sa photo.</span>
+      <span class="hint">La premiere photo sert de vignette dans la boutique ; les suivantes s'affichent dans la galerie de la fiche produit. Tu peux en choisir plusieurs d'un coup, et les réordonner avec la poignée ⠿. Indique sous chaque photo la couleur qu'elle montre (ou laisse le bouton les associer) : sur la fiche, choisir cette couleur affichera sa photo.</span>
       <input type="file" id="f-photo" accept="image/*" multiple style="display:none;">
     </div>
     <div class="field">
@@ -1240,6 +1253,8 @@
 
   function updatePhotoPreview(){
     var grid = document.getElementById("photoGrid");
+    var tools = document.getElementById("photoTools");
+    tools.hidden = !(panelPhotos.length && panelColors.length > 0);
     grid.innerHTML = panelPhotos.map(function(u, i){
       var linked = panelColors.findIndex(function(c){ return c.photo === u; });
       var colorPick = panelColors.length
@@ -1248,13 +1263,15 @@
             panelColors.map(function(c, k){ return '<option value="'+k+'"'+(k===linked?' selected':'')+'>'+esc(c.n)+'</option>'; }).join("") +
           '</select>'
         : '';
-      return '<div class="photo-cell"><div class="photo-tile"><img src="'+assetUrl(u)+'" alt="">' +
-        (i === 0 ? '<span class="main-badge">Principale</span>' : '') +
-        (linked > -1 ? '<span class="color-badge" style="background:'+panelColors[linked].h+'" title="'+esc(panelColors[linked].n)+'"></span>' : '') +
-        '<div class="tile-actions">' +
-          (i > 0 ? '<button type="button" data-first="'+i+'" title="Mettre en premier" aria-label="Mettre en premier">&#9733;</button>' : '') +
-          '<button type="button" data-drop="'+i+'" title="Retirer" aria-label="Retirer la photo">&times;</button>' +
-        '</div></div>' + colorPick + '</div>';
+      return '<div class="photo-cell" data-i="'+i+'">' +
+        '<div class="photo-tile"><img src="'+assetUrl(u)+'" alt="">' +
+          '<button type="button" class="photo-handle" aria-label="Déplacer la photo (glisser, ou flèches gauche et droite)" title="Glisser pour changer l\'ordre">⠿</button>' +
+          (linked > -1 ? '<span class="color-badge" style="background:'+panelColors[linked].h+'" title="'+esc(panelColors[linked].n)+'"></span>' : '') +
+          '<div class="tile-actions"><button type="button" data-drop="'+i+'" title="Retirer" aria-label="Retirer la photo">&times;</button></div>' +
+        '</div>' +
+        '<label class="photo-main"><input type="radio" name="photoMain" data-main="'+i+'"'+(i===0?' checked':'')+'> Photo principale</label>' +
+        colorPick +
+      '</div>';
     }).join("") +
       '<button type="button" class="photo-add" id="photoAdd">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
@@ -1264,6 +1281,14 @@
       b.addEventListener("click", function(){
         var u = panelPhotos.splice(+b.getAttribute("data-drop"), 1)[0];
         panelColors.forEach(function(c){ if(c.photo === u) delete c.photo; });
+        updatePhotoPreview();
+      });
+    });
+    /* Photo principale = la premiere : la cocher la fait passer en tete. */
+    grid.querySelectorAll("[data-main]").forEach(function(r){
+      r.addEventListener("change", function(){
+        var u = panelPhotos.splice(+r.getAttribute("data-main"), 1)[0];
+        panelPhotos.unshift(u);
         updatePhotoPreview();
       });
     });
@@ -1277,14 +1302,116 @@
         updatePhotoPreview();
       });
     });
-    grid.querySelectorAll("[data-first]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var u = panelPhotos.splice(+b.getAttribute("data-first"), 1)[0];
-        panelPhotos.unshift(u);
-        updatePhotoPreview();
-      });
+  }
+
+  /* Ordre des photos : glisser la poignee (souris ou doigt) ou fleches. */
+  (function(){
+    var grid = document.getElementById("photoGrid"), drag = null;
+    function clear(){ grid.querySelectorAll(".drop-before,.drop-after").forEach(function(c){ c.classList.remove("drop-before","drop-after"); }); }
+    function move(from, to, before){
+      if(from === to) return;
+      var u = panelPhotos.splice(from, 1)[0];
+      var at = to > from ? to - 1 : to;
+      panelPhotos.splice(before ? at : at + 1, 0, u);
+      updatePhotoPreview();
+    }
+    grid.addEventListener("pointerdown", function(e){
+      var h = e.target.closest(".photo-handle");
+      if(!h || e.button > 0) return;
+      e.preventDefault();
+      var cell = h.closest(".photo-cell");
+      drag = { from:+cell.getAttribute("data-i"), cell:cell, target:null };
+      h.setPointerCapture(e.pointerId);
+      cell.classList.add("dragging");
+      document.body.classList.add("sorting");
+    });
+    grid.addEventListener("pointermove", function(e){
+      if(!drag) return;
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      var cell = el && el.closest("#photoGrid .photo-cell");
+      clear();
+      if(!cell || cell === drag.cell){ drag.target = null; return; }
+      var r = cell.getBoundingClientRect(), before = e.clientX < r.left + r.width / 2;
+      cell.classList.add(before ? "drop-before" : "drop-after");
+      drag.target = { to:+cell.getAttribute("data-i"), before:before };
+    });
+    function end(){
+      if(!drag) return;
+      var d = drag; drag = null;
+      clear(); d.cell.classList.remove("dragging"); document.body.classList.remove("sorting");
+      if(d.target) move(d.from, d.target.to, d.target.before);
+    }
+    grid.addEventListener("pointerup", end);
+    grid.addEventListener("pointercancel", end);
+    grid.addEventListener("click", function(e){ if(e.target.closest(".photo-handle")) e.preventDefault(); });
+    grid.addEventListener("keydown", function(e){
+      var h = e.target.closest(".photo-handle");
+      if(!h || (e.key !== "ArrowLeft" && e.key !== "ArrowRight")) return;
+      e.preventDefault();
+      var i = +h.closest(".photo-cell").getAttribute("data-i"), j = e.key === "ArrowLeft" ? i - 1 : i + 1;
+      if(j < 0 || j >= panelPhotos.length) return;
+      var u = panelPhotos.splice(i, 1)[0]; panelPhotos.splice(j, 0, u);
+      updatePhotoPreview();
+      var again = document.querySelector('#photoGrid .photo-cell[data-i="'+j+'"] .photo-handle');
+      if(again) again.focus();
+    });
+  })();
+
+  /* Associer automatiquement chaque photo a la couleur d'article la plus
+     proche : couleur moyenne du sujet (les pixels proches du fond, pris sur
+     les bords, sont ignores), puis appariement glouton par distance. */
+  function photoTint(src){
+    return new Promise(function(res){
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var n = 48, c = document.createElement("canvas"); c.width = n; c.height = n;
+          var ctx = c.getContext("2d", { willReadFrequently:true });
+          ctx.drawImage(img, 0, 0, n, n);
+          var d = ctx.getImageData(0, 0, n, n).data, bg = [0,0,0], nb = 0;
+          for(var k = 0; k < n; k++) [[k,0],[k,n-1],[0,k],[n-1,k]].forEach(function(p){ var i = (p[1]*n+p[0])*4; bg[0]+=d[i]; bg[1]+=d[i+1]; bg[2]+=d[i+2]; nb++; });
+          bg = bg.map(function(v){ return v / nb; });
+          var s = [0,0,0], m = 0;
+          for(var i = 0; i < d.length; i += 4){
+            if(Math.abs(d[i]-bg[0]) + Math.abs(d[i+1]-bg[1]) + Math.abs(d[i+2]-bg[2]) < 40) continue;
+            s[0]+=d[i]; s[1]+=d[i+1]; s[2]+=d[i+2]; m++;
+          }
+          res(m ? s.map(function(v){ return v / m; }) : bg);
+        } catch(e){ res(null); }
+      };
+      img.onerror = function(){ res(null); };
+      img.src = src;
     });
   }
+  function hexRgb(h){ var x = parseInt(h.slice(1), 16); return [x >> 16 & 255, x >> 8 & 255, x & 255]; }
+
+  document.getElementById("photoAutoColors").addEventListener("click", function(){
+    var btn = this;
+    btn.disabled = true;
+    Promise.all(panelPhotos.map(function(u){ return photoTint(assetUrl(u)); })).then(function(tints){
+      var pairs = [];
+      tints.forEach(function(t, i){
+        if(!t) return;
+        panelColors.forEach(function(c, k){
+          var h = hexRgb(c.h);
+          pairs.push({ i:i, k:k, d:Math.pow(t[0]-h[0],2) + Math.pow(t[1]-h[1],2) + Math.pow(t[2]-h[2],2) });
+        });
+      });
+      pairs.sort(function(a, b){ return a.d - b.d; });
+      var usedP = {}, usedC = {}, n = 0;
+      panelColors.forEach(function(c){ delete c.photo; });
+      pairs.forEach(function(p){
+        if(usedP[p.i] || usedC[p.k]) return;
+        usedP[p.i] = usedC[p.k] = true;
+        panelColors[p.k].photo = panelPhotos[p.i];
+        n++;
+      });
+      btn.disabled = false;
+      updatePhotoPreview();
+      toast(n ? n + " couleur" + (n>1?"s":"") + " associée" + (n>1?"s":"") + " : vérifie, puis enregistre" : "Aucune association trouvée");
+    });
+  });
+
 
   function saveSku(e){
     e.preventDefault();
