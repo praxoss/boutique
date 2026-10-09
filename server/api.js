@@ -5,9 +5,12 @@
 //   POST /api/commande          panier + coordonnees -> commande enregistree,
 //                               puis page de paiement Stripe si configure
 //   POST /api/stripe-webhook    Stripe confirme (ou non) le paiement
+//   POST /api/precommande       article en precommande : e-mail a prevenir
+//                               (pas de paiement)
 // Backoffice (nginx exige l'identifiant avant de transmettre) :
 //   POST /api/publier           catalogue exporte par le backoffice
 //   GET  /api/commandes         commandes enregistrees
+//   GET  /api/precommandes      e-mails laisses sur les articles en precommande
 //   POST /api/sheet-sync        renvoie toutes les commandes au Google Sheet
 //   GET  /api/sante
 //
@@ -36,6 +39,7 @@ const DATA = process.env.BOUTIQUE_DATA || "/var/www/boutique/data";
 const SITE = process.env.BOUTIQUE_URL || "https://boutique.implacables.fr";
 const SCRIPT = path.join(__dirname, "..", "scripts", "integrer-catalogue.py");
 const ORDERS = path.join(DATA, "commandes.json");
+const PREORDERS = path.join(DATA, "precommandes.json");
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WHSEC = process.env.STRIPE_WEBHOOK_SECRET || "";
 const SHEETS_URL = process.env.SHEETS_URL || "";
@@ -281,6 +285,38 @@ function stripeWebhook(raw, req, res){
   send(res, 200, { ok:true });
 }
 
+/* ---------------- precommandes ----------------
+   Pour un article au statut "precommande", la boutique ne vend pas : elle
+   note l'e-mail, la taille et la couleur, pour prevenir quand la commande
+   groupee est lancee. Une meme personne qui revient sur le meme article et
+   la meme taille met a jour sa demande au lieu d'en creer une autre. */
+function loadPreorders(){
+  try { return JSON.parse(fs.readFileSync(PREORDERS, "utf8")); } catch(e){ return []; }
+}
+
+function createPreorder(body, res){
+  let req;
+  try { req = JSON.parse(body); } catch(e){ return send(res, 400, { ok:false, erreur:"Requete invalide" }); }
+  const email = clean(req.email, 160).toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return send(res, 400, { ok:false, erreur:"Indique un e-mail valide" });
+  let cat;
+  try { cat = JSON.parse(fs.readFileSync(path.join(DATA, "catalogue.json"), "utf8")); } catch(e){ return send(res, 500, { ok:false, erreur:"Catalogue indisponible" }); }
+  const s = cat.skus.find(x => x.id === req.id);
+  if(!s || s.status !== "precommande") return send(res, 400, { ok:false, erreur:"Cet article n'est pas en precommande" });
+  const taille = clean(req.taille, 40);
+  if((s.sizes || []).length && (s.sizes || []).indexOf(taille) === -1) return send(res, 400, { ok:false, erreur:"Choisis une taille" });
+  const couleur = ((s.colors || []).find(c => c.n === req.couleur) || (s.colors || [])[0] || {}).n || "";
+  const q = Math.min(10, Math.max(1, parseInt(req.quantite, 10) || 1));
+
+  const list = loadPreorders();
+  const same = list.find(x => x.email === email && x.id === s.id && x.taille === taille && x.couleur === couleur);
+  if(same){ same.quantite = q; same.date = new Date().toISOString(); }
+  else list.push({ date:new Date().toISOString(), id:s.id, article:s.name, taille:taille, couleur:couleur, quantite:q, email:email, nom:clean(req.nom, 120) });
+  writeJsonAtomic(PREORDERS, list);
+  console.log("precommande", s.id, taille, couleur, same ? "(mise a jour)" : "");
+  send(res, 200, { ok:true, dejaInscrit:!!same });
+}
+
 /* ---------------- routage ---------------- */
 http.createServer((req, res) => {
   const user = req.headers["x-remote-user"] || "";
@@ -289,6 +325,9 @@ http.createServer((req, res) => {
   if(req.method === "GET" && url === "/api/sante") return send(res, 200, { ok:true, stripe:!!STRIPE_KEY });
   if(req.method === "GET" && url === "/api/commandes"){
     return send(res, 200, { ok:true, stripe:!!STRIPE_KEY, webhook:!!STRIPE_WHSEC, sheets:!!(SHEETS_URL && SHEETS_TOKEN), commandes:loadOrders() });
+  }
+  if(req.method === "GET" && url === "/api/precommandes"){
+    return send(res, 200, { ok:true, precommandes:loadPreorders() });
   }
   if(req.method === "POST" && url === "/api/sheet-sync"){
     return pushToSheet(loadOrders()).then(r => send(res, r.ok ? 200 : 502, r));
@@ -301,6 +340,10 @@ http.createServer((req, res) => {
   }
   if(url === "/api/commande"){
     return readBody(req, MAX_SMALL, b => b ? createOrder(b.toString("utf8"), res)
+                                           : send(res, 413, { ok:false, erreur:"Requete trop lourde" }));
+  }
+  if(url === "/api/precommande"){
+    return readBody(req, MAX_SMALL, b => b ? createPreorder(b.toString("utf8"), res)
                                            : send(res, 413, { ok:false, erreur:"Requete trop lourde" }));
   }
   if(url === "/api/stripe-webhook"){

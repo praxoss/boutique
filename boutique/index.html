@@ -551,6 +551,7 @@
     text-transform:uppercase;padding:4px 8px;color:var(--ink);
   }
   .card-badge--rupture{ background:#888; color:#fff; }
+  .card-badge--pre{ background:var(--navy); color:#fff; }
   .quick-submit:disabled{ opacity:.55; cursor:not-allowed; }
   .card:focus-visible{outline:2px solid var(--navy);outline-offset:3px;}
   .quick{
@@ -714,6 +715,12 @@
   .btn-secondary svg{width:17px;height:17px;}
 
   .pdp-actions{display:flex;flex-direction:column;gap:10px;margin-top:22px;}
+  .pdp-actions:empty{display:none;}
+  .preorder-box{display:flex;flex-direction:column;gap:10px;margin-top:22px;padding:16px;border:1px solid var(--line);background:var(--surface);}
+  .preorder-intro,.preorder-done{margin:0;font-size:14px;line-height:1.6;color:var(--ink);}
+  .preorder-email{font-family:inherit;font-size:15px;padding:13px 14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);}
+  .preorder-email:focus{outline:none;border-color:var(--navy);}
+  .preorder-legal{margin:0;font-size:12px;color:var(--sub);}
   .pdp-actions > button{width:100%;}
   .btn-primary:disabled{background:var(--sub);cursor:default;}
   /* dans l'accueil, le bloc suit le defilement normal et ne remonte pas
@@ -1333,8 +1340,10 @@
   /* ---------------- PLP ---------------- */
   function cardHTML(p){
     var isRupture = p.status === "rupture";
+    var isPre = p.status === "precommande";
     var badge = isRupture
       ? '<span class="card-badge card-badge--rupture">Rupture</span>'
+      : isPre ? '<span class="card-badge card-badge--pre">Précommande</span>'
       : (p.label ? '<span class="card-badge">'+esc(p.label)+'</span>' : "");
     var swatches = p.colors.map(function(c){return '<span style="background:'+c.h+(c.h==="#FFFFFF"?";border-color:var(--white-swatch-border)":"")+'"></span>';}).join("");
     var media = p.photo
@@ -1346,7 +1355,12 @@
           return '<button type="button" class="quick-color" data-quick-color="'+esc(c.n)+'" aria-pressed="'+(i===0)+'" title="'+esc(c.n)+'"><span style="background:'+c.h+(c.h==="#FFFFFF"?";border-color:var(--white-swatch-border)":"")+'"></span></button>';
         }).join("") + '</div>'
       : '';
-    var quick =
+    // precommande : pas d'achat rapide, le bouton mene a la fiche (e-mail)
+    var quick = isPre
+      ? '<div class="quick"><button type="button" class="quick-btn" data-preorder="'+p.id+'">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>' +
+          'Précommander</button></div>'
+      :
       '<div class="quick">' +
         '<button type="button" class="quick-btn" data-quick="'+p.id+'" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h15l-1.6 9h-12z"/><path d="M6 6L4 3H2"/><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/></svg>' +
@@ -1400,6 +1414,7 @@
       var openBtn = card.querySelector("[data-quick]");
 
       card.addEventListener("click", function(e){
+        if(e.target.closest("[data-preorder]")){ e.stopPropagation(); openProduct(id); return; }
         if(e.target.closest(".quick") || e.target.closest(".quick-panel")) return;
         openProduct(id);
       });
@@ -1595,7 +1610,8 @@
           ) +
         '</div>' +
         '<div class="pdp-info">' +
-          (p.label ? '<div class="pdp-label">'+esc(p.label)+'</div>' : '') +
+          (p.status === "precommande" ? '<div class="pdp-label">Précommande</div>'
+            : p.label ? '<div class="pdp-label">'+esc(p.label)+'</div>' : '') +
           '<h1>'+esc(p.name)+'</h1>' +
           '<div class="pdp-sub">'+esc(p.sub)+'</div>' +
           '<div class="pdp-price">'+euro(p.price)+'</div>' +
@@ -1613,8 +1629,17 @@
               p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="false">'+s+'</button>';}).join("") +
             '</div>' +
           '</div>' +
+          (p.status === "precommande"
+            ? '<form class="preorder-box" novalidate>' +
+                '<p class="preorder-intro"><b>Article en précommande.</b> Choisis ta taille et laisse ton e-mail : on te prévient dès que la commande groupée est lancée. Rien à payer pour l\'instant.</p>' +
+                '<input type="email" class="preorder-email" placeholder="ton@email.fr" autocomplete="email" aria-label="Ton e-mail" required>' +
+                '<button type="submit" class="btn-primary preorder-submit">Me prévenir</button>' +
+                '<p class="preorder-legal">Ton e-mail ne sert qu\'à te prévenir pour cet article.</p>' +
+              '</form>'
+            : '') +
           '<div class="pdp-actions">' +
-            (p.status === "rupture"
+            (p.status === "precommande" ? ''
+              : p.status === "rupture"
               ? '<button class="btn-primary add-to-cart" disabled>Rupture de stock</button>'
               : '<button class="btn-primary add-to-cart">Ajouter au panier</button>') +
             (compact ? '' : '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>') +
@@ -1696,7 +1721,34 @@
       });
     }
 
-    root.querySelector(".add-to-cart").addEventListener("click", function(){
+    var pre = root.querySelector(".preorder-box");
+    if(pre){
+      var mail = pre.querySelector(".preorder-email");
+      if(buyer.email) mail.value = buyer.email;
+      pre.addEventListener("submit", function(e){
+        e.preventDefault();
+        if(p.sizes.length && !st.size){ toast("Choisis une taille"); return; }
+        var email = mail.value.trim();
+        if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast("Indique un e-mail valide"); mail.focus(); return; }
+        var btn = pre.querySelector(".preorder-submit");
+        btn.disabled = true; btn.textContent = "Un instant…";
+        fetch("/api/precommande", {
+          method:"POST", headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ id:p.id, taille:st.size || "", couleur:st.color.n, email:email })
+        })
+          .then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+          .then(function(res){
+            if(!res.ok) throw new Error(res.erreur || "Envoi impossible, réessaie dans un instant");
+            rememberBuyer({ name:buyer.name, phone:buyer.phone, email:email });
+            pre.innerHTML = '<p class="preorder-done"><b>C\'est noté !</b> On te prévient à ' + esc(email) +
+              ' dès que la commande groupée de ce ' + esc(p.name) + ' (' + esc(st.size || "taille unique") + ', ' + esc(st.color.n) + ') est lancée.</p>';
+          })
+          .catch(function(err){ btn.disabled = false; btn.textContent = "Me prévenir"; toast(err.message); });
+      });
+    }
+
+    var addBtn = root.querySelector(".add-to-cart");
+    if(addBtn) addBtn.addEventListener("click", function(){
       if(!st.size){ toast("Choisis une taille avant d'ajouter au panier"); return; }
       addToCart({
         id: p.id,
