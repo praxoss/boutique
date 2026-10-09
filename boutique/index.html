@@ -975,8 +975,12 @@
   }
   /* fiche produit : comme le bloc produit du moment, le cadre epouse la
      photo (pas de fond gris) ; le cadre gris carre reste pour le picto. */
-  .gallery-frame:has(img){aspect-ratio:auto;background:none;display:block;}
-  .gallery-frame:has(img) img{display:block;height:auto;max-height:85vh;mix-blend-mode:normal;}
+  /* Cadre fixe au format des photos (3:4, 1200 x 1600) : il ne change pas
+     de taille d'une photo a l'autre, donc les chevrons ne bougent pas. Une
+     photo d'un autre format y est centree, sur fond blanc (pas de bord
+     gris). Hauteur limitee a 85 % de l'ecran. */
+  .gallery-frame:has(img){aspect-ratio:3/4;max-height:85vh;width:100%;background:none;display:flex;align-items:center;justify-content:center;}
+  .gallery-frame:has(img) img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:normal;}
   .color-thumb{background:none;}
   .color-thumb .swatch-fill{width:100%;height:100%;border-radius:0;}
 
