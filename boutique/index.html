@@ -1279,6 +1279,8 @@
   function applyLinkFilter(el){
     var sp = function(v){ return v ? v.split("|").filter(Boolean) : []; };
     state.sel = pairsOf(sp(el.getAttribute("data-univ")), sp(el.getAttribute("data-cats")));
+    // arrivee par un lien : seuls les univers de la selection restent deplies
+    Object.keys(openGroups).forEach(function(k){ if(k.indexOf("u:") === 0) delete openGroups[k]; });
   }
   function pairsOf(univ, cats){
     if(univ.length) return [].concat.apply([], univ.map(function(u){
