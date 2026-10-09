@@ -1257,7 +1257,7 @@
     var enriched = {};
     PRODUCTS.forEach(function(p){ enriched[p.id] = p; });
     PRODUCTS = saved
-      .filter(function(s){ return s.status !== "discontinue"; })
+      .filter(function(s){ return s.status !== "discontinue" && !s.hidden; })   // masque dans le backoffice
       .map(function(s){
         var ex = enriched[s.id] || {};
         var photo = s.photo || ex.photo || "";

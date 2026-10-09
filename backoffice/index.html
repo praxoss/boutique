@@ -185,6 +185,9 @@
   .status-pill.actif{color:var(--green);background:var(--green-bg);}
   .status-pill.rupture{color:var(--amber);background:var(--amber-bg);}
   .status-pill.precommande{color:var(--navy);background:var(--surface-2);}
+  .status-pill.masque{color:var(--sub);background:var(--surface-2);}
+  .status-pill.masque::before{display:none;}
+  .sku-table tr.is-hidden td:not(:last-child){opacity:.45;}
   .status-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
   .row-actions{display:flex;gap:4px;justify-content:flex-end;}
   .icon-btn-sm{
@@ -818,6 +821,13 @@
 
     <div class="field hero-box">
       <label class="hero-switch">
+        <input type="checkbox" id="f-hidden">
+        <span><b>Masquer dans la boutique</b><em>L'article reste ici, avec ses réglages, mais n'apparaît plus nulle part dans la boutique et ne peut plus être commandé. Pratique pour préparer un article ou le retirer un temps.</em></span>
+      </label>
+    </div>
+
+    <div class="field hero-box">
+      <label class="hero-switch">
         <input type="checkbox" id="f-feature">
         <span><b>Produit du moment</b><em>Le bloc sous le hero, avec tailles et ajout au panier. Un seul article a la fois. Si aucun n'est coche, c'est l'article du hero.</em></span>
       </label>
@@ -869,6 +879,8 @@
   var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
   var ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   var ICON_TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+  var ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.5 10.5 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
   var ICON_X_SM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
   var TYPOLOGIES = [
@@ -1077,15 +1089,17 @@
         ? '<img src="'+assetUrl(s.photoDataUrl||s.photo)+'" alt="">'
         : '<svg style="color:'+s.colors[0].h+'"><use href="#'+s.icon+'"/></svg>';
       return (
-        '<tr data-id="'+s.id+'">' +
+        '<tr data-id="'+s.id+'"'+(s.hidden ? ' class="is-hidden"' : '')+'>' +
           '<td class="drag-td"><button type="button" class="drag-handle" aria-label="Déplacer '+esc(s.name)+' (glisser, ou flèches haut et bas)" title="Glisser pour changer l\'ordre">⠿</button></td>' +
           '<td class="sku-name-td" data-label="Article"><div class="sku-name-cell"><div class="sku-thumb">'+media+'</div>' +
             '<div class="sku-name"><b>'+esc(s.name)+'</b><span class="ref">'+(s.univers ? esc(s.univers)+' · ' : '<span style="color:var(--amber)">sans univers</span> · ')+esc(s.ref)+'</span></div></div></td>' +
           '<td data-label="Couleurs"><div class="sku-colors">'+s.colors.map(function(c){return '<span style="background:'+c.h+'" title="'+esc(c.n)+'"></span>';}).join("")+'</div></td>' +
           '<td data-label="Tailles"><span class="sku-sizes">'+s.sizes.join(" · ")+'</span></td>' +
           '<td data-label="Prix"><span class="sku-price">'+euro(s.price)+'</span></td>' +
-          '<td data-label="Statut"><span class="status-pill '+s.status+'">'+({ actif:"En stock", rupture:"Rupture", precommande:"Précommande" }[s.status] || s.status)+'</span></td>' +
+          '<td data-label="Statut"><span class="status-pill '+s.status+'">'+({ actif:"En stock", rupture:"Rupture", precommande:"Précommande" }[s.status] || s.status)+'</span>'+
+            (s.hidden ? ' <span class="status-pill masque">Masqué</span>' : '')+'</td>' +
           '<td><div class="row-actions">' +
+            '<button type="button" class="icon-btn-sm hide-btn" aria-label="'+(s.hidden ? 'Réafficher' : 'Masquer')+' dans la boutique" title="'+(s.hidden ? 'Masqué : cliquer pour le réafficher' : 'Visible : cliquer pour le masquer')+'">'+(s.hidden ? ICON_EYE_OFF : ICON_EYE)+'</button>' +
             '<button type="button" class="icon-btn-sm edit-btn" aria-label="Modifier">'+ICON_EDIT+'</button>' +
             '<button type="button" class="icon-btn-sm danger delete-btn" aria-label="Supprimer">'+ICON_TRASH+'</button>' +
           '</div></td>' +
@@ -1098,6 +1112,14 @@
       tr.querySelector(".drag-handle").addEventListener("click", function(e){ e.stopPropagation(); });
       tr.querySelector(".edit-btn").addEventListener("click", function(e){ e.stopPropagation(); openPanel(skuById(id)); });
       tr.querySelector(".delete-btn").addEventListener("click", function(e){ e.stopPropagation(); deleteSku(id); });
+      tr.querySelector(".hide-btn").addEventListener("click", function(e){
+        e.stopPropagation();
+        var s = skuById(id);
+        if(s.hidden) delete s.hidden; else s.hidden = true;
+        persistDraft();
+        renderTable();
+        toast(s.hidden ? "« "+s.name+" » masqué (pense a publier)" : "« "+s.name+" » de nouveau visible (pense a publier)");
+      });
       tr.addEventListener("click", function(){ openPanel(skuById(id)); });
     });
   }
@@ -1278,6 +1300,7 @@
     var isHero = !!(sku && sku.hero);
     document.getElementById("f-hero").checked = isHero;
     document.getElementById("f-feature").checked = !!(sku && sku.feature);
+    document.getElementById("f-hidden").checked = !!(sku && sku.hidden);
     document.getElementById("heroFields").hidden = !isHero;
     document.getElementById("f-hero-title").value = sku && sku.heroTitle ? sku.heroTitle : "";
     document.getElementById("f-hero-text").value  = sku && sku.heroText  ? sku.heroText  : "";
@@ -1524,6 +1547,7 @@
       desc: document.getElementById("f-desc").value.trim(),
       label: existing ? existing.label : undefined,
       feature: document.getElementById("f-feature").checked,
+      hidden: document.getElementById("f-hidden").checked || undefined,
       hero: document.getElementById("f-hero").checked,
       heroTitle: document.getElementById("f-hero-title").value.trim(),
       heroText: document.getElementById("f-hero-text").value.trim(),
@@ -1743,6 +1767,8 @@
       var st = String(status).toLowerCase();
       f.status = /pr[ée]?commande|preorder|pre-order/.test(st) ? "precommande" : /rupture|epuis|épuis|out/.test(st) ? "rupture" : "actif";
     }
+    var hid = pick(raw, ["hidden","masque","masqué"]);
+    if(hid != null) f.hidden = hid === true || /^(1|true|oui|yes)$/i.test(String(hid)) || undefined;
     var photos = pick(raw, ["photos"]);
     var photo = pick(raw, ["photo","image"]);
     var list = (Array.isArray(photos) ? photos : []).concat(photo && !(Array.isArray(photos) && photos.indexOf(photo) > -1) ? [photo] : []);

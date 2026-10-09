@@ -161,7 +161,7 @@ function priceCart(lignes){
   if(!Array.isArray(lignes) || !lignes.length || lignes.length > 30) throw new Error("Panier vide ou invalide");
   return lignes.map(l => {
     const s = byId[l && l.id];
-    if(!s || s.status === "discontinue") throw new Error("Article introuvable : " + (l && l.id));
+    if(!s || s.status === "discontinue" || s.hidden) throw new Error("Article indisponible : " + (s ? s.name : (l && l.id)));
     if(s.status === "rupture") throw new Error(s.name + " est en rupture de stock");
     if((s.sizes || []).indexOf(l.taille) === -1) throw new Error("Taille indisponible pour " + s.name);
     const couleur = (s.colors || []).find(c => c.n === l.couleur) || (s.colors || [])[0];
@@ -302,7 +302,7 @@ function createPreorder(body, res){
   let cat;
   try { cat = JSON.parse(fs.readFileSync(path.join(DATA, "catalogue.json"), "utf8")); } catch(e){ return send(res, 500, { ok:false, erreur:"Catalogue indisponible" }); }
   const s = cat.skus.find(x => x.id === req.id);
-  if(!s || s.status !== "precommande") return send(res, 400, { ok:false, erreur:"Cet article n'est pas en precommande" });
+  if(!s || s.hidden || s.status !== "precommande") return send(res, 400, { ok:false, erreur:"Cet article n'est pas en precommande" });
   const taille = clean(req.taille, 40);
   if((s.sizes || []).length && (s.sizes || []).indexOf(taille) === -1) return send(res, 400, { ok:false, erreur:"Choisis une taille" });
   const couleur = ((s.colors || []).find(c => c.n === req.couleur) || (s.colors || [])[0] || {}).n || "";
