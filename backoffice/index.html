@@ -122,6 +122,7 @@
   .btn-ghost:hover{border-color:var(--ink);}
 
   .bo-count{color:var(--sub);font-size:13px;margin-bottom:10px;}
+  .univ-filter{border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--bg);font-size:13px;}
 
   /* import d'articles par lot */
   .import-panel{width:min(560px,100vw);}
@@ -227,6 +228,7 @@
   /* ---------- onglet categories et menu ---------- */
   .cat-row{display:grid;grid-template-columns:minmax(0,1.3fr) 160px minmax(0,1.6fr) 74px auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line);}
   .cat-row:first-child{border-top:none;}
+  .cat-row.univ-row{grid-template-columns:minmax(0,1.3fr) minmax(0,1.6fr) 74px auto;}
   .cat-row label{display:block;font-size:11px;color:var(--sub);margin:0 0 5px;}
   .cat-row input,.cat-row select,.menu-card input,.menu-card textarea,.menu-card select{
     display:block;width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;
@@ -561,6 +563,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input type="text" id="searchInput" placeholder="Rechercher un SKU, une reference...">
             </div>
+            <select id="univFilter" class="univ-filter" aria-label="Filtrer par univers"></select>
             <button class="btn-ghost" id="importBtn" type="button">Importer (JSON)</button>
             <button class="btn-navy" id="newSkuBtn"></button>
             <input type="file" id="importFile" accept=".json,application/json" hidden>
@@ -586,6 +589,15 @@
           <p class="home-hint">Ils illustrent chaque catégorie : dans le menu déroulant de la boutique, et à la place de la photo pour un article qui n'en a pas. Importe un SVG d'une seule couleur pour qu'il prenne automatiquement la couleur de l'article ; un PNG s'affiche tel quel. Un pictogramme utilisé par une catégorie ne peut pas être supprimé.</p>
           <div class="picto-grid" id="pictoGrid"></div>
           <input type="file" id="pictoFile" accept=".svg,image/svg+xml,image/png,image/webp" hidden>
+        </div>
+
+        <div class="home-card">
+          <h2>Univers</h2>
+          <p class="home-hint">Les grandes familles de la boutique (Rugby, Lifestyle, Femme, Enfant…), au-dessus des catégories : un t-shirt femme est dans l'univers Femme et la catégorie T-shirts. Elles servent de premier filtre dans la boutique et les rubriques du menu peuvent les ouvrir. Tailles facultatives : si tu en indiques, elles remplacent celles de la catégorie à la création d'un article.</p>
+          <div id="univRows"></div>
+          <div class="home-actions" style="margin-top:16px">
+            <button type="button" class="btn-ghost" id="univAdd">+ Ajouter un univers</button>
+          </div>
         </div>
 
         <div class="home-card">
@@ -741,9 +753,15 @@
     </button>
   </div>
   <form class="panel-body" id="skuForm">
-    <div class="field">
-      <label for="f-typ">Typologie</label>
-      <select id="f-typ"></select>
+    <div class="field-row">
+      <div class="field">
+        <label for="f-univ">Univers</label>
+        <select id="f-univ"></select>
+      </div>
+      <div class="field">
+        <label for="f-typ">Catégorie</label>
+        <select id="f-typ"></select>
+      </div>
     </div>
     <div class="field">
       <label>Photos produit</label>
@@ -885,6 +903,17 @@
      n'ont pas de dessin dans la liste : ils utilisent les symboles ecrits
      dans les pages. Une entree importee porte son dessin : { viewBox, svg }
      (SVG nettoye, recolore en currentColor) ou { image } (PNG). */
+  /* Univers (sur-categories), publies dans catalogue.json ("universes") :
+     chaque article en a un (sku.univers) en plus de sa categorie. Des
+     tailles facultatives par univers remplacent celles de la categorie a la
+     creation d'un article (Enfant : 4 a 14 ans). */
+  var UNIVERSES = [
+    { id:"Rugby" }, { id:"Lifestyle" }, { id:"Accessoires" },
+    { id:"Femme", sizes:["XS","S","M","L","XL"] },
+    { id:"Enfant", sizes:["4 ans","6 ans","8 ans","10 ans","12 ans","14 ans"] }
+  ];
+  function universOf(id){ return UNIVERSES.filter(function(u){ return u.id === id; })[0]; }
+
   var ICONS = [
     { id:"icon-shirt",  name:"Haut" },
     { id:"icon-hoodie", name:"Sweat, veste" },
@@ -943,7 +972,7 @@
 
   function persistDraft(){
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, menu:MENU, icons:ICONS, savedAt:new Date().toISOString() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, savedAt:new Date().toISOString() }));
       hasDraft = true;
       renderPublishNote();
       return true;
@@ -956,7 +985,7 @@
 
   var ORDERS = [];
 
-  var state = { activeTyp:"all", search:"", tab:"catalogue", editingId:null, threshold:20, lastRestock:"2026-08-02", photoDataUrl:null, heroDataUrl:null, ordersLoaded:false, ordersLoading:false };
+  var state = { activeUniv:"all", activeTyp:"all", search:"", tab:"catalogue", editingId:null, threshold:20, lastRestock:"2026-08-02", photoDataUrl:null, heroDataUrl:null, ordersLoaded:false, ordersLoading:false };
 
   /* Commandes passees sur la boutique, lues sur l'API du serveur
      (server/api.js), derriere le meme identifiant que ce backoffice. */
@@ -1015,9 +1044,19 @@
     var q = state.search.trim().toLowerCase();
     return SKUS.filter(function(s){
       if(state.activeTyp !== "all" && s.typ !== state.activeTyp) return false;
+      if(state.activeUniv !== "all" && (s.univers || "") !== state.activeUniv) return false;
       if(q && s.name.toLowerCase().indexOf(q)===-1 && s.ref.toLowerCase().indexOf(q)===-1) return false;
       return true;
     });
+  }
+
+  function fillUnivFilter(){
+    var sel = document.getElementById("univFilter");
+    sel.innerHTML = '<option value="all">Tous les univers</option>' +
+      UNIVERSES.map(function(u){ return '<option value="'+esc(u.id)+'">'+esc(u.id)+'</option>'; }).join("") +
+      '<option value="">Sans univers</option>';
+    sel.value = state.activeUniv;
+    if(sel.value !== state.activeUniv){ state.activeUniv = "all"; sel.value = "all"; }
   }
 
   function renderTable(){
@@ -1041,7 +1080,7 @@
         '<tr data-id="'+s.id+'">' +
           '<td class="drag-td"><button type="button" class="drag-handle" aria-label="Déplacer '+esc(s.name)+' (glisser, ou flèches haut et bas)" title="Glisser pour changer l\'ordre">⠿</button></td>' +
           '<td class="sku-name-td" data-label="Article"><div class="sku-name-cell"><div class="sku-thumb">'+media+'</div>' +
-            '<div class="sku-name"><b>'+esc(s.name)+'</b><span class="ref">'+esc(s.ref)+'</span></div></div></td>' +
+            '<div class="sku-name"><b>'+esc(s.name)+'</b><span class="ref">'+(s.univers ? esc(s.univers)+' · ' : '<span style="color:var(--amber)">sans univers</span> · ')+esc(s.ref)+'</span></div></div></td>' +
           '<td data-label="Couleurs"><div class="sku-colors">'+s.colors.map(function(c){return '<span style="background:'+c.h+'" title="'+esc(c.n)+'"></span>';}).join("")+'</div></td>' +
           '<td data-label="Tailles"><span class="sku-sizes">'+s.sizes.join(" · ")+'</span></td>' +
           '<td data-label="Prix"><span class="sku-price">'+euro(s.price)+'</span></td>' +
@@ -1173,9 +1212,19 @@
     updatePhotoPreview();   // la liste "Couleur" des photos suit les couleurs
   }
 
+  function fillUnivSelect(){
+    var sel = document.getElementById("f-univ"), cur = sel.value;
+    sel.innerHTML = '<option value="">—</option>' + UNIVERSES.map(function(u){ return '<option value="'+esc(u.id)+'">'+esc(u.id)+'</option>'; }).join("");
+    sel.value = cur;
+  }
+  /* Tailles proposees : celles de l'univers s'il en a (Enfant), sinon
+     celles de la categorie ; les tailles deja cochees restent visibles. */
   function renderSizeGrid(){
     var typ = typologyOf(document.getElementById("f-typ").value) || TYPOLOGIES[0];
-    document.getElementById("sizeGrid").innerHTML = typ.sizes.map(function(sz){
+    var un = universOf(document.getElementById("f-univ").value);
+    var offer = (un && un.sizes && un.sizes.length ? un.sizes : typ.sizes).slice();
+    panelSizes.forEach(function(s){ if(offer.indexOf(s) === -1) offer.push(s); });
+    document.getElementById("sizeGrid").innerHTML = offer.map(function(sz){
       var on = panelSizes.indexOf(sz)>-1;
       return '<div class="size-check'+(on?' on':'')+'" data-size="'+esc(sz)+'">'+esc(sz)+'</div>';
     }).join("");
@@ -1219,6 +1268,8 @@
 
     var defaultTyp = sku ? sku.typ : (state.activeTyp!=="all" ? state.activeTyp : TYPOLOGIES[0].id);
     document.getElementById("f-typ").value = defaultTyp;
+    fillUnivSelect();
+    document.getElementById("f-univ").value = sku ? (sku.univers || "") : (state.activeUniv !== "all" ? state.activeUniv : "");
     document.getElementById("f-name").value = sku ? sku.name : "";
     document.getElementById("f-sub").value = sku ? sku.sub : "";
     document.getElementById("f-price").value = sku ? sku.price : "";
@@ -1459,6 +1510,7 @@
     var sku = {
       id: existing ? existing.id : uniqueId(name),
       typ: typ,
+      univers: document.getElementById("f-univ").value || undefined,
       name: name,
       sub: document.getElementById("f-sub").value.trim(),
       price: price,
@@ -1612,6 +1664,7 @@
     return JSON.stringify([
       {
         "name":"T-shirt Exemple",
+        "univers":"Lifestyle",
         "categorie":"T-shirts",
         "price":15,
         "sub":"Coton, coupe régulière",
@@ -1642,6 +1695,14 @@
       if(!known) cat = cat.charAt(0).toUpperCase() + cat.slice(1);
       f.typ = known ? known.id : cat;
       if(!known) f._newCat = cat;
+    }
+    var un = pick(raw, ["univers","universe","univ"]);
+    if(un != null){
+      un = String(un).trim();
+      var knownU = UNIVERSES.filter(function(u){ return u.id.toLowerCase() === un.toLowerCase(); })[0];
+      if(!knownU) un = un.charAt(0).toUpperCase() + un.slice(1);
+      f.univers = knownU ? knownU.id : un;
+      if(!knownU) f._newUniv = un;
     }
     var price = pick(raw, ["price","prix"]);
     if(price != null){
@@ -1703,7 +1764,7 @@
     if(!items) return { fatal:"Le fichier doit contenir une liste d'articles, ou un objet avec une liste « skus »." };
     if(!items.length) return { fatal:"Le fichier ne contient aucun article." };
     if(items.length > 500) return { fatal:"500 articles au plus par import." };
-    var rows = [], newCats = {}, seen = {};
+    var rows = [], newCats = {}, newUnivs = {}, seen = {};
     items.forEach(function(raw, i){
       var r = normalizeImport(raw), line = "Article " + (i + 1);
       var rawName = raw && typeof raw === "object" && (raw.name || raw.nom);
@@ -1719,15 +1780,16 @@
         if(miss.length){ rows.push({ kind:"err", label:f.name || line, note:"pour créer un article, il manque : " + miss.join(", ") }); return; }
       }
       if(f._newCat) newCats[f._newCat] = true;
+      if(f._newUniv) newUnivs[f._newUniv] = true;
       rows.push({ kind:existing ? "upd" : "new", label:f.name || (existing && existing.name), target:existing, fields:f, note:r.warn.join(" · ") });
     });
-    return { rows:rows, newCats:Object.keys(newCats) };
+    return { rows:rows, newCats:Object.keys(newCats), newUnivs:Object.keys(newUnivs) };
   }
 
   function renderImportPlan(fileName){
     var p = importPlan, body = document.getElementById("importBody");
     var apply = document.getElementById("importApply");
-    var help = '<p class="imp-help">Fichier attendu : une liste d\'articles en JSON (ou un catalogue exporté). Champs : <code>name</code>, <code>categorie</code>, <code>price</code> obligatoires pour créer ; <code>sub</code>, <code>ref</code>, <code>colors</code>, <code>sizes</code>, <code>status</code>, <code>desc</code>, <code>photo</code> facultatifs. Un article dont l\'<code>id</code> ou la <code>ref</code> existe déjà est mis à jour. <a href="#" id="importTemplate">Télécharger un modèle</a></p>';
+    var help = '<p class="imp-help">Fichier attendu : une liste d\'articles en JSON (ou un catalogue exporté). Champs : <code>name</code>, <code>categorie</code>, <code>price</code> obligatoires pour créer ; <code>univers</code>, <code>sub</code>, <code>ref</code>, <code>colors</code>, <code>sizes</code>, <code>status</code>, <code>desc</code>, <code>photo</code> facultatifs. Un article dont l\'<code>id</code> ou la <code>ref</code> existe déjà est mis à jour. <a href="#" id="importTemplate">Télécharger un modèle</a></p>';
     if(!p || p.fatal){
       body.innerHTML = (p && p.fatal ? '<p class="imp-help" style="color:var(--red)"><b>'+esc(p.fatal)+'</b></p>' : '') + help +
         '<button type="button" class="btn-navy" id="importPick" style="align-self:flex-start">Choisir un fichier JSON</button>';
@@ -1744,6 +1806,7 @@
           '<div class="imp-stat'+(n.err?' err':'')+'"><b>'+n.err+'</b>en erreur (ignorés)</div>' +
         '</div>' +
         (p.newCats.length ? '<p class="imp-help">Catégories créées au passage : <b>'+p.newCats.map(esc).join(", ")+'</b> (modifiables dans l\'onglet Catégories &amp; menu).</p>' : '') +
+        (p.newUnivs.length ? '<p class="imp-help">Univers créés au passage : <b>'+p.newUnivs.map(esc).join(", ")+'</b>.</p>' : '') +
         '<div class="imp-list">' + p.rows.map(function(r){
           var tag = { "new":"Nouveau", upd:"Mise à jour", err:"Erreur" }[r.kind];
           var detail = r.kind === "err" ? r.note : (r.kind === "upd"
@@ -1791,6 +1854,7 @@
   function applyImport(){
     if(!importPlan || importPlan.fatal) return;
     var created = 0, updated = 0;
+    importPlan.newUnivs.forEach(function(u){ if(!universOf(u)) UNIVERSES.push({ id:u }); });
     importPlan.newCats.forEach(function(c){
       if(!typologyOf(c)) TYPOLOGIES.push({ id:c, icon:"icon-shirt", sizes:["S","M","L","XL","XXL"] });
     });
@@ -1808,13 +1872,14 @@
         SKUS.push(Object.assign({
           id:id, ref:slugRef(f.name, f.typ), sub:"", desc:"", status:"actif",
           colors:[{ n:"Bleu marine", h:"#0B1F3D" }],
-          sizes:(typ && typ.sizes || ["Taille unique"]).slice(),
+          sizes:((universOf(f.univers) || {}).sizes || (typ && typ.sizes) || ["Taille unique"]).slice(),
           icon:typ ? typ.icon : "icon-shirt", hero:false, feature:false
         }, f));
         created++;
       }
     });
     closeImport();
+    fillUnivSelect(); fillUnivFilter();
     catChanged();
     renderTable();
     toast(created + " créé" + (created>1?"s":"") + ", " + updated + " mis à jour (pense à publier)");
@@ -2011,6 +2076,75 @@
     }
   });
 
+  /* ---------------- univers ---------------- */
+  function univCount(id){ return SKUS.filter(function(s){ return s.univers === id; }).length; }
+
+  function renderUnivTab(){
+    var last = UNIVERSES.length - 1;
+    document.getElementById("univRows").innerHTML = UNIVERSES.map(function(u, i){
+      var n = univCount(u.id);
+      return '<div class="cat-row univ-row" data-i="'+i+'">' +
+        '<div><label>Nom</label><input type="text" data-univ="name" value="'+esc(u.id)+'"></div>' +
+        '<div class="cat-sizes"><label>Tailles par défaut (facultatif)</label><input type="text" data-univ="sizes" value="'+esc((u.sizes||[]).join(", "))+'" placeholder="celles de la catégorie"></div>' +
+        '<div class="cat-count">'+n+' article'+(n>1?'s':'')+'</div>' +
+        '<div class="row-tools">' +
+          '<button type="button" class="icon-btn-sm" data-univ-act="up" aria-label="Monter"'+(i===0?' disabled':'')+'>↑</button>' +
+          '<button type="button" class="icon-btn-sm" data-univ-act="down" aria-label="Descendre"'+(i===last?' disabled':'')+'>↓</button>' +
+          '<button type="button" class="icon-btn-sm danger" data-univ-act="del" aria-label="Supprimer">'+ICON_TRASH+'</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+  function univChanged(){
+    persistDraft();
+    fillUnivSelect(); fillUnivFilter();
+    renderUnivTab(); renderMenuTab(); renderTable();
+  }
+  document.getElementById("univRows").addEventListener("change", function(e){
+    var el = e.target, row = el.closest(".cat-row");
+    if(!row) return;
+    var u = UNIVERSES[+row.getAttribute("data-i")];
+    if(el.getAttribute("data-univ") === "name"){
+      var v = el.value.trim();
+      var taken = UNIVERSES.some(function(x){ return x !== u && x.id.toLowerCase() === v.toLowerCase(); });
+      if(!v || taken){ toast(v ? "Un univers porte deja ce nom" : "Donne un nom a l'univers"); el.value = u.id; return; }
+      if(v !== u.id){
+        var from = u.id; u.id = v;
+        SKUS.forEach(function(s){ if(s.univers === from) s.univers = v; });
+        MENU.forEach(function(m){ if(m.univ) m.univ = m.univ.map(function(x){ return x === from ? v : x; }); });
+        if(state.activeUniv === from) state.activeUniv = v;
+        toast("« "+from+" » renomme en « "+v+" »");
+      }
+    } else {
+      var sizes = el.value.split(/[,;]/).map(function(x){ return x.trim(); }).filter(Boolean);
+      if(sizes.length) u.sizes = sizes; else delete u.sizes;
+    }
+    univChanged();
+  });
+  document.getElementById("univRows").addEventListener("click", function(e){
+    var b = e.target.closest("[data-univ-act]");
+    if(!b) return;
+    var i = +b.closest(".cat-row").getAttribute("data-i"), u = UNIVERSES[i], act = b.getAttribute("data-univ-act");
+    if(act === "up" || act === "down"){
+      UNIVERSES.splice(act === "up" ? i - 1 : i + 1, 0, UNIVERSES.splice(i, 1)[0]);
+    } else {
+      var n = univCount(u.id);
+      if(n){ toast(n+" article"+(n>1?"s sont":" est")+" dans « "+u.id+" » : change-"+(n>1?"les":"le")+" d'univers avant de le supprimer"); return; }
+      if(!confirm("Supprimer l'univers « "+u.id+" » ?")) return;
+      UNIVERSES.splice(i, 1);
+      MENU.forEach(function(m){ if(m.univ){ m.univ = m.univ.filter(function(x){ return x !== u.id; }); if(!m.univ.length) delete m.univ; } });
+    }
+    univChanged();
+  });
+  document.getElementById("univAdd").addEventListener("click", function(){
+    var name = "Nouvel univers", n = 2;
+    while(universOf(name)) name = "Nouvel univers " + (n++);
+    UNIVERSES.push({ id:name });
+    univChanged();
+    var inputs = document.querySelectorAll('#univRows [data-univ="name"]');
+    inputs[inputs.length - 1].focus(); inputs[inputs.length - 1].select();
+  });
+
   /* ---------------- categories et menu ---------------- */
   function catChanged(){
     persistDraft();
@@ -2133,11 +2267,15 @@
             '<button type="button" class="icon-btn-sm danger" data-menu-act="del" aria-label="Supprimer la rubrique">'+ICON_TRASH+'</button>' +
           '</div>' +
         '</div>' +
-        '<label class="sub">Le nom mène à la liste de ces catégories</label>' +
+        '<label class="sub">Le nom mène à la liste de cet univers…</label>' +
+        '<div class="cat-checks">' + UNIVERSES.map(function(u){
+          return '<label class="cat-check"><input type="checkbox" data-menu="univ" value="'+esc(u.id)+'"'+((m.univ||[]).indexOf(u.id)>-1?' checked':'')+'> '+esc(u.id)+'</label>';
+        }).join("") + '</div>' +
+        '<label class="sub">…et/ou de ces catégories</label>' +
         '<div class="cat-checks">' + TYPOLOGIES.map(function(c){
           return '<label class="cat-check"><input type="checkbox" data-menu="cat" value="'+esc(c.id)+'"'+(cats.indexOf(c.id)>-1?' checked':'')+'> '+esc(c.id)+'</label>';
         }).join("") + '</div>' +
-        (cats.length ? '' : '<p class="home-hint" style="margin-top:6px">Aucune : le nom de la rubrique ouvre seulement son menu déroulant.</p>') +
+        (cats.length || (m.univ||[]).length ? '' : '<p class="home-hint" style="margin-top:6px">Rien de coché : le nom de la rubrique ouvre seulement son menu déroulant.</p>') +
         '<label class="sub">Colonnes du menu déroulant</label>' +
         cols.map(function(col, j){
           return '<div class="menu-col" data-c="'+j+'">' +
@@ -2176,6 +2314,9 @@
       var v = el.value.trim();
       if(!v){ toast("Donne un nom a la rubrique"); el.value = m.label; return; }
       m.label = v;
+    } else if(what === "univ"){
+      var us = Array.prototype.map.call(card.querySelectorAll('[data-menu="univ"]:checked'), function(x){ return x.value; });
+      if(us.length) m.univ = us; else delete m.univ;
     } else if(what === "cat"){
       var cats = Array.prototype.map.call(card.querySelectorAll('[data-menu="cat"]:checked'), function(x){ return x.value; });
       if(cats.length) m.cats = cats; else delete m.cats;   // la boutique teste la presence de cats
@@ -2292,7 +2433,7 @@
     document.getElementById("tab-categories").hidden = tab!=="categories";
     if(tab==="catalogue") renderTable();
     else if(tab==="commandes") fetchOrders();
-    else if(tab==="categories"){ renderPictos(); renderCatsTab(); renderMenuTab(); }
+    else if(tab==="categories"){ renderPictos(); renderUnivTab(); renderCatsTab(); renderMenuTab(); }
     else renderHomeTab();
   }
 
@@ -2497,7 +2638,7 @@
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, menu:MENU, icons:ICONS }, null, 2);
+    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS }, null, 2);
   }
 
   /* Secours : le meme contenu en fichier, a integrer a la main dans le depot
@@ -2554,6 +2695,7 @@
   function applyStructure(src){
     if(src && Array.isArray(src.categories) && src.categories.length) TYPOLOGIES = src.categories;
     if(src && Array.isArray(src.menu)) MENU = src.menu;
+    if(src && Array.isArray(src.universes) && src.universes.length) UNIVERSES = src.universes;
     if(src && Array.isArray(src.icons) && src.icons.length){ ICONS = src.icons; installIcons(ICONS); }
   }
   var draft = readDraft();
@@ -2574,11 +2716,13 @@
       .catch(function(){ if(draft) applyStructure(draft); });
   loading.then(function(){
     fillTypSelect();
+    fillUnivSelect();
+    fillUnivFilter();
     renderPublishNote();
     renderSidebar();
     renderTable();
     if(state.tab === "accueil") renderHomeTab();
-    if(state.tab === "categories"){ renderPictos(); renderCatsTab(); renderMenuTab(); }
+    if(state.tab === "categories"){ renderPictos(); renderUnivTab(); renderCatsTab(); renderMenuTab(); }
   });
 
   document.getElementById("exportBtn").addEventListener("click", exportCatalogue);
@@ -2594,10 +2738,15 @@
   });
 
   document.getElementById("newSkuBtn").addEventListener("click", function(){ openPanel(null); });
+  document.getElementById("univFilter").addEventListener("change", function(){ state.activeUniv = this.value; renderTable(); });
   document.getElementById("panelClose").addEventListener("click", closePanel);
   document.getElementById("panelOverlay").addEventListener("click", closePanel);
 
   document.getElementById("f-typ").addEventListener("change", function(){
+    panelSizes = [];
+    renderSizeGrid();
+  });
+  document.getElementById("f-univ").addEventListener("change", function(){
     panelSizes = [];
     renderSizeGrid();
   });

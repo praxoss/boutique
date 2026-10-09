@@ -1225,6 +1225,7 @@
         return {
           id:        s.id,
           cat:       s.typ,            /* backoffice "typ" -> boutique "cat" */
+          univ:      s.univers || ex.univ || "",
           name:      s.name,
           sub:       s.sub  || ex.sub  || "",
           price:     s.price,
@@ -1260,7 +1261,24 @@
     {id:"o50", label:"Plus de 50€", test:function(p){return p>50;}}
   ];
 
-  var state = { cats:[], sizes:[], colors:[], price:"all", sort:"new" };
+  var state = { univ:[], cats:[], sizes:[], colors:[], price:"all", sort:"new" };
+
+  /* Univers (sur-categories : Rugby, Lifestyle, Accessoires, Femme,
+     Enfant...), publies par le backoffice (catalogue.json, "universes") ;
+     chaque article porte le sien (univers), en plus de sa categorie. */
+  var UNIVS = [];
+
+  /* Liens vers une liste (menu, tuiles, blocs) : data-cats et data-univ,
+     listes separees par "|", vides = pas de filtre. */
+  function applyLinkFilter(el){
+    var sp = function(v){ return v ? v.split("|").filter(Boolean) : []; };
+    state.cats = sp(el.getAttribute("data-cats"));
+    state.univ = sp(el.getAttribute("data-univ"));
+  }
+  function linkTarget(menu){ return !!((menu.cats && menu.cats.length) || (menu.univ && menu.univ.length)); }
+  function linkAttrs(menu){
+    return ' data-cats="'+esc((menu.cats || []).join("|"))+'" data-univ="'+esc((menu.univ || []).join("|"))+'"';
+  }
 
   /* Commandes : l'API du serveur (server/api.js) recalcule les prix a partir
      du catalogue publie, enregistre la commande et renvoie la page de
@@ -1326,6 +1344,7 @@
   function filteredProducts(){
     var band = PRICE_BANDS.filter(function(b){return b.id===state.price;})[0] || PRICE_BANDS[0];
     var list = PRODUCTS.filter(function(p){
+      if(state.univ.length && state.univ.indexOf(p.univ)===-1) return false;
       if(state.cats.length && state.cats.indexOf(p.cat)===-1) return false;
       if(state.sizes.length && !p.sizes.some(function(s){return state.sizes.indexOf(s)!==-1;})) return false;
       if(state.colors.length && !p.colors.some(function(c){return state.colors.indexOf(c.n)!==-1;})) return false;
@@ -1478,30 +1497,45 @@
      ferme de chaque groupe est conserve d'un rendu a l'autre, puisque
      chaque filtre clique re-genere toute la page. */
   var MOBILE_Q = window.matchMedia("(max-width:860px)");
-  var openGroups = { cat:true, size:true, color:true, price:false };
+  var openGroups = { univ:true, cat:true, size:true, color:true, price:false };
   function op(g){ return openGroups[g] ? " open" : ""; }
 
   /* Titre de la liste : la rubrique du menu (ou la tuile de l'accueil) dont
      les categories cochees correspondent, sinon la ou les categories. Il
      suit donc aussi les cases que l'on coche a la main. */
   function plpTitle(){
-    var c = state.cats;
-    if(!c.length) return "Toute la boutique";
-    function same(list){ return list && list.length === c.length && list.every(function(x){ return c.indexOf(x) !== -1; }); }
-    var menu = MENUS.filter(function(m){ return same(m.cats); })[0];
+    var c = state.cats, u = state.univ;
+    if(!c.length && !u.length) return "Toute la boutique";
+    function same(list, ref){ list = list || []; return list.length === ref.length && list.every(function(x){ return ref.indexOf(x) !== -1; }); }
+    var menu = MENUS.filter(function(m){ return same(m.cats, c) && same(m.univ, u); })[0];
     if(menu) return menu.label;
-    var tile = (HOME.cats || []).filter(function(x){ return same(x.filter); })[0];
-    if(tile) return tile.label;
-    var block = (HOME.duo || []).filter(function(x){ return same(x.filter); })[0];
-    if(block) return block.title;
-    return c.length <= 3 ? c.join(" · ") : "Sélection";
+    if(!c.length) return u.length <= 2 ? u.join(" · ") : "Sélection";
+    if(!u.length){
+      var tile = (HOME.cats || []).filter(function(x){ return same(x.filter, c); })[0];
+      if(tile) return tile.label;
+      var block = (HOME.duo || []).filter(function(x){ return same(x.filter, c); })[0];
+      if(block) return block.title;
+    }
+    var base = c.length <= 3 ? c.join(" · ") : "Sélection";
+    return u.length === 1 ? base + " — " + u[0] : base;
   }
 
   function renderPLP(){
     var list = filteredProducts();
     var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
 
-    var catFilters = CATS.map(function(c){
+    var univFilters = UNIVS.filter(function(u){
+      return state.univ.indexOf(u) !== -1 || PRODUCTS.some(function(p){ return p.univ === u; });
+    }).map(function(u){
+      var checked = state.univ.indexOf(u)!==-1;
+      return '<label class="chk"><input type="checkbox" data-filter="univ" value="'+esc(u)+'" '+(checked?"checked":"")+'> '+esc(u)+'</label>';
+    }).join("");
+
+    // categories : celles qui ont des articles dans les univers choisis
+    var catFilters = CATS.filter(function(c){
+      return !state.univ.length || state.cats.indexOf(c) !== -1 ||
+        PRODUCTS.some(function(p){ return p.cat === c && state.univ.indexOf(p.univ) !== -1; });
+    }).map(function(c){
       var checked = state.cats.indexOf(c)!==-1;
       return '<label class="chk"><input type="checkbox" data-filter="cat" value="'+c+'" '+(checked?"checked":"")+'> '+c+'</label>';
     }).join("");
@@ -1536,6 +1570,7 @@
       '</div>' +
       '<div class="plp-layout">' +
         '<aside class="filters">' +
+          (univFilters ? '<details class="filter-group" data-group="univ"'+op("univ")+'><summary>Univers</summary><div class="filter-body">'+univFilters+'</div></details>' : '') +
           '<details class="filter-group" data-group="cat"'+op("cat")+'><summary>Catégorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
           '<details class="filter-group" data-group="size"'+op("size")+'><summary>Taille</summary><div class="filter-body"><div class="size-row">'+sizeFilters+'</div></div></details>' +
           '<details class="filter-group" data-group="color"'+op("color")+'><summary>Couleur</summary><div class="filter-body"><div class="swatch-row">'+colorFilters+'</div></div></details>' +
@@ -1545,6 +1580,17 @@
       '</div>';
 
     wireCards(document.getElementById("view-plp"));
+    document.getElementById("view-plp").querySelectorAll('[data-filter="univ"]').forEach(function(el){
+      el.addEventListener("change", function(){
+        var v = el.value;
+        state.univ = el.checked ? state.univ.concat([v]) : state.univ.filter(function(x){return x!==v;});
+        // une categorie qui n'a plus d'article dans ces univers ne doit pas tout masquer
+        state.cats = state.cats.filter(function(c){
+          return !state.univ.length || PRODUCTS.some(function(p){ return p.cat === c && state.univ.indexOf(p.univ) !== -1; });
+        });
+        renderPLP();
+      });
+    });
     document.getElementById("view-plp").querySelectorAll('[data-filter="cat"]').forEach(function(el){
       el.addEventListener("change", function(){
         var v = el.value;
@@ -1821,9 +1867,9 @@
                    col.ids.map(megaLinkHTML).join("")+
                  '</div>';
         }).join("");
-        if(menu.cats){
+        if(linkTarget(menu)){
           foot = '<div class="mega-foot">'+
-                   '<button type="button" class="mega-all" data-cats="'+menu.cats.join("|")+'">'+
+                   '<button type="button" class="mega-all"'+linkAttrs(menu)+'>'+
                    'Voir tout ' + esc(menu.label.toLowerCase()) +
                    '</button></div>';
         }
@@ -1831,8 +1877,8 @@
         panel = '<div class="mega-col"><p class="mega-empty">'+esc(menu.note||"")+'</p></div>';
       }
       return '<li class="main-nav-item" data-menu="'+i+'">'+
-               '<button type="button" class="main-nav-link'+(menu.cats ? '' : ' no-target')+'" aria-expanded="false"'+
-                 (menu.cats ? ' data-cats="'+menu.cats.join("|")+'"' : '')+'>'+esc(menu.label)+'</button>'+
+               '<button type="button" class="main-nav-link'+(linkTarget(menu) ? '' : ' no-target')+'" aria-expanded="false"'+
+                 (linkTarget(menu) ? linkAttrs(menu) : '')+'>'+esc(menu.label)+'</button>'+
                '<div class="mega-panel"><div class="mega-inner">'+panel+'</div>'+foot+'</div>'+
              '</li>';
     }).join("");
@@ -1863,8 +1909,8 @@
          second suit le lien. Une rubrique sans liste (Enfant) ne fait
          qu'ouvrir son menu. */
       link.addEventListener("click", function(e){
-        var cats = link.getAttribute("data-cats");
-        if(cats && (hoverable || li.classList.contains("open"))) return;   // gere plus bas, comme "Voir tout"
+        var target = link.hasAttribute("data-cats");
+        if(target && (hoverable || li.classList.contains("open"))) return;   // gere plus bas, comme "Voir tout"
         e.stopPropagation();
         if(li.classList.contains("open") && !hoverable) closeMenus(); else openMenu(li);
       });
@@ -1884,7 +1930,7 @@
       var all = e.target.closest("[data-cats]");
       if(all){
         closeMenus();
-        state.cats = all.getAttribute("data-cats").split("|");
+        applyLinkFilter(all);
         if(location.hash === "#/boutique") route(); else location.hash = "#/boutique";
         window.scrollTo(0,0);
       }
@@ -1907,8 +1953,8 @@
           return '<p class="mega-col-title" style="padding:6px 18px 0;">'+esc(col.title)+'</p>'+
                  col.ids.map(megaLinkHTML).join("");
         }).join("");
-        if(menu.cats){
-          body += '<button type="button" class="mega-all" data-cats="'+menu.cats.join("|")+'">'+
+        if(linkTarget(menu)){
+          body += '<button type="button" class="mega-all"'+linkAttrs(menu)+'>'+
                   'Voir tout ' + esc(menu.label.toLowerCase()) + '</button>';
         }
       } else {
@@ -1973,7 +2019,7 @@
     } else if(parked){
       parked.remove();
     }
-    var active = state.cats.length + state.sizes.length + state.colors.length + (state.price!=="all" ? 1 : 0);
+    var active = state.univ.length + state.cats.length + state.sizes.length + state.colors.length + (state.price!=="all" ? 1 : 0);
     document.getElementById("filterLabel").textContent = active ? "Filtrer et trier ("+active+")" : "Filtrer et trier";
     document.getElementById("sheetApply").textContent = "Voir les "+count+" article"+(count>1?"s":"");
   }
@@ -1994,7 +2040,7 @@
     });
 
     document.getElementById("sheetReset").addEventListener("click", function(){
-      state.cats = []; state.sizes = []; state.colors = []; state.price = "all";
+      state.univ = []; state.cats = []; state.sizes = []; state.colors = []; state.price = "all";
       renderPLP();
     });
 
@@ -2004,7 +2050,7 @@
       var all = e.target.closest("[data-cats]");
       if(all){
         closeOverlays();
-        state.cats = all.getAttribute("data-cats").split("|");
+        applyLinkFilter(all);
         if(location.hash === "#/boutique") route(); else location.hash = "#/boutique";
         window.scrollTo(0,0);
       }
@@ -2244,8 +2290,7 @@
     home.querySelectorAll("[data-cats]").forEach(function(btn){
       if(btn.closest(".card")) return;   // deja gere par wireCards
       btn.addEventListener("click", function(){
-        var v = btn.getAttribute("data-cats");
-        state.cats = v ? v.split("|") : [];
+        applyLinkFilter(btn);
         location.hash = "#/boutique";
         window.scrollTo(0, 0);
       });
@@ -2470,6 +2515,7 @@
         CATS = data.categories.map(function(c){ return c.id; });
       }
       if(Array.isArray(data.menu)) MENUS = data.menu;
+      UNIVS = Array.isArray(data.universes) ? data.universes.map(function(u){ return u.id; }) : [];
       if(Array.isArray(data.icons)) installIcons(data.icons, "");
     })
     .catch(function(){ /* catalogue injoignable : liste de secours */ })
