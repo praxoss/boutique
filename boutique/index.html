@@ -651,7 +651,20 @@
     padding:12px 0 48px;
     align-items:start;
   }
-  .pdp-gallery{position:sticky;top:calc(var(--topbar-h, 64px) + 16px + env(safe-area-inset-top,0px));}
+  .pdp-gallery{position:relative;}
+  /* fleches du carrousel, posees sur la photo */
+  .gallery-nav{
+    position:absolute;top:50%;transform:translateY(-50%);z-index:2;
+    width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(255,255,255,.92);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12);
+    display:flex;align-items:center;justify-content:center;padding:0;
+    transition:background .15s ease,color .15s ease;
+  }
+  .gallery-nav:hover,.gallery-nav:focus-visible{background:var(--navy);color:#fff;}
+  .gallery-nav svg{width:18px;height:18px;}
+  .gallery-nav.prev{left:12px;}
+  .gallery-nav.next{right:12px;}
+  .gallery-frame{touch-action:pan-y;}   /* balayage horizontal pour le carrousel, defilement vertical libre */
   .gallery-frame{
     background:var(--surface);
     aspect-ratio:1/1;
@@ -1672,6 +1685,10 @@
     return '<div class="pdp-layout">' +
         '<div class="pdp-gallery">' +
           '<div class="gallery-frame">' +
+            (mediaList.length > 1
+              ? '<button type="button" class="gallery-nav prev" aria-label="Photo précédente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+                '<button type="button" class="gallery-nav next" aria-label="Photo suivante"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>'
+              : '') +
             (hasPhotos
               ? '<img class="gallery-img" src="'+p.photos[0]+'" alt="'+esc(p.name)+'">'
               : '<span class="gallery-badge">'+views[0]+'</span>' +
@@ -1771,6 +1788,32 @@
     if(hasPhotos){
       var first = p.colors.findIndex(function(x){ return x.photo && x.photo === p.photos[0]; });
       if(first > 0) selectColor(first);
+    }
+
+    /* Fleches et balayage : on avance ou recule d'une vue, en boucle, en
+       passant par les points (qui changent la photo et la couleur liee). */
+    function step(delta){
+      if(!dots) return;
+      var bs = dots.querySelectorAll("button"), n = bs.length;
+      var cur = Array.prototype.findIndex.call(bs, function(b){ return b.getAttribute("aria-current") === "true"; });
+      bs[((cur < 0 ? 0 : cur) + delta + n) % n].click();
+    }
+    var prevBtn = root.querySelector(".gallery-nav.prev"), nextBtn = root.querySelector(".gallery-nav.next");
+    if(prevBtn) prevBtn.addEventListener("click", function(){ step(-1); });
+    if(nextBtn) nextBtn.addEventListener("click", function(){ step(1); });
+    var frame = root.querySelector(".gallery-frame"), swipe = null;
+    if(frame && dots){
+      frame.addEventListener("pointerdown", function(e){
+        if(e.pointerType === "mouse" || e.target.closest(".gallery-nav")) return;
+        swipe = { x:e.clientX, y:e.clientY };
+      });
+      frame.addEventListener("pointerup", function(e){
+        if(!swipe) return;
+        var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+        swipe = null;
+        if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+      });
+      frame.addEventListener("pointercancel", function(){ swipe = null; });
     }
 
     root.querySelectorAll("[data-size]").forEach(function(btn){
