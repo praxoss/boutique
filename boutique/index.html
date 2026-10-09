@@ -1992,13 +1992,32 @@
     return '<button type="button" class="mega-col-title mega-col-link"'+linkAttrs({ univ:menu.univ, cats:[cat] })+'>'+esc(col.title)+'</button>';
   }
 
+  /* Colonnes d'une rubrique : celles composees dans le backoffice ; a
+     defaut, les articles de son univers (et categories), une colonne par
+     categorie. Vide s'il n'y a aucun article : le message s'affiche. */
+  function menuCols(menu){
+    if(menu.cols && menu.cols.length) return menu.cols;
+    if(!linkTarget(menu)) return [];
+    var pairs = pairsOf(menu.univ || [], menu.cats || []);
+    var items = PRODUCTS.filter(function(p){
+      return pairs.some(function(s){ return (!s.u || p.univ === s.u) && (!s.c || p.cat === s.c); });
+    });
+    var cols = [];
+    CATS.concat(items.map(function(p){ return p.cat; })).forEach(function(c){
+      if(cols.some(function(x){ return x.title === c; })) return;
+      var ids = items.filter(function(p){ return p.cat === c; }).map(function(p){ return p.id; });
+      if(ids.length) cols.push({ title:c, ids:ids });
+    });
+    return cols;
+  }
+
   function renderMainNav(){
     // pas de "Voir tout" en bas : le nom de la rubrique (et les titres de
     // colonne qui sont des categories) menent deja aux listes
     document.getElementById("mainNavList").innerHTML = MENUS.map(function(menu, i){
-      var panel, foot = "";
-      if(menu.cols.length){
-        panel = menu.cols.map(function(col){
+      var panel, foot = "", cols = menuCols(menu);
+      if(cols.length){
+        panel = cols.map(function(col){
           return '<div class="mega-col">'+
                    colTitleHTML(menu, col)+
                    '<div class="mega-col-items'+(col.ids.length >= 4 ? ' two' : '')+'">'+col.ids.map(megaLinkHTML).join("")+'</div>'+
@@ -2078,9 +2097,9 @@
 
   function renderDrawer(){
     document.getElementById("drawerBody").innerHTML = MENUS.map(function(menu){
-      var body;
-      if(menu.cols.length){
-        body = menu.cols.map(function(col){
+      var body, cols = menuCols(menu);
+      if(cols.length){
+        body = cols.map(function(col){
           return '<p class="mega-col-title" style="padding:6px 18px 0;">'+esc(col.title)+'</p>'+
                  col.ids.map(megaLinkHTML).join("");
         }).join("");
