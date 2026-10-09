@@ -492,6 +492,7 @@
   }
   .filter-group[open] summary::after{transform:rotate(-135deg);margin-top:2px;}
   .filter-body{padding:0 0 16px;display:flex;flex-direction:column;gap:10px;}
+  .univ-group .chk-all{font-weight:600;}
   .chk{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
   .chk input{width:16px;height:16px;accent-color:var(--navy);cursor:pointer;}
   .size-row{display:flex;flex-wrap:wrap;gap:8px;}
@@ -1261,7 +1262,12 @@
     {id:"o50", label:"Plus de 50€", test:function(p){return p>50;}}
   ];
 
-  var state = { univ:[], cats:[], sizes:[], colors:[], price:"all", sort:"new" };
+  /* sel : la selection de rayons, une liste de { u, c } (univers,
+     categorie). c vide = tout l'univers ; u vide = cette categorie dans
+     tous les univers (tuiles de l'accueil, anciens liens). Une categorie
+     presente dans plusieurs univers (T-shirts : Lifestyle, Femme...) se
+     choisit donc univers par univers. */
+  var state = { sel:[], sizes:[], colors:[], price:"all", sort:"new" };
 
   /* Univers (sur-categories : Rugby, Lifestyle, Accessoires, Femme,
      Enfant...), publies par le backoffice (catalogue.json, "universes") ;
@@ -1272,8 +1278,17 @@
      listes separees par "|", vides = pas de filtre. */
   function applyLinkFilter(el){
     var sp = function(v){ return v ? v.split("|").filter(Boolean) : []; };
-    state.cats = sp(el.getAttribute("data-cats"));
-    state.univ = sp(el.getAttribute("data-univ"));
+    state.sel = pairsOf(sp(el.getAttribute("data-univ")), sp(el.getAttribute("data-cats")));
+  }
+  function pairsOf(univ, cats){
+    if(univ.length) return [].concat.apply([], univ.map(function(u){
+      return cats.length ? cats.map(function(c){ return { u:u, c:c }; }) : [{ u:u, c:"" }];
+    }));
+    return cats.map(function(c){ return { u:"", c:c }; });
+  }
+  function selKey(list){ return list.map(function(s){ return s.u + "\u0001" + s.c; }).sort().join("|"); }
+  function inSel(p){
+    return !state.sel.length || state.sel.some(function(s){ return (!s.u || p.univ === s.u) && (!s.c || p.cat === s.c); });
   }
   function linkTarget(menu){ return !!((menu.cats && menu.cats.length) || (menu.univ && menu.univ.length)); }
   function linkAttrs(menu){
@@ -1344,8 +1359,7 @@
   function filteredProducts(){
     var band = PRICE_BANDS.filter(function(b){return b.id===state.price;})[0] || PRICE_BANDS[0];
     var list = PRODUCTS.filter(function(p){
-      if(state.univ.length && state.univ.indexOf(p.univ)===-1) return false;
-      if(state.cats.length && state.cats.indexOf(p.cat)===-1) return false;
+      if(!inSel(p)) return false;
       if(state.sizes.length && !p.sizes.some(function(s){return state.sizes.indexOf(s)!==-1;})) return false;
       if(state.colors.length && !p.colors.some(function(c){return state.colors.indexOf(c.n)!==-1;})) return false;
       if(!band.test(p.price)) return false;
@@ -1499,47 +1513,57 @@
      ferme de chaque groupe est conserve d'un rendu a l'autre, puisque
      chaque filtre clique re-genere toute la page. */
   var MOBILE_Q = window.matchMedia("(max-width:860px)");
-  var openGroups = { univ:true, cat:true, size:true, color:true, price:false };
+  var openGroups = { size:true, color:true, price:false };   // + "u:<univers>", ouverts quand on y coche
   function op(g){ return openGroups[g] ? " open" : ""; }
 
-  /* Titre de la liste : la rubrique du menu (ou la tuile de l'accueil) dont
-     les categories cochees correspondent, sinon la ou les categories. Il
-     suit donc aussi les cases que l'on coche a la main. */
+  /* Titre de la liste : la rubrique du menu (ou la tuile de l'accueil) qui
+     correspond exactement a la selection, sinon l'univers et/ou les
+     categories cochees. */
   function plpTitle(){
-    var c = state.cats, u = state.univ;
-    if(!c.length && !u.length) return "Toute la boutique";
-    function same(list, ref){ list = list || []; return list.length === ref.length && list.every(function(x){ return ref.indexOf(x) !== -1; }); }
-    var menu = MENUS.filter(function(m){ return same(m.cats, c) && same(m.univ, u); })[0];
+    var sel = state.sel;
+    if(!sel.length) return "Toute la boutique";
+    var k = selKey(sel);
+    var menu = MENUS.filter(function(m){ return selKey(pairsOf(m.univ || [], m.cats || [])) === k; })[0];
     if(menu) return menu.label;
-    if(!c.length) return u.length <= 2 ? u.join(" · ") : "Sélection";
-    if(!u.length){
-      var tile = (HOME.cats || []).filter(function(x){ return same(x.filter, c); })[0];
-      if(tile) return tile.label;
-      var block = (HOME.duo || []).filter(function(x){ return same(x.filter, c); })[0];
-      if(block) return block.title;
-    }
-    var base = c.length <= 3 ? c.join(" · ") : "Sélection";
-    return u.length === 1 ? base + " — " + u[0] : base;
+    var tile = (HOME.cats || []).filter(function(x){ return selKey(pairsOf([], x.filter || [])) === k; })[0];
+    if(tile) return tile.label;
+    var block = (HOME.duo || []).filter(function(x){ return selKey(pairsOf([], x.filter || [])) === k; })[0];
+    if(block) return block.title;
+    var us = sel.map(function(s){ return s.u; }).filter(function(x, i, all){ return x && all.indexOf(x) === i; });
+    var cs = sel.map(function(s){ return s.c; }).filter(function(x, i, all){ return x && all.indexOf(x) === i; });
+    var whole = sel.every(function(s){ return !s.c; });
+    if(whole) return us.length <= 2 ? us.join(" · ") : "Sélection";
+    var base = cs.length <= 3 ? cs.join(" · ") : "Sélection";
+    return us.length === 1 ? base + " — " + us[0] : base;
   }
 
   function renderPLP(){
     var list = filteredProducts();
     var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
 
-    var univFilters = UNIVS.filter(function(u){
-      return state.univ.indexOf(u) !== -1 || PRODUCTS.some(function(p){ return p.univ === u; });
-    }).map(function(u){
-      var checked = state.univ.indexOf(u)!==-1;
-      return '<label class="chk"><input type="checkbox" data-filter="univ" value="'+esc(u)+'" '+(checked?"checked":"")+'> '+esc(u)+'</label>';
-    }).join("");
-
-    // categories : celles qui ont des articles dans les univers choisis
-    var catFilters = CATS.filter(function(c){
-      return !state.univ.length || state.cats.indexOf(c) !== -1 ||
-        PRODUCTS.some(function(p){ return p.cat === c && state.univ.indexOf(p.univ) !== -1; });
-    }).map(function(c){
-      var checked = state.cats.indexOf(c)!==-1;
-      return '<label class="chk"><input type="checkbox" data-filter="cat" value="'+c+'" '+(checked?"checked":"")+'> '+c+'</label>';
+    /* Un bloc depliable par univers (Rugby, Lifestyle...), ses categories
+       dessous : seulement celles qui y ont des articles. Les articles sans
+       univers sont dans un bloc "Autres". */
+    var groups = UNIVS.filter(function(u){ return PRODUCTS.some(function(p){ return p.univ === u; }); });
+    if(PRODUCTS.some(function(p){ return !p.univ || groups.indexOf(p.univ) === -1; })) groups.push("");
+    function isOn(u, c){
+      return state.sel.some(function(s){ return s.u === u && s.c === c; }) ||
+        (c && state.sel.some(function(s){ return !s.u && s.c === c; }));
+    }
+    var univGroups = groups.map(function(u){
+      var inU = function(p){ return u ? p.univ === u : (!p.univ || groups.indexOf(p.univ) === -1); };
+      var cats = CATS.filter(function(c){ return PRODUCTS.some(function(p){ return inU(p) && p.cat === c; }); });
+      PRODUCTS.forEach(function(p){ if(inU(p) && cats.indexOf(p.cat) === -1) cats.push(p.cat); });
+      var name = u || "Autres";
+      var any = isOn(u, "") || cats.some(function(c){ return isOn(u, c); });
+      var g = "u:" + name;
+      if(any) openGroups[g] = true;
+      return '<details class="filter-group univ-group" data-group="'+esc(g)+'"'+(openGroups[g] ? " open" : "")+'><summary>'+esc(name)+'</summary><div class="filter-body">' +
+        '<label class="chk chk-all"><input type="checkbox" data-filter="sel" data-u="'+esc(u)+'" data-c=""'+(isOn(u, "")?" checked":"")+'> Tout '+esc(name)+'</label>' +
+        cats.map(function(c){
+          return '<label class="chk"><input type="checkbox" data-filter="sel" data-u="'+esc(u)+'" data-c="'+esc(c)+'"'+(isOn(u, c)?" checked":"")+'> '+esc(c)+'</label>';
+        }).join("") +
+      '</div></details>';
     }).join("");
 
     var sizeFilters = SIZES.map(function(s){
@@ -1572,8 +1596,7 @@
       '</div>' +
       '<div class="plp-layout">' +
         '<aside class="filters">' +
-          (univFilters ? '<details class="filter-group" data-group="univ"'+op("univ")+'><summary>Univers</summary><div class="filter-body">'+univFilters+'</div></details>' : '') +
-          '<details class="filter-group" data-group="cat"'+op("cat")+'><summary>Catégorie</summary><div class="filter-body">'+catFilters+'</div></details>' +
+          univGroups +
           '<details class="filter-group" data-group="size"'+op("size")+'><summary>Taille</summary><div class="filter-body"><div class="size-row">'+sizeFilters+'</div></div></details>' +
           '<details class="filter-group" data-group="color"'+op("color")+'><summary>Couleur</summary><div class="filter-body"><div class="swatch-row">'+colorFilters+'</div></div></details>' +
           '<details class="filter-group" data-group="price"'+op("price")+'><summary>Prix</summary><div class="filter-body">'+priceFilters+'</div></details>' +
@@ -1582,21 +1605,23 @@
       '</div>';
 
     wireCards(document.getElementById("view-plp"));
-    document.getElementById("view-plp").querySelectorAll('[data-filter="univ"]').forEach(function(el){
+    document.getElementById("view-plp").querySelectorAll('[data-filter="sel"]').forEach(function(el){
       el.addEventListener("change", function(){
-        var v = el.value;
-        state.univ = el.checked ? state.univ.concat([v]) : state.univ.filter(function(x){return x!==v;});
-        // une categorie qui n'a plus d'article dans ces univers ne doit pas tout masquer
-        state.cats = state.cats.filter(function(c){
-          return !state.univ.length || PRODUCTS.some(function(p){ return p.cat === c && state.univ.indexOf(p.univ) !== -1; });
-        });
-        renderPLP();
-      });
-    });
-    document.getElementById("view-plp").querySelectorAll('[data-filter="cat"]').forEach(function(el){
-      el.addEventListener("change", function(){
-        var v = el.value;
-        state.cats = el.checked ? state.cats.concat([v]) : state.cats.filter(function(x){return x!==v;});
+        var u = el.getAttribute("data-u"), c = el.getAttribute("data-c");
+        // une categorie choisie "dans tous les univers" (tuile de l'accueil)
+        // devient un choix par univers, pour pouvoir en decocher un
+        if(c) state.sel = [].concat.apply([], state.sel.map(function(s){
+          if(s.u || s.c !== c) return [s];
+          return groups.filter(function(g){ return PRODUCTS.some(function(p){ return p.cat === c && (g ? p.univ === g : !p.univ); }); })
+            .map(function(g){ return { u:g, c:c }; });
+        }));
+        if(!c){
+          state.sel = state.sel.filter(function(s){ return s.u !== u; });   // tout l'univers remplace ses categories
+          if(el.checked) state.sel.push({ u:u, c:"" });
+        } else {
+          state.sel = state.sel.filter(function(s){ return !(s.u === u && (s.c === c || !s.c)); });
+          if(el.checked) state.sel.push({ u:u, c:c });
+        }
         renderPLP();
       });
     });
@@ -2021,7 +2046,7 @@
     } else if(parked){
       parked.remove();
     }
-    var active = state.univ.length + state.cats.length + state.sizes.length + state.colors.length + (state.price!=="all" ? 1 : 0);
+    var active = state.sel.length + state.sizes.length + state.colors.length + (state.price!=="all" ? 1 : 0);
     document.getElementById("filterLabel").textContent = active ? "Filtrer et trier ("+active+")" : "Filtrer et trier";
     document.getElementById("sheetApply").textContent = "Voir les "+count+" article"+(count>1?"s":"");
   }
@@ -2042,7 +2067,7 @@
     });
 
     document.getElementById("sheetReset").addEventListener("click", function(){
-      state.univ = []; state.cats = []; state.sizes = []; state.colors = []; state.price = "all";
+      state.sel = []; state.sizes = []; state.colors = []; state.price = "all";
       renderPLP();
     });
 
