@@ -400,6 +400,13 @@
     font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
     color:var(--sub);margin:0 0 14px;
   }
+  .mega-col-link{
+    display:block;background:none;border:none;padding:0;cursor:pointer;font-family:inherit;text-align:left;
+    border-bottom:1px solid transparent;transition:color .15s ease,border-color .15s ease;
+  }
+  .mega-col-link:hover,.mega-col-link:focus-visible{color:var(--navy);border-bottom-color:var(--navy);}
+  /* 4 articles ou plus dans une colonne : sur deux colonnes */
+  .mega-col-items.two{display:grid;grid-template-columns:repeat(2,minmax(220px,auto));column-gap:28px;}
   .mega-link{
     display:flex;align-items:center;gap:12px;
     padding:8px 0;
@@ -1949,22 +1956,28 @@
            '</button>';
   }
 
+  /* Titre de colonne qui porte le nom d'une categorie (accents et
+     majuscules ignores) : lien vers cette categorie dans l'univers de la
+     rubrique. Sinon simple titre. */
+  function plain(s){ return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); }
+  function colTitleHTML(menu, col){
+    var cat = CATS.filter(function(c){ return plain(c) === plain(col.title); })[0];
+    if(!cat) return '<p class="mega-col-title">'+esc(col.title)+'</p>';
+    return '<button type="button" class="mega-col-title mega-col-link"'+linkAttrs({ univ:menu.univ, cats:[cat] })+'>'+esc(col.title)+'</button>';
+  }
+
   function renderMainNav(){
+    // pas de "Voir tout" en bas : le nom de la rubrique (et les titres de
+    // colonne qui sont des categories) menent deja aux listes
     document.getElementById("mainNavList").innerHTML = MENUS.map(function(menu, i){
       var panel, foot = "";
       if(menu.cols.length){
         panel = menu.cols.map(function(col){
           return '<div class="mega-col">'+
-                   '<p class="mega-col-title">'+esc(col.title)+'</p>'+
-                   col.ids.map(megaLinkHTML).join("")+
+                   colTitleHTML(menu, col)+
+                   '<div class="mega-col-items'+(col.ids.length >= 4 ? ' two' : '')+'">'+col.ids.map(megaLinkHTML).join("")+'</div>'+
                  '</div>';
         }).join("");
-        if(linkTarget(menu)){
-          foot = '<div class="mega-foot">'+
-                   '<button type="button" class="mega-all"'+linkAttrs(menu)+'>'+
-                   'Voir tout ' + esc(menu.label.toLowerCase()) +
-                   '</button></div>';
-        }
       } else {
         panel = '<div class="mega-col"><p class="mega-empty">'+esc(menu.note||"")+'</p></div>';
       }
