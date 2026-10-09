@@ -1533,6 +1533,7 @@
     var cs = sel.map(function(s){ return s.c; }).filter(function(x, i, all){ return x && all.indexOf(x) === i; });
     var whole = sel.every(function(s){ return !s.c; });
     if(whole) return us.length <= 2 ? us.join(" · ") : "Sélection";
+    if(us.length > 1 && sel.some(function(s){ return !s.c; })) return "Sélection";   // univers entier + rayon d'un autre
     var base = cs.length <= 3 ? cs.join(" · ") : "Sélection";
     return us.length === 1 ? base + " — " + us[0] : base;
   }
