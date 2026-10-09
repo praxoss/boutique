@@ -417,6 +417,14 @@
     color:var(--sub);
   }
   .mega-link .mega-icon svg{width:18px;height:18px;}
+  /* miniature photo de l'article (pictogramme si l'article n'a pas de photo) */
+  .mega-link .mega-thumb{
+    width:42px;height:56px;flex-shrink:0;overflow:hidden;border-radius:4px;
+    background:#fff;box-shadow:inset 0 0 0 1px var(--line);
+    transition:box-shadow .15s ease;
+  }
+  .mega-link .mega-thumb img{width:100%;height:100%;object-fit:contain;display:block;}
+  .mega-link:hover .mega-thumb{box-shadow:inset 0 0 0 1px var(--navy);}
   .mega-link .mega-name{flex:1;}
   .mega-link .mega-price{font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap;}
   .mega-empty{font-size:13px;color:var(--sub);max-width:32ch;line-height:1.6;}
@@ -1933,7 +1941,9 @@
     var p = PRODUCTS.filter(function(x){ return x.id===id; })[0];
     if(!p) return "";
     return '<button type="button" class="mega-link" data-goto="'+p.id+'">'+
-             '<span class="mega-icon" style="color:'+p.colors[0].h+'"><svg><use href="#'+p.icon+'"/></svg></span>'+
+             (p.photo
+               ? '<span class="mega-thumb"><img src="'+p.photo+'" alt="" loading="lazy"></span>'
+               : '<span class="mega-icon" style="color:'+p.colors[0].h+'"><svg><use href="#'+p.icon+'"/></svg></span>')+
              '<span class="mega-name">'+esc(p.name)+'</span>'+
              '<span class="mega-price">'+euro(p.price)+'</span>'+
            '</button>';
