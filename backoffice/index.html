@@ -2201,7 +2201,15 @@
       var v = el.value.trim();
       var taken = TYPOLOGIES.some(function(t){ return t !== c && t.id.toLowerCase() === v.toLowerCase(); });
       if(!v || taken){ toast(v ? "Une categorie porte deja ce nom" : "Donne un nom a la categorie"); el.value = c.id; return; }
-      if(v !== c.id){ var from = c.id; renameCategory(from, v); toast("« "+from+" » renommee en « "+v+" »"); }
+      if(v !== c.id){
+        var from = c.id, its = SKUS.filter(function(s){ return s.typ === from; });
+        // renommer deplace TOUS les articles de la categorie : on le dit avant
+        if(its.length && !confirm("Renommer « "+from+" » en « "+v+" » change la catégorie de "+its.length+" article"+(its.length>1?"s":"")+" : "+
+            its.map(function(s){ return s.name; }).join(", ")+".\n\nPour n'en déplacer qu'une partie, annule, crée une nouvelle catégorie et change la catégorie de ces articles dans leur fiche.\n\nRenommer quand même ?")){
+          el.value = from; return;
+        }
+        renameCategory(from, v); toast("« "+from+" » renommee en « "+v+" »");
+      }
     } else if(what === "icon"){
       c.icon = el.value;
       SKUS.forEach(function(s){ if(s.typ === c.id) s.icon = c.icon; });
@@ -2271,11 +2279,20 @@
         '<div class="cat-checks">' + UNIVERSES.map(function(u){
           return '<label class="cat-check"><input type="checkbox" data-menu="univ" value="'+esc(u.id)+'"'+((m.univ||[]).indexOf(u.id)>-1?' checked':'')+'> '+esc(u.id)+'</label>';
         }).join("") + '</div>' +
-        '<label class="sub">…et/ou de ces catégories</label>' +
+        '<label class="sub">'+((m.univ||[]).length ? '…en ne gardant que ces catégories (rien de coché = tout l\'univers)' : '…ou de ces catégories, tous univers confondus')+'</label>' +
         '<div class="cat-checks">' + TYPOLOGIES.map(function(c){
           return '<label class="cat-check"><input type="checkbox" data-menu="cat" value="'+esc(c.id)+'"'+(cats.indexOf(c.id)>-1?' checked':'')+'> '+esc(c.id)+'</label>';
         }).join("") + '</div>' +
-        (cats.length || (m.univ||[]).length ? '' : '<p class="home-hint" style="margin-top:6px">Rien de coché : le nom de la rubrique ouvre seulement son menu déroulant.</p>') +
+        (function(){
+          var us = m.univ || [];
+          if(!cats.length && !us.length) return '<p class="home-hint" style="margin-top:6px">Rien de coché : le nom de la rubrique ouvre seulement son menu déroulant.</p>';
+          var n = SKUS.filter(function(s){
+            return (!us.length || us.indexOf(s.univers) > -1) && (!cats.length || cats.indexOf(s.typ) > -1);
+          }).length;
+          return n
+            ? '<p class="home-hint" style="margin-top:6px">Le lien ouvre <b>'+n+' article'+(n>1?'s':'')+'</b>.</p>'
+            : '<p class="home-hint" style="margin-top:6px;color:var(--red)"><b>Le lien n\'ouvre aucun article</b> : aucun article ne correspond à cet univers et à ces catégories à la fois. Décoche les catégories pour ouvrir tout l\'univers.</p>';
+        })() +
         '<label class="sub">Colonnes du menu déroulant</label>' +
         cols.map(function(col, j){
           return '<div class="menu-col" data-c="'+j+'">' +
