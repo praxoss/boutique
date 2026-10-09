@@ -1441,6 +1441,8 @@
         if(e.target !== card) return;
         if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openProduct(id); }
       });
+      // tuile sans achat rapide (precommande) : rien d'autre a brancher
+      if(!panel || !openBtn) return;
 
       function closePanel(){ panel.hidden = true; card.classList.remove("quick-open"); openBtn.setAttribute("aria-expanded","false"); }
       function openPanel(){
