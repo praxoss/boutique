@@ -1292,6 +1292,16 @@
      ("categories", "menu") ; ces valeurs ne servent que de secours. */
   var CATS = ["Maillots","T-shirts","Sweats","Shorts","Chaussettes","Accessoires"];
   var SIZES = ["S","M","L","XL","XXL"];
+  /* Ordre des tailles dans le filtre : XS..XXXL, puis ages, puis le reste. */
+  var SIZE_ORDER = ["XXS","XS","S","M","L","XL","XXL","XXXL","4XL"];
+  function sizeRank(s){
+    var i = SIZE_ORDER.indexOf(String(s).toUpperCase());
+    if(i > -1) return i;
+    var age = String(s).match(/^(\d+)\s*ans?$/i);
+    if(age) return 100 + parseInt(age[1], 10);
+    var n = parseFloat(s);
+    return isNaN(n) ? 1000 : 200 + n;
+  }
   var COLOR_SWATCHES = [{n:"Bleu marine",h:"#0B1F3D"},{n:"Rouge",h:"#C8102E"},{n:"Blanc",h:"#FFFFFF"},{n:"Gris",h:"#8A8D93"}];
   var PRICE_BANDS = [
     {id:"all", label:"Tous les prix", test:function(){return true;}},
@@ -1607,14 +1617,29 @@
       '</div></details>';
     }).join("");
 
-    var sizeFilters = SIZES.map(function(s){
+    /* Tailles et couleurs proposees : celles des articles du rayon choisi
+       (univers / categorie), plus celles deja cochees. */
+    var pool = PRODUCTS.filter(inSel);
+    var sizes = [];
+    pool.forEach(function(p){ p.sizes.forEach(function(s){ if(sizes.indexOf(s) === -1) sizes.push(s); }); });
+    state.sizes.forEach(function(s){ if(sizes.indexOf(s) === -1) sizes.push(s); });
+    sizes.sort(function(a, b){ return sizeRank(a) - sizeRank(b) || a.localeCompare(b); });
+    var sizeFilters = sizes.map(function(s){
       var on = state.sizes.indexOf(s)!==-1;
-      return '<button type="button" class="chip" data-filter="size" value="'+s+'" aria-pressed="'+on+'">'+s+'</button>';
+      return '<button type="button" class="chip" data-filter="size" value="'+esc(s)+'" aria-pressed="'+on+'">'+esc(s)+'</button>';
     }).join("");
 
-    var colorFilters = COLOR_SWATCHES.map(function(c){
+    var swatches = [], count = {};
+    pool.forEach(function(p){ p.colors.forEach(function(c){
+      if(!count[c.n]){ count[c.n] = 0; swatches.push(c); }
+      count[c.n]++;
+    }); });
+    state.colors.forEach(function(n){ if(!count[n]){ count[n] = 0; swatches.push({ n:n, h:"#8A8D93" }); } });
+    swatches.sort(function(a, b){ return count[b.n] - count[a.n]; });   // les plus courantes d'abord
+    var colorFilters = swatches.map(function(c){
       var on = state.colors.indexOf(c.n)!==-1;
-      return '<button type="button" class="swatch" title="'+c.n+'" data-filter="color" value="'+c.n+'" aria-pressed="'+on+'" style="background:'+c.h+(c.h==="#FFFFFF"?";border-color:var(--white-swatch-border)":"")+'"></button>';
+      var light = /^#(f|e)[0-9a-f](f|e)[0-9a-f](f|e)[0-9a-f]$/i.test(c.h);
+      return '<button type="button" class="swatch" title="'+esc(c.n)+'" aria-label="'+esc(c.n)+'" data-filter="color" value="'+esc(c.n)+'" aria-pressed="'+on+'" style="background:'+c.h+(light?";border-color:var(--white-swatch-border)":"")+'"></button>';
     }).join("");
 
     var priceFilters = PRICE_BANDS.map(function(b){
