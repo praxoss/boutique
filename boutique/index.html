@@ -648,6 +648,7 @@
   .card-price{font-size:14px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;}
 
   .empty-state{padding:60px 0;text-align:center;color:var(--sub);font-size:15px;grid-column:1/-1;}
+  .empty-state [data-reset-filters]{margin-top:14px;font:inherit;font-weight:600;color:var(--ink);background:none;border:0;border-bottom:1px solid currentColor;padding:2px 0;cursor:pointer;}
 
   /* ---------- PDP ---------- */
   .pdp-back{
@@ -1327,6 +1328,8 @@
   function applyLinkFilter(el){
     var sp = function(v){ return v ? v.split("|").filter(Boolean) : []; };
     state.sel = pairsOf(sp(el.getAttribute("data-univ")), sp(el.getAttribute("data-cats")));
+    // une taille ou couleur choisie avant (ex. "6 ans") viderait la nouvelle liste
+    state.sizes = []; state.colors = []; state.price = "all";
     // arrivee par un lien : seuls les univers de la selection restent deplies
     Object.keys(openGroups).forEach(function(k){ if(k.indexOf("u:") === 0) delete openGroups[k]; });
   }
@@ -1590,7 +1593,7 @@
 
   function renderPLP(){
     var list = filteredProducts();
-    var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.</div>';
+    var grid = list.length ? list.map(cardHTML).join("") : '<div class="empty-state">Aucun article ne correspond à ces filtres.<br><button type="button" data-reset-filters>Effacer les filtres</button></div>';
 
     /* Un bloc depliable par univers (Rugby, Lifestyle...), ses categories
        dessous : seulement celles qui y ont des articles. Les articles sans
@@ -1707,6 +1710,11 @@
     });
     document.getElementById("view-plp").querySelectorAll('[data-filter="price"]').forEach(function(el){
       el.addEventListener("change", function(){ state.price = el.value; renderPLP(); });
+    });
+    var resetBtn = document.getElementById("view-plp").querySelector("[data-reset-filters]");
+    if(resetBtn) resetBtn.addEventListener("click", function(){   // garde la section, retire taille/couleur/prix
+      state.sizes = []; state.colors = []; state.price = "all";
+      renderPLP();
     });
     document.getElementById("view-plp").querySelectorAll(".filter-group").forEach(function(el){
       el.addEventListener("toggle", function(){ openGroups[el.getAttribute("data-group")] = el.open; });
