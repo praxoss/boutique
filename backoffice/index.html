@@ -213,6 +213,12 @@
   .home-card input[type=text]:focus,.home-card textarea:focus,.home-card select:focus{outline:none;border-color:var(--navy);}
   .home-card textarea{resize:vertical;}
   .home-hint{font-size:12px;color:var(--sub);line-height:1.6;margin:0;}
+  #textCards{display:flex;flex-direction:column;gap:18px;}
+  .text-field-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:14px 0 6px;}
+  .text-field-head label{margin:0 !important;}
+  .text-default{background:none;border:0;padding:0;font:inherit;font-size:12px;color:var(--sub);text-decoration:underline;cursor:pointer;}
+  .text-default:hover{color:var(--navy);}
+  .text-where{font-size:11.5px;color:var(--sub);margin:4px 0 0;}
   .home-row{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
   #homeCats .home-row:first-child,#homeDuo .home-row:first-child,#homeTrust .home-row:first-child{
     border-top:none;padding-top:0;margin-top:0;
@@ -555,6 +561,7 @@
       <button class="bo-tab" data-tab="commandes" aria-selected="false" role="tab">Commandes &amp; reappro</button>
       <button class="bo-tab" data-tab="categories" aria-selected="false" role="tab">Catégories &amp; menu</button>
       <button class="bo-tab" data-tab="accueil" aria-selected="false" role="tab">Page d'accueil</button>
+      <button class="bo-tab" data-tab="textes" aria-selected="false" role="tab">Textes</button>
     </div>
 
     <section id="tab-catalogue">
@@ -667,6 +674,17 @@
           <button class="btn-ghost" id="homeReset">Revenir aux valeurs par defaut</button>
         </div>
         <p class="home-hint" id="homeSaved"></p>
+      </div>
+    </section>
+
+    <section id="tab-textes" hidden>
+      <div class="home-admin">
+        <p class="home-hint">Les textes fixes de la boutique. <b>**mot**</b> met en gras, un retour a la ligne est garde. Un champ vide reprend le texte d'origine (en gris dans le champ). Les mots entre accolades, comme <b>{commande}</b>, sont remplaces par la boutique : garde-les tels quels.</p>
+        <div id="textCards"></div>
+        <div class="home-actions">
+          <button class="btn-navy" id="textsSave">Enregistrer les textes</button>
+        </div>
+        <p class="home-hint" id="textsSaved"></p>
       </div>
     </section>
 
@@ -984,7 +1002,7 @@
 
   function persistDraft(){
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, savedAt:new Date().toISOString() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, texts:TEXTS, savedAt:new Date().toISOString() }));
       hasDraft = true;
       renderPublishNote();
       return true;
@@ -2474,9 +2492,11 @@
     document.getElementById("tab-commandes").hidden = tab!=="commandes";
     document.getElementById("tab-accueil").hidden = tab!=="accueil";
     document.getElementById("tab-categories").hidden = tab!=="categories";
+    document.getElementById("tab-textes").hidden = tab!=="textes";
     if(tab==="catalogue") renderTable();
     else if(tab==="commandes") fetchOrders();
     else if(tab==="categories"){ renderPictos(); renderUnivTab(); renderCatsTab(); renderMenuTab(); }
+    else if(tab==="textes") renderTextsTab();
     else renderHomeTab();
   }
 
@@ -2642,6 +2662,97 @@
     }
   }
 
+  /* ---------------- textes de la boutique ---------------- */
+  /* Valeurs par defaut : les memes que DEFAULT_TEXTS de la boutique. On ne
+     garde dans TEXTS que ce qui differe, pour qu'un texte d'origine corrige
+     plus tard dans le code s'applique partout ou il n'a pas ete change. */
+  var TEXT_FIELDS = [
+    { group:"Bandeau et accueil", fields:[
+      { k:"promo", label:"Bandeau sous le menu", where:"En haut de toutes les pages",
+        def:"**Retrait gratuit** en main propre au club" },
+      { k:"featuredTitle", label:"Titre du produit du moment", where:"Accueil, sous le hero",
+        def:"Le produit du moment" },
+      { k:"featuredSub", label:"Sous-titre du produit du moment", where:"Accueil, sous le hero",
+        def:"Disponible à la commande, retrait au club house." }
+    ]},
+    { group:"Fiche produit", fields:[
+      { k:"pdpDelivery", label:"Encadre sous le bouton Ajouter au panier", where:"Toutes les fiches", multi:true,
+        def:"**Retrait gratuit** en main propre au club.\nLes commandes sont groupées : elles partent chez le fournisseur dès qu'on en a 20." },
+      { k:"pdpPickup", label:"Onglet « Retrait »", where:"Toutes les fiches", multi:true,
+        def:"Commandes groupées, livraison en main propre uniquement. Contactez un membre du bureau pour connaître la prochaine date de livraison." },
+      { k:"pdpCare", label:"Onglet « Composition et entretien »", where:"Toutes les fiches", multi:true,
+        def:"100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge." }
+    ]},
+    { group:"Précommande", fields:[
+      { k:"preorderIntro", label:"Texte au-dessus du champ e-mail", where:"Fiches en précommande", multi:true,
+        def:"**Article en précommande.** Choisis ta taille et laisse ton e-mail : on te prévient dès que la commande groupée est lancée. Rien à payer pour l'instant." },
+      { k:"preorderLegal", label:"Mention sous le bouton", where:"Fiches en précommande",
+        def:"Ton e-mail ne sert qu'à te prévenir pour cet article." },
+      { k:"preorderDone", label:"Message apres envoi", where:"Fiches en précommande ; {email} et {article} (nom, taille, couleur)", multi:true,
+        def:"**C'est noté !** On te prévient à {email} dès que la commande groupée de ce {article} est lancée." }
+    ]},
+    { group:"Panier et commande", fields:[
+      { k:"cartEmpty", label:"Panier vide", where:"Panier",
+        def:"Ton panier est vide. Ajoute un article depuis la grille ou une fiche produit." },
+      { k:"cartContact", label:"Au-dessus des coordonnees", where:"Panier, formulaire de commande",
+        def:"Pour te recontacter au moment du retrait au club house." },
+      { k:"cartPay", label:"Sous le bouton Commander et payer", where:"Panier, formulaire de commande",
+        def:"Paiement sécurisé par carte sur la page Stripe, puis retrait au club house." },
+      { k:"orderPaid", label:"Confirmation apres paiement", where:"Retour de Stripe ; {commande} = numero de commande", multi:true,
+        def:"Merci, ton paiement est bien reçu ! Commande **{commande}**. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house." },
+      { k:"orderUnpaid", label:"Confirmation sans paiement en ligne", where:"Si Stripe est coupe ; {commande} = numero de commande", multi:true,
+        def:"Commande **{commande}** enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte." }
+    ]},
+    { group:"Pied de page", fields:[
+      { k:"footerTagline", label:"Sous « Les Implacables »", where:"Pied de page",
+        def:"Boutique officielle du club" },
+      { k:"footerOrders", label:"Colonne « Commandes »", where:"Pied de page, une ligne par point", multi:true,
+        def:"Retrait en main propre au club\nCommandes groupées par 20\nNi reprise ni échange" },
+      { k:"footerLegal", label:"Mention tout en bas", where:"Pied de page",
+        def:"© Les Implacables — commandes traitées par le bureau du club." },
+      { k:"contactEmail", label:"Adresse du lien « Nous écrire »", where:"Pied de page",
+        def:"contact@implacables.fr" }
+    ]}
+  ];
+  var TEXTS = {};
+
+  function escAttr(v){ return esc(v).replace(/"/g, "&quot;"); }
+  function renderTextsTab(){
+    document.getElementById("textCards").innerHTML = TEXT_FIELDS.map(function(g){
+      return '<div class="home-card"><h2>'+esc(g.group)+'</h2>' + g.fields.map(function(f){
+        var v = typeof TEXTS[f.k] === "string" ? TEXTS[f.k] : f.def;
+        var rows = Math.min(6, Math.max(2, Math.ceil(v.length / 80) + (v.split("\n").length - 1)));
+        var input = f.multi
+          ? '<textarea id="t-'+f.k+'" data-text="'+f.k+'" rows="'+rows+'" placeholder="'+escAttr(f.def)+'">'+esc(v)+'</textarea>'
+          : '<input type="text" id="t-'+f.k+'" data-text="'+f.k+'" value="'+escAttr(v)+'" placeholder="'+escAttr(f.def)+'">';
+        return '<div class="text-field-head"><label for="t-'+f.k+'">'+esc(f.label)+'</label>' +
+               '<button type="button" class="text-default" data-text-default="'+f.k+'">Texte d\'origine</button></div>' +
+               input + '<p class="text-where">'+esc(f.where)+'</p>';
+      }).join("") + '</div>';
+    }).join("");
+  }
+  function collectTexts(){
+    var out = {};
+    TEXT_FIELDS.forEach(function(g){ g.fields.forEach(function(f){
+      var el = document.getElementById("t-" + f.k);
+      var v = el ? el.value.replace(/\r/g, "").trim() : (typeof TEXTS[f.k] === "string" ? TEXTS[f.k] : "");
+      if(v && v !== f.def) out[f.k] = v;
+    }); });
+    return out;
+  }
+  function saveTexts(){
+    var mail = document.getElementById("t-contactEmail");
+    if(mail && mail.value.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.value.trim())){
+      toast("L'adresse de « Nous écrire » n'est pas une adresse e-mail"); mail.focus(); return;
+    }
+    TEXTS = collectTexts();
+    if(persistDraft()){
+      document.getElementById("textsSaved").textContent = "Enregistre dans le brouillon. Clique sur Publier pour que la boutique les reprenne.";
+      toast("Textes enregistres (pense a publier)");
+      renderTextsTab();
+    }
+  }
+
   /* ---------------- publication ---------------- */
   function renderPublishNote(){
     var el = document.getElementById("publishNote");
@@ -2674,6 +2785,7 @@
      en fichiers assets/<id>.jpg pour alleger le catalogue. */
   function cataloguePayload(){
     collectHome();
+    if(document.getElementById("t-promo")) TEXTS = collectTexts();   // onglet Textes ouvert : on prend ce qui est saisi
     var skus = SKUS.map(function(s){
       var o = JSON.parse(JSON.stringify(s));
       if(o.photoDataUrl){ o.photo = o.photoDataUrl; o.photos = undefined; }
@@ -2681,7 +2793,7 @@
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS }, null, 2);
+    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, texts:TEXTS }, null, 2);
   }
 
   /* Secours : le meme contenu en fichier, a integrer a la main dans le depot
@@ -2740,6 +2852,7 @@
     if(src && Array.isArray(src.menu)) MENU = src.menu;
     if(src && Array.isArray(src.universes) && src.universes.length) UNIVERSES = src.universes;
     if(src && Array.isArray(src.icons) && src.icons.length){ ICONS = src.icons; installIcons(ICONS); }
+    if(src && src.texts && typeof src.texts === "object") TEXTS = src.texts;
   }
   var draft = readDraft();
   hasDraft = !!draft;
@@ -2754,7 +2867,7 @@
           applyHome(data.home);
         }
         applyStructure(data);
-        if(draft && draft.categories) applyStructure(draft);
+        if(draft && draft.categories) applyStructure(draft);   // (sans "texts", il garde ceux en ligne)
       })
       .catch(function(){ if(draft) applyStructure(draft); });
   loading.then(function(){
@@ -2853,6 +2966,14 @@
   });
 
   document.getElementById("homeSave").addEventListener("click", saveHome);
+  document.getElementById("textsSave").addEventListener("click", saveTexts);
+  document.getElementById("textCards").addEventListener("click", function(e){
+    var b = e.target.closest("[data-text-default]");
+    if(!b) return;
+    var k = b.getAttribute("data-text-default");
+    var f = [].concat.apply([], TEXT_FIELDS.map(function(g){ return g.fields; })).filter(function(x){ return x.k === k; })[0];
+    document.getElementById("t-" + k).value = f.def;
+  });
   document.getElementById("homeReset").addEventListener("click", function(){
     HOME = JSON.parse(JSON.stringify(HOME_DEFAULT));
     renderHomeTab();

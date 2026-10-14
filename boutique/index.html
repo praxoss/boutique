@@ -1118,7 +1118,7 @@
   <div class="search-suggest" id="searchSuggest" role="listbox" aria-label="Suggestions"></div>
 </div>
 </div>
-<div class="promo-bar"><b>Retrait gratuit</b> en main propre au club</div>
+<div class="promo-bar" data-text="promo"><b>Retrait gratuit</b> en main propre au club</div>
 
 <main>
   <div id="view-home" class="home" hidden></div>
@@ -1130,7 +1130,7 @@
   <div class="footer-inner">
     <div>
       <div class="footer-brand">Les Implacables</div>
-      <div class="footer-col" style="margin-top:8px">Boutique officielle du club</div>
+      <div class="footer-col" style="margin-top:8px" data-text="footerTagline">Boutique officielle du club</div>
     </div>
     <div class="footer-col">
       <b>La boutique</b>
@@ -1141,16 +1141,14 @@
     <div class="footer-col">
       <b>Le club</b>
       <a href="https://ffse.implacables.fr" target="_blank" rel="noopener">Classement FFSE</a><br>
-      <a href="mailto:contact@implacables.fr">Nous écrire</a>
+      <a href="mailto:contact@implacables.fr" id="contactLink">Nous écrire</a>
     </div>
     <div class="footer-col">
       <b>Commandes</b>
-      Retrait en main propre au club<br>
-      Commandes groupées par 20<br>
-      Ni reprise ni échange
+      <span data-text="footerOrders">Retrait en main propre au club<br>Commandes groupées par 20<br>Ni reprise ni échange</span>
     </div>
   </div>
-  <div class="footer-legal">© Les Implacables — commandes traitées par le bureau du club.</div>
+  <div class="footer-legal" data-text="footerLegal">© Les Implacables — commandes traitées par le bureau du club.</div>
 </footer>
 
 <div class="scrim" id="scrim"></div>
@@ -1176,12 +1174,12 @@
   <div class="cart-foot" id="cartFoot" hidden>
     <div class="cart-total"><span>Total</span><span id="cartTotal">0,00 €</span></div>
     <form class="cart-form" id="cartForm" hidden>
-      <p class="cart-form-hint">Pour te recontacter au moment du retrait au club house.</p>
+      <p class="cart-form-hint" data-text="cartContact">Pour te recontacter au moment du retrait au club house.</p>
       <input type="text" id="coName" placeholder="Nom complet" autocomplete="name" required>
       <input type="tel" id="coPhone" placeholder="Téléphone" autocomplete="tel" required>
       <input type="email" id="coEmail" placeholder="E-mail" autocomplete="email" required>
       <button type="submit" class="cart-cta" id="cartConfirm">Commander et payer</button>
-      <p class="cart-form-hint cart-pay-hint">Paiement sécurisé par carte sur la page Stripe, puis retrait au club house.</p>
+      <p class="cart-form-hint cart-pay-hint" data-text="cartPay">Paiement sécurisé par carte sur la page Stripe, puis retrait au club house.</p>
     </form>
     <button type="button" class="cart-cta" id="cartCheckout">Passer la commande</button>
   </div>
@@ -1367,6 +1365,46 @@
      choisit donc univers par univers. */
   var state = { sel:[], sizes:[], colors:[], price:"all", sort:"new", q:"" };   // q : recherche (#/recherche/...)
   var lastSearch = "";   // recherche dont les filtres sont en cours (retour depuis une fiche)
+
+  /* Textes de la boutique, modifiables dans le backoffice (onglet Textes,
+     catalogue.texts). Ici les valeurs par defaut, a garder identiques a
+     TEXT_FIELDS du backoffice. **gras**, retours a la ligne, et {commande},
+     {email}, {article} la ou c'est indique. */
+  var DEFAULT_TEXTS = {
+    promo:          "**Retrait gratuit** en main propre au club",
+    featuredTitle:  "Le produit du moment",
+    featuredSub:    "Disponible à la commande, retrait au club house.",
+    pdpDelivery:    "**Retrait gratuit** en main propre au club.\nLes commandes sont groupées : elles partent chez le fournisseur dès qu'on en a 20.",
+    pdpPickup:      "Commandes groupées, livraison en main propre uniquement. Contactez un membre du bureau pour connaître la prochaine date de livraison.",
+    pdpCare:        "100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge.",
+    preorderIntro:  "**Article en précommande.** Choisis ta taille et laisse ton e-mail : on te prévient dès que la commande groupée est lancée. Rien à payer pour l'instant.",
+    preorderLegal:  "Ton e-mail ne sert qu'à te prévenir pour cet article.",
+    preorderDone:   "**C'est noté !** On te prévient à {email} dès que la commande groupée de ce {article} est lancée.",
+    cartEmpty:      "Ton panier est vide. Ajoute un article depuis la grille ou une fiche produit.",
+    cartContact:    "Pour te recontacter au moment du retrait au club house.",
+    cartPay:        "Paiement sécurisé par carte sur la page Stripe, puis retrait au club house.",
+    orderPaid:      "Merci, ton paiement est bien reçu ! Commande **{commande}**. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house.",
+    orderUnpaid:    "Commande **{commande}** enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte.",
+    footerTagline:  "Boutique officielle du club",
+    footerOrders:   "Retrait en main propre au club\nCommandes groupées par 20\nNi reprise ni échange",
+    footerLegal:    "© Les Implacables — commandes traitées par le bureau du club.",
+    contactEmail:   "contact@implacables.fr"
+  };
+  var TEXTS = {};
+  function txt(k){ var v = TEXTS[k]; return typeof v === "string" && v.trim() ? v.trim() : DEFAULT_TEXTS[k]; }
+  // texte mis en forme : echappe, **gras**, retours a la ligne, variables (deja echappees ici)
+  function rich(k, vars){
+    var s = esc(txt(k)).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+    Object.keys(vars || {}).forEach(function(v){ s = s.split("{" + v + "}").join(esc(vars[v])); });
+    return s;
+  }
+  // textes poses dans la page elle-meme (bandeau, panier, pied de page)
+  function applyTexts(){
+    document.querySelectorAll("[data-text]").forEach(function(el){ el.innerHTML = rich(el.getAttribute("data-text")); });
+    var mail = txt("contactEmail");
+    var link = document.getElementById("contactLink");
+    if(link && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) link.href = "mailto:" + mail;
+  }
 
   /* Univers (sur-categories : Rugby, Lifestyle, Accessoires, Femme,
      Enfant...), publies par le backoffice (catalogue.json, "universes") ;
@@ -1886,10 +1924,10 @@
           '</div>' +
           (p.status === "precommande"
             ? '<form class="preorder-box" novalidate>' +
-                '<p class="preorder-intro"><b>Article en précommande.</b> Choisis ta taille et laisse ton e-mail : on te prévient dès que la commande groupée est lancée. Rien à payer pour l\'instant.</p>' +
+                '<p class="preorder-intro">'+rich("preorderIntro")+'</p>' +
                 '<input type="email" class="preorder-email" placeholder="ton@email.fr" autocomplete="email" aria-label="Ton e-mail" required>' +
                 '<button type="submit" class="btn-primary preorder-submit">Me prévenir</button>' +
-                '<p class="preorder-legal">Ton e-mail ne sert qu\'à te prévenir pour cet article.</p>' +
+                '<p class="preorder-legal">'+rich("preorderLegal")+'</p>' +
               '</form>'
             : '') +
           '<div class="pdp-actions">' +
@@ -1900,14 +1938,14 @@
             (compact ? '' : '<button class="btn-secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 1 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg> Ajouter aux favoris</button>') +
           '</div>' +
           (compact ? '' :
-          '<div class="pdp-delivery"><b>Retrait gratuit</b> en main propre au club.<br>Les commandes sont groupées : elles partent chez le fournisseur dès qu\'on en a 20.</div>' +
+          '<div class="pdp-delivery">'+rich("pdpDelivery")+'</div>' +
           '<ul class="pdp-meta">' +
             '<li>Reference : IMP-'+p.id.toUpperCase()+'</li>' +
           '</ul>' +
           '<div class="accordion">' +
             '<details class="accordion-item" open><summary>Description</summary><p>'+esc(p.desc)+'</p></details>' +
-            '<details class="accordion-item"><summary>Retrait</summary><p>Commandes groupées, livraison en main propre uniquement. Contactez un membre du bureau pour connaître la prochaine date de livraison.</p></details>' +
-            '<details class="accordion-item"><summary>Composition et entretien</summary><p>100 % polyester recyclé pour les hauts techniques, coton biologique pour les pièces en jersey. Lavage en machine à 30 degrés, ne pas utiliser de sèche-linge.</p></details>' +
+            '<details class="accordion-item"><summary>Retrait</summary><p>'+rich("pdpPickup")+'</p></details>' +
+            '<details class="accordion-item"><summary>Composition et entretien</summary><p>'+rich("pdpCare")+'</p></details>' +
           '</div>') +
         '</div>' +
       '</div>';
@@ -2021,8 +2059,8 @@
           .then(function(res){
             if(!res.ok) throw new Error(res.erreur || "Envoi impossible, réessaie dans un instant");
             rememberBuyer({ name:buyer.name, phone:buyer.phone, email:email });
-            pre.innerHTML = '<p class="preorder-done"><b>C\'est noté !</b> On te prévient à ' + esc(email) +
-              ' dès que la commande groupée de ce ' + esc(p.name) + ' (' + esc(st.size || "taille unique") + ', ' + esc(st.color.n) + ') est lancée.</p>';
+            pre.innerHTML = '<p class="preorder-done">' + rich("preorderDone", { email:email,
+              article:p.name + " (" + (st.size || "taille unique") + ", " + st.color.n + ")" }) + '</p>';
           })
           .catch(function(err){ btn.disabled = false; btn.textContent = "Me prévenir"; toast(err.message); });
       });
@@ -2524,8 +2562,8 @@
 
       '<section class="after-hero">' +
         '<div class="home-head">' +
-          '<div><h2 class="home-title">Le produit du moment</h2>' +
-          '<p class="home-sub">Disponible à la commande, retrait au club house.</p></div>' +
+          '<div><h2 class="home-title">'+rich("featuredTitle")+'</h2>' +
+          '<p class="home-sub">'+rich("featuredSub")+'</p></div>' +
         '</div>' +
         '<div class="home-product">' + productBlockHTML(f, true) + '</div>' +
       '</section>' +
@@ -2585,7 +2623,7 @@
 
   function renderCart(){
     if(!cart.length){
-      cartBody.innerHTML = '<p class="cart-empty">Ton panier est vide. Ajoute un article depuis la grille ou une fiche produit.</p>';
+      cartBody.innerHTML = '<p class="cart-empty">'+rich("cartEmpty")+'</p>';
       cartFoot.hidden = true;
       return;
     }
@@ -2698,9 +2736,7 @@
     btn.textContent = "Commander et payer";
     document.getElementById("cartCheckout").hidden = false;
     openCart();   // redessine le panier (vide) : le message vient apres
-    cartBody.innerHTML = '<p class="cart-empty">' + (paid
-      ? 'Merci, ton paiement est bien reçu ! Commande <b>' + esc(id) + '</b>. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house.'
-      : 'Commande <b>' + esc(id) + '</b> enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte.') + '</p>';
+    cartBody.innerHTML = '<p class="cart-empty">' + rich(paid ? "orderPaid" : "orderUnpaid", { commande:id }) + '</p>';
   }
 
   document.getElementById("cartClose").addEventListener("click", closeOverlays);
@@ -2897,6 +2933,8 @@
       if(Array.isArray(data.menu)) MENUS = data.menu;
       UNIVS = Array.isArray(data.universes) ? data.universes.map(function(u){ return u.id; }) : [];
       if(Array.isArray(data.icons)) installIcons(data.icons, "");
+      if(data.texts && typeof data.texts === "object") TEXTS = data.texts;
+      applyTexts();
     })
     .catch(function(){ /* catalogue injoignable : liste de secours */ })
     .then(start);
