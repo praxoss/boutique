@@ -1436,25 +1436,350 @@
      commandes du backoffice). Celui marque "def" sert a tous les articles
      qui n'en ont pas d'autre, sauf ceux en taille unique. A garder
      identique a DEFAULT_GUIDES du backoffice. */
-  var DEFAULT_GUIDES = [{
-    id:"sweat-ample", name:"Sweat à capuche, coupe ample", def:true,
-    sizes:["XXS","XS","S","M","L","XL","XXL","3XL","4XL","5XL"],
-    rows:[
-      { label:"A — Demi-tour de poitrine", values:["51","53","55","59","62","65","69","73","78","83"] },
-      { label:"B — Longueur du corps",     values:["64","67","71","74","76","78","80","82","84","85"] },
-      { label:"C — Longueur de manche",    values:["58,5","60,5","64,5","66,5","68,5","69","69,5","69,5","69,5","69,5"] }
-    ],
-    note:"Mesures du vêtement posé à plat, en centimètres.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : du haut de l'épaule jusqu'au bout de la manche.\nLe plus simple : mesure un vêtement qui te va bien et compare."
-  },{
-    id:"polo-ajuste", name:"Polo, coupe ajustée",
-    sizes:["S","M","L","XL","XXL","3XL","4XL","5XL"],
-    rows:[
-      { label:"A — Demi-tour de poitrine", values:["48","51","54","57","61","65","70","75"] },
-      { label:"B — Longueur du corps",     values:["70","72","74","76","78","80","82","83"] },
-      { label:"C — Longueur de manche",    values:["21","21,5","22","22,5","23","23,5","23,5","23,5"] }
-    ],
-    note:"Mesures du vêtement posé à plat, en centimètres. Coupe ajustée, près du corps : entre deux tailles, prends la plus grande.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : de la couture d'épaule jusqu'au bout de la manche."
-  }];
+  var DEFAULT_GUIDES = [
+    {
+      "id": "tshirt-ample",
+      "name": "T-shirt épais, coupe ample",
+      "sizes": [
+        "XXS",
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL"
+      ],
+      "rows": [
+        {
+          "label": "A — Demi-tour de poitrine",
+          "values": [
+            "49,5",
+            "52",
+            "55",
+            "58",
+            "61",
+            "64",
+            "67",
+            "70"
+          ]
+        },
+        {
+          "label": "B — Longueur du corps",
+          "values": [
+            "68",
+            "70",
+            "73",
+            "76",
+            "78",
+            "80",
+            "82",
+            "84"
+          ]
+        },
+        {
+          "label": "C — Longueur de manche",
+          "values": [
+            "22,5",
+            "23",
+            "24",
+            "25",
+            "26",
+            "26",
+            "27",
+            "28"
+          ]
+        }
+      ],
+      "note": "Mesures du vêtement posé à plat, en centimètres. Coupe ample : prends ta taille habituelle.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : de la couture d'épaule jusqu'au bout de la manche.\nLe plus simple : mesure un vêtement qui te va bien et compare."
+    },
+    {
+      "id": "tshirt-classique",
+      "name": "T-shirt col rond, coupe classique",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL",
+        "4XL",
+        "5XL"
+      ],
+      "rows": [
+        {
+          "label": "A — Demi-tour de poitrine",
+          "values": [
+            "48",
+            "50",
+            "53",
+            "56",
+            "59",
+            "62",
+            "65",
+            "68",
+            "71"
+          ]
+        },
+        {
+          "label": "B — Longueur du corps",
+          "values": [
+            "64",
+            "70",
+            "72",
+            "74",
+            "76",
+            "78",
+            "80",
+            "82",
+            "84"
+          ]
+        }
+      ],
+      "note": "Mesures du vêtement posé à plat, en centimètres.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas.\nLe plus simple : mesure un vêtement qui te va bien et compare."
+    },
+    {
+      "id": "sweat-ample",
+      "name": "Sweat à capuche, coupe ample",
+      "sizes": [
+        "XXS",
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL",
+        "4XL",
+        "5XL"
+      ],
+      "rows": [
+        {
+          "label": "A — Demi-tour de poitrine",
+          "values": [
+            "51",
+            "53",
+            "55",
+            "59",
+            "62",
+            "65",
+            "69",
+            "73",
+            "78",
+            "83"
+          ]
+        },
+        {
+          "label": "B — Longueur du corps",
+          "values": [
+            "64",
+            "67",
+            "71",
+            "74",
+            "76",
+            "78",
+            "80",
+            "82",
+            "84",
+            "85"
+          ]
+        },
+        {
+          "label": "C — Longueur de manche",
+          "values": [
+            "58,5",
+            "60,5",
+            "64,5",
+            "66,5",
+            "68,5",
+            "69",
+            "69,5",
+            "69,5",
+            "69,5",
+            "69,5"
+          ]
+        }
+      ],
+      "note": "Mesures du vêtement posé à plat, en centimètres.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : du haut de l'épaule jusqu'au bout de la manche.\nLe plus simple : mesure un vêtement qui te va bien et compare."
+    },
+    {
+      "id": "sweat-col-rond",
+      "name": "Sweat col rond",
+      "sizes": [
+        "XXS",
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL",
+        "4XL",
+        "5XL"
+      ],
+      "rows": [
+        {
+          "label": "A — Demi-tour de poitrine",
+          "values": [
+            "46,5",
+            "49",
+            "51,5",
+            "54",
+            "57",
+            "60",
+            "63",
+            "66",
+            "71",
+            "76"
+          ]
+        },
+        {
+          "label": "B — Longueur du corps",
+          "values": [
+            "60",
+            "62",
+            "67",
+            "71",
+            "73",
+            "75",
+            "77",
+            "79",
+            "81",
+            "82"
+          ]
+        },
+        {
+          "label": "C — Longueur de manche",
+          "values": [
+            "60,5",
+            "61,5",
+            "64",
+            "65,5",
+            "67",
+            "68,5",
+            "70",
+            "70",
+            "70",
+            "70"
+          ]
+        }
+      ],
+      "note": "Mesures du vêtement posé à plat, en centimètres.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : du haut de l'épaule jusqu'au bout de la manche.\nLe plus simple : mesure un vêtement qui te va bien et compare."
+    },
+    {
+      "id": "polo-ajuste",
+      "name": "Polo, coupe ajustée",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL",
+        "4XL",
+        "5XL"
+      ],
+      "rows": [
+        {
+          "label": "A — Demi-tour de poitrine",
+          "values": [
+            "48",
+            "51",
+            "54",
+            "57",
+            "61",
+            "65",
+            "70",
+            "75"
+          ]
+        },
+        {
+          "label": "B — Longueur du corps",
+          "values": [
+            "70",
+            "72",
+            "74",
+            "76",
+            "78",
+            "80",
+            "82",
+            "83"
+          ]
+        },
+        {
+          "label": "C — Longueur de manche",
+          "values": [
+            "21",
+            "21,5",
+            "22",
+            "22,5",
+            "23",
+            "23,5",
+            "23,5",
+            "23,5"
+          ]
+        }
+      ],
+      "note": "Mesures du vêtement posé à plat, en centimètres. Coupe ajustée, près du corps : entre deux tailles, prends la plus grande.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : de la couture d'épaule jusqu'au bout de la manche."
+    },
+    {
+      "id": "sweat-pluie",
+      "name": "Sweat de pluie",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL",
+        "4XL"
+      ],
+      "rows": [
+        {
+          "label": "A — Demi-tour de poitrine",
+          "values": [
+            "53",
+            "56",
+            "59",
+            "62",
+            "65",
+            "68",
+            "71",
+            "74"
+          ]
+        },
+        {
+          "label": "B — Longueur du corps",
+          "values": [
+            "73,5",
+            "75,5",
+            "77,5",
+            "79,5",
+            "81,5",
+            "83,5",
+            "85,5",
+            "87,5"
+          ]
+        },
+        {
+          "label": "C — Longueur de manche",
+          "values": [
+            "71,5",
+            "74,3",
+            "77,1",
+            "80",
+            "82,9",
+            "85,8",
+            "88,6",
+            "91,8"
+          ]
+        }
+      ],
+      "note": "Mesures du vêtement posé à plat, en centimètres. Il se porte par-dessus le maillot : il est déjà coupé large.\n**A** : d'une aisselle à l'autre, juste sous la manche. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : manches raglan, du col jusqu'au bout de la manche."
+    }
+  ];
   var GUIDES = DEFAULT_GUIDES;
   function sizeKey(s){ return String(s).toUpperCase().replace(/\s+/g, "").replace("XXXXL", "4XL").replace("XXXL", "3XL"); }
   function guideFor(p){
