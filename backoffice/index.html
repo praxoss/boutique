@@ -219,6 +219,11 @@
   .text-default{background:none;border:0;padding:0;font:inherit;font-size:12px;color:var(--sub);text-decoration:underline;cursor:pointer;}
   .text-default:hover{color:var(--navy);}
   .text-where{font-size:11.5px;color:var(--sub);margin:4px 0 0;}
+  .guide-row{border-top:1px solid var(--line);padding-top:16px;margin-top:16px;}
+  .guide-row:first-child{border-top:0;padding-top:0;margin-top:0;}
+  .guide-row textarea.guide-table{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;white-space:pre;overflow-x:auto;}
+  .guide-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--sub);}
+  .guide-foot label{display:inline-flex !important;align-items:center;gap:6px;margin:0 !important;color:var(--ink) !important;}
   .home-row{border-top:1px solid var(--line);padding-top:18px;margin-top:18px;}
   #homeCats .home-row:first-child,#homeDuo .home-row:first-child,#homeTrust .home-row:first-child{
     border-top:none;padding-top:0;margin-top:0;
@@ -681,8 +686,14 @@
       <div class="home-admin">
         <p class="home-hint">Les textes fixes de la boutique. <b>**mot**</b> met en gras, un retour a la ligne est garde. Un champ vide reprend le texte d'origine (en gris dans le champ). Les mots entre accolades, comme <b>{commande}</b>, sont remplaces par la boutique : garde-les tels quels.</p>
         <div id="textCards"></div>
+        <div class="home-card">
+          <h2>Guides des tailles</h2>
+          <p class="home-hint">Ouverts par le lien « Guide des tailles » des fiches (et du pied de page). Le guide <b>par défaut</b> sert à tous les articles, sauf ceux en taille unique ; un autre guide se choisit dans la fiche de l'article. Tableau : une ligne par mesure, valeurs séparées par <b>|</b> (ou collées depuis un tableur), la première ligne donne les tailles.</p>
+          <div id="guideRows"></div>
+          <button type="button" class="btn-ghost" id="guideAdd" style="margin-top:14px">+ Ajouter un guide</button>
+        </div>
         <div class="home-actions">
-          <button class="btn-navy" id="textsSave">Enregistrer les textes</button>
+          <button class="btn-navy" id="textsSave">Enregistrer</button>
         </div>
         <p class="home-hint" id="textsSaved"></p>
       </div>
@@ -823,6 +834,11 @@
     <div class="field">
       <label>Tailles disponibles</label>
       <div class="size-grid" id="sizeGrid"></div>
+    </div>
+    <div class="field">
+      <label for="f-guide">Guide des tailles</label>
+      <select id="f-guide"></select>
+      <span class="hint">Les guides se gèrent dans l'onglet Infos produits &amp; commandes. Les articles en taille unique n'affichent pas de guide.</span>
     </div>
     <div class="field">
       <label>Statut</label>
@@ -1002,7 +1018,7 @@
 
   function persistDraft(){
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, texts:TEXTS, savedAt:new Date().toISOString() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ skus:SKUS, home:HOME, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, texts:TEXTS, sizeGuides:GUIDES, savedAt:new Date().toISOString() }));
       hasDraft = true;
       renderPublishNote();
       return true;
@@ -1319,6 +1335,7 @@
     document.getElementById("f-hero").checked = isHero;
     document.getElementById("f-feature").checked = !!(sku && sku.feature);
     document.getElementById("f-hidden").checked = !!(sku && sku.hidden);
+    fillGuideSelect(sku ? sku.sizeGuide || "" : "");
     document.getElementById("heroFields").hidden = !isHero;
     document.getElementById("f-hero-title").value = sku && sku.heroTitle ? sku.heroTitle : "";
     document.getElementById("f-hero-text").value  = sku && sku.heroText  ? sku.heroText  : "";
@@ -1566,6 +1583,7 @@
       label: existing ? existing.label : undefined,
       feature: document.getElementById("f-feature").checked,
       hidden: document.getElementById("f-hidden").checked || undefined,
+      sizeGuide: document.getElementById("f-guide").value || undefined,
       hero: document.getElementById("f-hero").checked,
       heroTitle: document.getElementById("f-hero-title").value.trim(),
       heroText: document.getElementById("f-hero-text").value.trim(),
@@ -2496,7 +2514,7 @@
     if(tab==="catalogue") renderTable();
     else if(tab==="commandes") fetchOrders();
     else if(tab==="categories"){ renderPictos(); renderUnivTab(); renderCatsTab(); renderMenuTab(); }
-    else if(tab==="textes") renderTextsTab();
+    else if(tab==="textes"){ renderTextsTab(); renderGuides(); }
     else renderHomeTab();
   }
 
@@ -2717,6 +2735,99 @@
   var TEXTS = {};
 
   function escAttr(v){ return esc(v).replace(/"/g, "&quot;"); }
+  function norm(v){ return String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+  /* Guides des tailles : memes valeurs par defaut que DEFAULT_GUIDES de la
+     boutique (mesures fournisseur, sweat a capuche Cruiser 2.0 STSU177). */
+  var DEFAULT_GUIDES = [{
+    id:"sweat-ample", name:"Sweat à capuche, coupe ample", def:true,
+    sizes:["XXS","XS","S","M","L","XL","XXL","3XL","4XL","5XL"],
+    rows:[
+      { label:"A — Demi-tour de poitrine", values:["51","53","55","59","62","65","69","73","78","83"] },
+      { label:"B — Longueur du corps",     values:["64","67","71","74","76","78","80","82","84","85"] },
+      { label:"C — Longueur de manche",    values:["58,5","60,5","64,5","66,5","68,5","69","69,5","69,5","69,5","69,5"] }
+    ],
+    note:"Mesures du vêtement posé à plat, en centimètres.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : du haut de l'épaule jusqu'au bout de la manche.\nLe plus simple : mesure un vêtement qui te va bien et compare."
+  }];
+  var GUIDES = DEFAULT_GUIDES;
+
+  function guideTableText(g){
+    var lines = [["Mesures en cm"].concat(g.sizes || [])].concat((g.rows || []).map(function(r){ return [r.label].concat(r.values || []); }));
+    return lines.map(function(l){ return l.join(" | "); }).join("\n");
+  }
+  function parseGuideTable(text){
+    var lines = text.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean)
+      .map(function(l){ return l.split(/\t|\|/).map(function(c){ return c.trim(); }); });
+    if(lines.length < 2) return null;
+    var sizes = lines[0].slice(1).filter(Boolean);
+    if(!sizes.length) return null;
+    return { sizes:sizes, rows:lines.slice(1).map(function(l){ return { label:l[0], values:l.slice(1, sizes.length + 1) }; }) };
+  }
+  // memes regles que la boutique : guide choisi ou par defaut, et au moins une taille de l'article dedans
+  function sizeKey(v){ return String(v).toUpperCase().replace(/\s+/g, "").replace("XXXXL", "4XL").replace("XXXL", "3XL"); }
+  function guideUsers(g){
+    var keys = (g.sizes || []).map(sizeKey);
+    var ids = GUIDES.map(function(x){ return x.id; });
+    return SKUS.filter(function(s){
+      if(s.sizeGuide === "none") return false;
+      var mine = s.sizeGuide && ids.indexOf(s.sizeGuide) !== -1 ? s.sizeGuide === g.id : !!g.def;
+      return mine && (s.sizes || []).some(function(z){ return keys.indexOf(sizeKey(z)) !== -1; });
+    }).length;
+  }
+  function renderGuides(){
+    var host = document.getElementById("guideRows");
+    if(!host) return;
+    host.innerHTML = GUIDES.map(function(g, i){
+      var n = guideUsers(g);
+      return '<div class="guide-row" data-guide-i="'+i+'">' +
+        '<label for="g-name-'+i+'">Nom du guide</label>' +
+        '<input type="text" id="g-name-'+i+'" data-g="name" value="'+escAttr(g.name || "")+'" placeholder="Ex. T-shirt coupe droite">' +
+        '<label for="g-table-'+i+'">Tableau des mesures</label>' +
+        '<textarea id="g-table-'+i+'" class="guide-table" data-g="table" rows="'+((g.rows || []).length + 2)+'">'+esc(guideTableText(g))+'</textarea>' +
+        '<label for="g-note-'+i+'">Conseils de mesure</label>' +
+        '<textarea id="g-note-'+i+'" data-g="note" rows="3">'+esc(g.note || "")+'</textarea>' +
+        '<div class="guide-foot"><label><input type="radio" name="guideDef" data-g="def"'+(g.def ? " checked" : "")+'> Guide par défaut</label>' +
+          '<span>'+(n ? n + ' article' + (n > 1 ? 's' : '') + ' l\'affiche' + (n > 1 ? 'nt' : '') : 'Aucun article ne l\'affiche')+'</span>' +
+          '<button type="button" class="text-default" data-guide-del="'+i+'">Supprimer ce guide</button></div>' +
+      '</div>';
+    }).join("") || '<p class="home-hint">Aucun guide : le lien « Guide des tailles » est masqué partout.</p>';
+  }
+  function slugGuide(name, taken){
+    var base = norm(name).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "guide", id = base, k = 2;
+    while(taken.indexOf(id) !== -1) id = base + "-" + (k++);
+    return id;
+  }
+  // relit les guides saisis ; null si un tableau est illisible (le toast dit lequel)
+  function collectGuides(){
+    var rows = document.querySelectorAll("#guideRows .guide-row");
+    if(!rows.length) return GUIDES.length ? GUIDES : [];
+    var out = [], bad = null;
+    rows.forEach(function(row){
+      var i = +row.getAttribute("data-guide-i"), old = GUIDES[i] || {};
+      var name = row.querySelector('[data-g="name"]').value.trim() || "Guide sans nom";
+      var t = parseGuideTable(row.querySelector('[data-g="table"]').value);
+      if(!t){ bad = bad || name; return; }
+      var taken = out.map(function(g){ return g.id; });
+      // un guide tout juste ajoute prend l'identifiant de son vrai nom
+      var id = !old.id || (/^nouveau-guide/.test(old.id) && !SKUS.some(function(s){ return s.sizeGuide === old.id; }))
+        ? slugGuide(name, taken) : old.id;
+      out.push({ id:id, name:name,
+        def:row.querySelector('[data-g="def"]').checked || undefined,
+        sizes:t.sizes, rows:t.rows, note:row.querySelector('[data-g="note"]').value.trim() });
+    });
+    if(bad){ toast("Tableau illisible pour « " + bad + " » : une ligne de tailles puis une ligne par mesure"); return null; }
+    if(out.length && !out.some(function(g){ return g.def; })) out[0].def = true;
+    return out;
+  }
+  function fillGuideSelect(value){
+    var sel = document.getElementById("f-guide");
+    var def = GUIDES.filter(function(g){ return g.def; })[0];
+    sel.innerHTML = '<option value="">Par défaut'+(def ? ' ('+esc(def.name)+')' : '')+'</option>' +
+      GUIDES.filter(function(g){ return !g.def; }).map(function(g){ return '<option value="'+escAttr(g.id)+'">'+esc(g.name)+'</option>'; }).join("") +
+      '<option value="none">Aucun guide</option>';
+    sel.value = value;
+    if(sel.value !== value) sel.value = "";
+  }
   function renderTextsTab(){
     document.getElementById("textCards").innerHTML = TEXT_FIELDS.map(function(g){
       return '<div class="home-card"><h2>'+esc(g.group)+'</h2>' + g.fields.map(function(f){
@@ -2745,11 +2856,15 @@
     if(mail && mail.value.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.value.trim())){
       toast("L'adresse de « Nous écrire » n'est pas une adresse e-mail"); mail.focus(); return;
     }
+    var guides = collectGuides();
+    if(!guides) return;
     TEXTS = collectTexts();
+    GUIDES = guides;
     if(persistDraft()){
       document.getElementById("textsSaved").textContent = "Enregistre dans le brouillon. Clique sur Publier pour que la boutique les reprenne.";
-      toast("Textes enregistres (pense a publier)");
+      toast("Enregistre (pense a publier)");
       renderTextsTab();
+      renderGuides();
     }
   }
 
@@ -2785,7 +2900,7 @@
      en fichiers assets/<id>.jpg pour alleger le catalogue. */
   function cataloguePayload(){
     collectHome();
-    if(document.getElementById("t-promo")) TEXTS = collectTexts();   // onglet Textes ouvert : on prend ce qui est saisi
+    if(document.getElementById("t-promo")){ TEXTS = collectTexts(); var g = collectGuides(); if(g) GUIDES = g; }   // onglet ouvert : on prend ce qui est saisi
     var skus = SKUS.map(function(s){
       var o = JSON.parse(JSON.stringify(s));
       if(o.photoDataUrl){ o.photo = o.photoDataUrl; o.photos = undefined; }
@@ -2793,7 +2908,7 @@
       return o;
     });
     var home = JSON.parse(JSON.stringify(HOME));
-    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, texts:TEXTS }, null, 2);
+    return JSON.stringify({ skus:skus, home:home, categories:TYPOLOGIES, universes:UNIVERSES, menu:MENU, icons:ICONS, texts:TEXTS, sizeGuides:GUIDES }, null, 2);
   }
 
   /* Secours : le meme contenu en fichier, a integrer a la main dans le depot
@@ -2853,6 +2968,7 @@
     if(src && Array.isArray(src.universes) && src.universes.length) UNIVERSES = src.universes;
     if(src && Array.isArray(src.icons) && src.icons.length){ ICONS = src.icons; installIcons(ICONS); }
     if(src && src.texts && typeof src.texts === "object") TEXTS = src.texts;
+    if(src && Array.isArray(src.sizeGuides)) GUIDES = src.sizeGuides;
   }
   var draft = readDraft();
   hasDraft = !!draft;
@@ -2967,6 +3083,22 @@
 
   document.getElementById("homeSave").addEventListener("click", saveHome);
   document.getElementById("textsSave").addEventListener("click", saveTexts);
+  document.getElementById("guideAdd").addEventListener("click", function(){
+    var cur = collectGuides(); if(!cur) return;
+    GUIDES = cur.concat([{ id:slugGuide("Nouveau guide", cur.map(function(g){ return g.id; })), name:"Nouveau guide",
+      sizes:["S","M","L","XL"], rows:[{ label:"A — Demi-tour de poitrine", values:["","","",""] }], note:"" }]);
+    renderGuides();
+  });
+  document.getElementById("guideRows").addEventListener("click", function(e){
+    var b = e.target.closest("[data-guide-del]");
+    if(!b) return;
+    var cur = collectGuides(); if(!cur) return;
+    var g = cur[+b.getAttribute("data-guide-del")];
+    if(!confirm("Supprimer le guide « " + g.name + " » ? Les articles qui l'utilisaient reprendront le guide par défaut.")) return;
+    GUIDES = cur.filter(function(x){ return x !== g; });
+    if(GUIDES.length && !GUIDES.some(function(x){ return x.def; })) GUIDES[0].def = true;
+    renderGuides();
+  });
   document.getElementById("textCards").addEventListener("click", function(e){
     var b = e.target.closest("[data-text-default]");
     if(!b) return;

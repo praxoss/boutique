@@ -871,6 +871,33 @@
   }
   .drawer-close svg{width:18px;height:18px;}
   .drawer-body{overflow-y:auto;flex:1;padding-bottom:20px;}
+
+  /* Guide des tailles : fenetre au centre, feuille du bas sur mobile */
+  .size-modal{position:fixed;inset:0;z-index:60;background:rgba(11,31,61,.45);display:flex;align-items:center;justify-content:center;padding:24px;}
+  .size-modal[hidden]{display:none;}
+  .size-modal-box{background:var(--bg);width:100%;max-width:760px;max-height:calc(100vh - 48px);display:flex;flex-direction:column;}
+  .size-modal-body{overflow-y:auto;padding:20px 24px 26px;}
+  .size-guide-name{font-size:15px;font-weight:600;color:var(--navy);margin:0 0 14px;}
+  .size-guide-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px;}
+  .size-guide-tabs button{font:inherit;font-size:13px;padding:7px 12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;}
+  .size-guide-tabs button[aria-pressed="true"]{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .size-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);}
+  .size-table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums;}
+  .size-table th,.size-table td{padding:10px 12px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap;}
+  .size-table tr:last-child td{border-bottom:0;}
+  .size-table thead th{background:var(--surface);font-weight:700;}
+  .size-table th:first-child,.size-table td:first-child{text-align:left;position:sticky;left:0;background:var(--bg);font-weight:600;}
+  .size-table thead th:first-child{background:var(--surface);color:var(--sub);font-weight:400;}
+  .size-table .is-picked{background:rgba(200,16,46,.07);}
+  .size-table thead .is-picked{color:var(--red);}
+  .size-note{font-size:13px;color:var(--sub);line-height:1.7;margin:16px 0 0;}
+  .size-note b{color:var(--ink);}
+  .size-all{margin-top:12px;font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:none;border:0;border-bottom:1px solid currentColor;padding:2px 0;cursor:pointer;}
+  @media (max-width:640px){
+    .size-modal{align-items:flex-end;padding:0;}
+    .size-modal-box{max-height:88vh;padding-bottom:env(safe-area-inset-bottom,0px);}
+    .size-modal-body{padding:16px 16px 22px;}
+  }
   .drawer-group{border-bottom:1px solid var(--line);}
   .drawer-group summary{
     list-style:none;cursor:pointer;
@@ -1136,7 +1163,7 @@
       <b>La boutique</b>
       <a href="#/boutique">Tous les articles</a><br>
       <a href="#/boutique">Nouveautés</a><br>
-      <a href="#/boutique">Guide des tailles</a>
+      <a href="#/boutique" id="footerSizeGuide">Guide des tailles</a>
     </div>
     <div class="footer-col">
       <b>Le club</b>
@@ -1203,6 +1230,18 @@
   <div class="sheet-foot">
     <button type="button" class="sheet-reset" id="sheetReset">Tout effacer</button>
     <button type="button" class="sheet-apply" id="sheetApply">Voir les articles</button>
+  </div>
+</div>
+
+<div class="size-modal" id="sizeModal" role="dialog" aria-modal="true" aria-labelledby="sizeModalTitle" hidden>
+  <div class="size-modal-box">
+    <div class="drawer-head">
+      <span class="drawer-title" id="sizeModalTitle">Guide des tailles</span>
+      <button class="drawer-close" id="sizeModalClose" aria-label="Fermer le guide des tailles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="size-modal-body" id="sizeModalBody"></div>
   </div>
 </div>
 
@@ -1321,6 +1360,7 @@
           colors:    s.colors && s.colors.length ? s.colors : (ex.colors || []),
           sizes:     s.sizes  && s.sizes.length  ? s.sizes  : (ex.sizes  || []),
           desc:      s.desc  || ex.desc  || "",
+          sizeGuide: s.sizeGuide || "",    /* "" = guide par defaut, "none" = pas de guide */
           photo:     photo,
           /* une seule photo suffit a remplacer le picto sur la fiche produit */
           photos:    s.photos || ex.photos || (photo ? [photo] : undefined),
@@ -1391,6 +1431,80 @@
     contactEmail:   "contact@implacables.fr"
   };
   var TEXTS = {};
+
+  /* Guides des tailles (catalogue.sizeGuides, onglet Infos produits &
+     commandes du backoffice). Celui marque "def" sert a tous les articles
+     qui n'en ont pas d'autre, sauf ceux en taille unique. A garder
+     identique a DEFAULT_GUIDES du backoffice. */
+  var DEFAULT_GUIDES = [{
+    id:"sweat-ample", name:"Sweat à capuche, coupe ample", def:true,
+    sizes:["XXS","XS","S","M","L","XL","XXL","3XL","4XL","5XL"],
+    rows:[
+      { label:"A — Demi-tour de poitrine", values:["51","53","55","59","62","65","69","73","78","83"] },
+      { label:"B — Longueur du corps",     values:["64","67","71","74","76","78","80","82","84","85"] },
+      { label:"C — Longueur de manche",    values:["58,5","60,5","64,5","66,5","68,5","69","69,5","69,5","69,5","69,5"] }
+    ],
+    note:"Mesures du vêtement posé à plat, en centimètres.\n**A** : d'une aisselle à l'autre. **B** : du haut de l'épaule, près du col, jusqu'en bas. **C** : du haut de l'épaule jusqu'au bout de la manche.\nLe plus simple : mesure un vêtement qui te va bien et compare."
+  }];
+  var GUIDES = DEFAULT_GUIDES;
+  function sizeKey(s){ return String(s).toUpperCase().replace(/\s+/g, "").replace("XXXXL", "4XL").replace("XXXL", "3XL"); }
+  function guideFor(p){
+    if(!p || p.sizeGuide === "none") return null;
+    if(!p.sizes.some(function(s){ return !/unique/i.test(s); })) return null;   // taille unique : rien a mesurer
+    var g = GUIDES.filter(function(x){ return x.id === p.sizeGuide; })[0] || GUIDES.filter(function(x){ return x.def; })[0];
+    if(!g) return null;
+    // aucune taille de l'article dans le guide (ex. "8 ans" face a un guide adulte) : pas de guide
+    var keys = (g.sizes || []).map(sizeKey);
+    return p.sizes.some(function(s){ return keys.indexOf(sizeKey(s)) !== -1; }) ? g : null;
+  }
+  function richText(v){ return esc(v || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>"); }
+
+  var sizeModal = null, sizeReturn = null;
+  /* p : l'article (ses tailles sont mises en avant), ou rien depuis le pied de page */
+  function openSizeGuide(p, guideId, showAll){
+    var g = p ? guideFor(p) : (GUIDES.filter(function(x){ return x.id === guideId; })[0] || GUIDES[0]);
+    if(!g) return;
+    sizeModal = sizeModal || document.getElementById("sizeModal");
+    var mine = p ? p.sizes.map(sizeKey) : [];
+    var cols = g.sizes.map(function(s, i){ return { s:s, i:i, on:mine.indexOf(sizeKey(s)) !== -1 }; });
+    var picked = cols.filter(function(c){ return c.on; });
+    var shown = (picked.length && !showAll) ? picked : cols;
+    var tabs = !p && GUIDES.length > 1
+      ? '<div class="size-guide-tabs">' + GUIDES.map(function(x){
+          return '<button type="button" data-guide="'+esc(x.id)+'" aria-pressed="'+(x.id === g.id)+'">'+esc(x.name)+'</button>';
+        }).join("") + '</div>'
+      : '<p class="size-guide-name">'+esc(g.name)+(p ? ' · '+esc(p.name) : '')+'</p>';
+    document.getElementById("sizeModalBody").innerHTML = tabs +
+      '<div class="size-table-wrap"><table class="size-table">' +
+        '<thead><tr><th scope="col">Mesures en cm</th>' + shown.map(function(c){
+          return '<th scope="col"'+(c.on && showAll ? ' class="is-picked"' : '')+'>'+esc(c.s)+'</th>';
+        }).join("") + '</tr></thead>' +
+        '<tbody>' + (g.rows || []).map(function(r){
+          return '<tr><th scope="row">'+esc(r.label)+'</th>' + shown.map(function(c){
+            return '<td'+(c.on && showAll ? ' class="is-picked"' : '')+'>'+esc((r.values || [])[c.i] || "–")+'</td>';
+          }).join("") + '</tr>';
+        }).join("") + '</tbody>' +
+      '</table></div>' +
+      (picked.length && picked.length < cols.length && !showAll
+        ? '<button type="button" class="size-all" data-size-all>Voir toutes les tailles</button>' : '') +
+      (g.note ? '<p class="size-note">'+richText(g.note)+'</p>' : '');
+    sizeModal.querySelectorAll("[data-guide]").forEach(function(b){
+      b.addEventListener("click", function(){ openSizeGuide(null, b.getAttribute("data-guide")); });
+    });
+    var all = sizeModal.querySelector("[data-size-all]");
+    if(all) all.addEventListener("click", function(){ openSizeGuide(p, null, true); });
+    if(sizeModal.hidden){
+      sizeReturn = document.activeElement;
+      sizeModal.hidden = false;
+      document.getElementById("sizeModalClose").focus();
+    }
+  }
+  function closeSizeGuide(){
+    if(!sizeModal || sizeModal.hidden) return;
+    sizeModal.hidden = true;
+    if(sizeReturn && sizeReturn.focus) sizeReturn.focus();
+  }
+
   function txt(k){ var v = TEXTS[k]; return typeof v === "string" && v.trim() ? v.trim() : DEFAULT_TEXTS[k]; }
   // texte mis en forme : echappe, **gras**, retours a la ligne, variables (deja echappees ici)
   function rich(k, vars){
@@ -1917,7 +2031,7 @@
             '</div>' +
           '</div>' +
           '<div class="pdp-sizes">' +
-            '<div class="pdp-section-title">Sélectionner la taille <button class="size-guide-link" type="button">Guide des tailles</button></div>' +
+            '<div class="pdp-section-title">Sélectionner la taille' + (guideFor(p) ? ' <button class="size-guide-link" type="button">Guide des tailles</button>' : '') + '</div>' +
             '<div class="pdp-size-row">' +
               p.sizes.map(function(s){return '<button type="button" class="chip" data-size="'+s+'" aria-pressed="false">'+s+'</button>';}).join("") +
             '</div>' +
@@ -1952,6 +2066,8 @@
   }
 
   function wireProductBlock(root, p, preset){
+    var guideBtn = root.querySelector(".size-guide-link");
+    if(guideBtn) guideBtn.addEventListener("click", function(){ openSizeGuide(p); });
     var views = ["Face","Dos","Detail","Porte"];
     var hasPhotos = !!(p.photos && p.photos.length);
     var st = { color: p.colors[0], size: null };
@@ -2740,6 +2856,14 @@
   }
 
   document.getElementById("cartClose").addEventListener("click", closeOverlays);
+  document.getElementById("sizeModalClose").addEventListener("click", closeSizeGuide);
+  document.getElementById("sizeModal").addEventListener("click", function(e){ if(e.target === this) closeSizeGuide(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeSizeGuide(); });
+  document.getElementById("footerSizeGuide").addEventListener("click", function(e){
+    if(!GUIDES.length) return;   // sans guide, le lien mene a la boutique
+    e.preventDefault();
+    openSizeGuide(null, (GUIDES.filter(function(g){ return g.def; })[0] || GUIDES[0]).id);
+  });
   document.getElementById("cartBtn").addEventListener("click", openCart);
 
   /* ---------------- recherche : panneau et suggestions ---------------- */
@@ -2862,6 +2986,7 @@
     }
     closeOverlays();
     closeSearch();
+    closeSizeGuide();
     // la barre de filtres n'a de sens que sur la grille
     filterBar.classList.toggle("hide", !isShop);
     document.querySelector("main").classList.toggle("home-mode", !m && !isShop);
@@ -2934,6 +3059,7 @@
       UNIVS = Array.isArray(data.universes) ? data.universes.map(function(u){ return u.id; }) : [];
       if(Array.isArray(data.icons)) installIcons(data.icons, "");
       if(data.texts && typeof data.texts === "object") TEXTS = data.texts;
+      if(Array.isArray(data.sizeGuides)) GUIDES = data.sizeGuides;
       applyTexts();
     })
     .catch(function(){ /* catalogue injoignable : liste de secours */ })
