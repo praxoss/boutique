@@ -580,7 +580,7 @@
       ? '<div class="size-guide-tabs">' + GUIDES.map(function(x){
           return '<button type="button" data-guide="'+esc(x.id)+'" aria-pressed="'+(x.id === g.id)+'">'+esc(x.name)+'</button>';
         }).join("") + '</div>'
-      : '<p class="size-guide-name">'+esc(g.name)+(p ? ' · '+esc(p.name) : '')+'</p>';
+      : '<p class="size-guide-name">'+esc(g.name)+(p && p.name !== g.name ? ' · '+esc(p.name) : '')+'</p>';
     document.getElementById("sizeModalBody").innerHTML = tabs +
       '<div class="size-table-wrap"><table class="size-table">' +
         '<thead><tr><th scope="col">Mesures en cm</th>' + shown.map(function(c){
