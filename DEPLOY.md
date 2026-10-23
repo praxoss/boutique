@@ -30,7 +30,7 @@ envoie le catalogue (photos comprises) a une petite API sur le serveur,
   du depot)
 - `data/historique/` : une copie horodatee de chaque publication. Pour
   revenir en arriere : `cp historique/catalogue-<date>.json catalogue.json`
-  (en tant que `deploy`).
+  (en root, puis `chown boutique: catalogue.json`).
 
 `boutique/catalogue.json` du depot ne sert plus que de repli si
 `data/catalogue.json` manque.
@@ -85,9 +85,14 @@ dans le Google Sheet du club si `/etc/boutique/sheets.env` existe : voir
   `data/` ; `/backoffice/` pointe sur son dossier ; `/boutique/...` (chemins
   relatifs du backoffice) est renvoye a la racine. Le reste du depot
   (`.git`, `scripts/`, `server/`...) n'est pas servi.
-- API : `boutique-api.service` (node `server/api.js`, 127.0.0.1:3100,
-  utilisateur `deploy`), redemarree automatiquement par
-  `boutique-api-reload.path` quand le dossier `server/` change.
+- API : `boutique-api.service` (node `server/api.js`, 127.0.0.1:3100),
+  redemarree automatiquement par `boutique-api-reload.path` quand le dossier
+  `server/` change. Elle tourne sous son propre compte `boutique` (pas
+  `deploy`, qui fait aussi tourner le site FFSE), cloisonnee par systemd
+  (`/etc/systemd/system/boutique-api.service.d/securite.conf`) : seul
+  `/var/www/boutique/data` lui est accessible en ecriture. Ce dossier
+  appartient a `boutique` ; `commandes.json` et `precommandes.json` sont en
+  600 (donnees personnelles).
   `/api/commande` et `/api/stripe-webhook` sont publics (limites en debit
   par nginx) ; le reste de `/api/` demande l'identifiant du backoffice.
 - HTTPS : certificat Let's Encrypt `boutique.implacables.fr`, pose par
@@ -102,3 +107,20 @@ ssh root@178.104.195.46 systemctl list-timers boutique-pull.timer
 ssh root@178.104.195.46 journalctl -u boutique-pull.service -n 20
 ssh root@178.104.195.46 sudo -u deploy /usr/local/bin/boutique-pull   # mise a jour immediate
 ```
+
+## Securite du serveur (octobre 2026)
+
+- SSH : cle uniquement (`/etc/ssh/sshd_config.d/00-securite.conf`), plus
+  aucun mot de passe accepte.
+- Pare-feu `ufw` : seuls 22 (limite), 80 et 443 sont ouverts ; les
+  applications (3000 FFSE, 3100 boutique, 3200 coach) ne sont joignables
+  que par nginx.
+- `fail2ban` (`/etc/fail2ban/jail.d/implacables.local`) : 1 h de blocage
+  apres 5 echecs en 10 min, en SSH comme sur le mot de passe du backoffice ;
+  1 semaine pour les recidivistes. Debloquer une adresse :
+  `fail2ban-client unban <ip>`.
+- nginx : en-tetes de securite et CSP stricte (aucun script integre aux
+  pages : tout le code est dans `app.js`), version masquee
+  (`server_tokens off`).
+- Mises a jour de securite automatiques (`unattended-upgrades`) ; quand un
+  noyau en attend un, `/var/run/reboot-required` existe.
