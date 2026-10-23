@@ -23,7 +23,8 @@ var STATUTS = {
   a_regler: "À régler au retrait",
   attente_paiement: "Paiement en cours",
   expiree: "Paiement abandonné",
-  erreur_paiement: "Erreur de paiement"
+  erreur_paiement: "Erreur de paiement",
+  a_verifier: "Paiement à vérifier dans Stripe"
 };
 
 function doPost(e) {

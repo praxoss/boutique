@@ -1632,7 +1632,8 @@
     a_regler:         { label:"A regler au retrait",  cls:"attente" },
     attente_paiement: { label:"Paiement en cours",    cls:"attente" },
     expiree:          { label:"Paiement abandonne",   cls:"attente" },
-    erreur_paiement:  { label:"Erreur de paiement",   cls:"attente" }
+    erreur_paiement:  { label:"Erreur de paiement",   cls:"attente" },
+    a_verifier:       { label:"Paiement a verifier dans Stripe", cls:"attente" }   // montant ou session differents de la commande
   };
   // commandes qui comptent pour le reassort : payees ou a regler au retrait
   function countsForRestock(o){ return o.statut === "payee" || o.statut === "a_regler"; }
@@ -2724,7 +2725,7 @@
       { k:"cartPay", label:"Sous le bouton Commander et payer", where:"Panier, formulaire de commande",
         def:"Paiement sécurisé par carte sur la page Stripe, puis retrait au club house." },
       { k:"orderPaid", label:"Confirmation apres paiement", where:"Retour de Stripe ; {commande} = numero de commande", multi:true,
-        def:"Merci, ton paiement est bien reçu ! Commande **{commande}**. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house." },
+        def:"Merci ! Ta commande **{commande}** est enregistrée. Dès que Stripe confirme le paiement, tu reçois ton reçu par e-mail ; on te prévient quand elle est prête au club house." },
       { k:"orderUnpaid", label:"Confirmation sans paiement en ligne", where:"Si Stripe est coupe ; {commande} = numero de commande", multi:true,
         def:"Commande **{commande}** enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte." }
     ]},

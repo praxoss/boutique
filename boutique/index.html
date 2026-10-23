@@ -1339,8 +1339,29 @@
     });
   }
 
+  /* Le catalogue vient du backoffice, mais ses adresses d'images, couleurs et
+     identifiants finissent dans des attributs HTML et du CSS : on n'y laisse
+     passer que des formes connues. */
+  function safeUrl(u){
+    u = String(u || "");
+    return /^(assets\/[\w\-.\/]+|https:\/\/[^\s"'<>()\\]+|data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+)$/.test(u) ? u : "";
+  }
+  function safeColor(h){ return /^#[0-9a-f]{3,8}$/i.test(String(h || "")) ? h : "#8A8D93"; }
+  function safeId(v){ return /^[\w-]+$/.test(String(v || "")) ? String(v) : ""; }
   function applySkus(saved){
     if(!saved || !Array.isArray(saved) || saved.length === 0) return;
+    saved = saved.filter(function(s){ return s && safeId(s.id); }).map(function(s){
+      var o = Object.assign({}, s);
+      o.photo = safeUrl(s.photo);
+      o.photos = Array.isArray(s.photos) ? s.photos.map(safeUrl).filter(Boolean) : undefined;
+      if(o.photos && !o.photos.length) o.photos = undefined;
+      o.heroImage = safeUrl(s.heroImage) || undefined;
+      o.icon = safeId(s.icon) || undefined;
+      o.colors = Array.isArray(s.colors) ? s.colors.map(function(c){
+        return { n:String(c && c.n || ""), h:safeColor(c && c.h), photo:safeUrl(c && c.photo) || undefined };
+      }) : undefined;
+      return o;
+    });
     var enriched = {};
     PRODUCTS.forEach(function(p){ enriched[p.id] = p; });
     PRODUCTS = saved
@@ -1423,7 +1444,7 @@
     cartEmpty:      "Ton panier est vide. Ajoute un article depuis la grille ou une fiche produit.",
     cartContact:    "Pour te recontacter au moment du retrait au club house.",
     cartPay:        "Paiement sécurisé par carte sur la page Stripe, puis retrait au club house.",
-    orderPaid:      "Merci, ton paiement est bien reçu ! Commande **{commande}**. Tu reçois le reçu par e-mail ; on te prévient quand elle est prête au club house.",
+    orderPaid:      "Merci ! Ta commande **{commande}** est enregistrée. Dès que Stripe confirme le paiement, tu reçois ton reçu par e-mail ; on te prévient quand elle est prête au club house.",
     orderUnpaid:    "Commande **{commande}** enregistrée, merci ! Elle sera à régler au retrait au club house ; on te recontacte.",
     footerTagline:  "Boutique officielle du club",
     footerOrders:   "Retrait en main propre au club\nCommandes groupées par 20\nNi reprise ni échange",
@@ -1934,7 +1955,8 @@
   }
 
   function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
-  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+  // texte place dans le HTML, y compris entre guillemets d'attribut
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 
   function toast(msg){
     var t = document.getElementById("toast");
@@ -2845,6 +2867,10 @@
   }
   function applyHome(saved){
     if(saved && typeof saved === "object") HOME = Object.assign({}, HOME_DEFAULT, nonEmpty(saved));
+    ["cats", "duo"].forEach(function(k){
+      if(Array.isArray(HOME[k])) HOME[k] = HOME[k].map(function(x){ return Object.assign({}, x, { image:safeUrl(x && x.image) || null, id:safeId(x && x.id) || undefined }); });
+    });
+    if(HOME.hero && typeof HOME.hero === "object") HOME.hero = Object.assign({}, HOME.hero, { image:safeUrl(HOME.hero.image) || undefined, id:safeId(HOME.hero.id) || undefined });
   }
 
   /* Le produit mis en avant vient du backoffice (option cochee sur la fiche

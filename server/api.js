@@ -274,9 +274,19 @@ function stripeWebhook(raw, req, res){
   if(id){
     if((ev.type === "checkout.session.completed" && s.payment_status === "paid") ||
         ev.type === "checkout.session.async_payment_succeeded"){
-      updateOrder(id, { statut:"payee", payeeLe:new Date().toISOString(),
-        stripe:{ session:s.id, paiement:s.payment_intent, montant:(s.amount_total || 0) / 100 } });
-      console.log("paiement recu", id);
+      const o = loadOrders().find(x => x.id === id);
+      if(!o){ console.error("paiement pour une commande inconnue", id, s.id); }
+      else if(o.statut === "payee"){ /* evenement rejoue par Stripe : deja traite */ }
+      else {
+        // la session payee doit etre celle de la commande, pour son montant, en euros
+        const attendu = Math.round(o.total * 100);
+        const ok = s.amount_total === attendu && String(s.currency || "").toLowerCase() === "eur" &&
+          (!o.stripe || !o.stripe.session || o.stripe.session === s.id);
+        updateOrder(id, { statut:ok ? "payee" : "a_verifier", payeeLe:new Date().toISOString(),
+          stripe:{ session:s.id, paiement:s.payment_intent, montant:(s.amount_total || 0) / 100 } });
+        if(ok) console.log("paiement recu", id);
+        else console.error("paiement A VERIFIER", id, ": Stripe", s.amount_total, s.currency, s.id, "/ commande", attendu, o.stripe && o.stripe.session);
+      }
     } else if(ev.type === "checkout.session.expired" || ev.type === "checkout.session.async_payment_failed"){
       const o = loadOrders().find(x => x.id === id);
       if(o && o.statut === "attente_paiement") updateOrder(id, { statut:"expiree" });
@@ -321,6 +331,10 @@ function createPreorder(body, res){
 http.createServer((req, res) => {
   const user = req.headers["x-remote-user"] || "";
   const url = req.url.split("?")[0];
+  // Routes d'administration : nginx les protege par mot de passe et transmet
+  // l'identifiant. Sans lui, on refuse aussi ici (si nginx etait mal regle).
+  const PUBLIC = { "/api/commande":1, "/api/precommande":1, "/api/stripe-webhook":1 };
+  if(!PUBLIC[url] && !user) return send(res, 401, { ok:false, erreur:"Identification requise" });
 
   if(req.method === "GET" && url === "/api/sante") return send(res, 200, { ok:true, stripe:!!STRIPE_KEY });
   if(req.method === "GET" && url === "/api/commandes"){
