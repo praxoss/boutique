@@ -63,11 +63,14 @@ function readBody(req, max, cb){
   req.on("end", () => cb(over ? null : Buffer.concat(chunks)));
 }
 
-function writeJsonAtomic(file, obj){
+function writeJsonAtomic(file, obj, mode){
   const tmp = file + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + "\n");
+  fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + "\n", { mode:mode || 0o644 });
+  if(mode) fs.chmodSync(tmp, mode);
   fs.renameSync(tmp, file);
 }
+// commandes et precommandes : donnees personnelles, lisibles par le seul service
+const PRIVATE = 0o600;
 
 /* ---------------- publication du catalogue ---------------- */
 let publishing = false;
@@ -101,7 +104,7 @@ function publish(body, user, res){
 function loadOrders(){
   try { return JSON.parse(fs.readFileSync(ORDERS, "utf8")); } catch(e){ return []; }
 }
-function saveOrders(list){ writeJsonAtomic(ORDERS, list); }
+function saveOrders(list){ writeJsonAtomic(ORDERS, list, PRIVATE); }
 function updateOrder(id, patch){
   const list = loadOrders();
   const o = list.find(x => x.id === id);
@@ -119,11 +122,24 @@ function updateOrder(id, patch){
    "Renvoyer toutes les commandes" (backoffice) rattrape tout. */
 let sheetQueue = Promise.resolve();
 
+/* Un texte qui commence par = + - @ serait lu comme une formule par Google
+   Sheets (et Excel) : un client nomme =IMPORTDATA(...) ferait executer sa
+   formule a l'ouverture du Sheet. L'apostrophe devant le neutralise (elle
+   ne s'affiche pas). */
+function cellSafe(v){ return typeof v === "string" && /^[=+\-@\t\r]/.test(v) ? "'" + v : v; }
+function sheetSafe(o){
+  const c = o.client || {};
+  return Object.assign({}, o, {
+    client:{ nom:cellSafe(c.nom), telephone:cellSafe(c.telephone), email:cellSafe(c.email) },
+    lignes:(o.lignes || []).map(l => Object.assign({}, l, { article:cellSafe(l.article), taille:cellSafe(l.taille), couleur:cellSafe(l.couleur) }))
+  });
+}
+
 function sendToSheet(orders){
   return fetch(SHEETS_URL, {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ token:SHEETS_TOKEN, commandes:orders }),
+    body:JSON.stringify({ token:SHEETS_TOKEN, commandes:orders.map(sheetSafe) }),
     redirect:"follow"
   }).then(r => r.text().then(txt => {
     let j; try { j = JSON.parse(txt); } catch(e){ j = { ok:false, erreur:"reponse " + r.status }; }
@@ -322,7 +338,7 @@ function createPreorder(body, res){
   const same = list.find(x => x.email === email && x.id === s.id && x.taille === taille && x.couleur === couleur);
   if(same){ same.quantite = q; same.date = new Date().toISOString(); }
   else list.push({ date:new Date().toISOString(), id:s.id, article:s.name, taille:taille, couleur:couleur, quantite:q, email:email, nom:clean(req.nom, 120) });
-  writeJsonAtomic(PREORDERS, list);
+  writeJsonAtomic(PREORDERS, list, PRIVATE);
   console.log("precommande", s.id, taille, couleur, same ? "(mise a jour)" : "");
   send(res, 200, { ok:true, dejaInscrit:!!same });
 }
@@ -335,6 +351,17 @@ http.createServer((req, res) => {
   // l'identifiant. Sans lui, on refuse aussi ici (si nginx etait mal regle).
   const PUBLIC = { "/api/commande":1, "/api/precommande":1, "/api/stripe-webhook":1 };
   if(!PUBLIC[url] && !user) return send(res, 401, { ok:false, erreur:"Identification requise" });
+  // Le navigateur joint tout seul le mot de passe du backoffice, y compris a
+  // une requete partie d'un autre site (CSRF) : une ecriture d'administration
+  // doit venir de ce site-ci, en JSON (un formulaire d'un autre site ne peut
+  // ni l'un ni l'autre sans que le navigateur ne le bloque).
+  if(!PUBLIC[url] && req.method !== "GET"){
+    const origin = req.headers["origin"] || "";
+    const fetchSite = req.headers["sec-fetch-site"] || "";
+    const sameSite = origin ? origin === SITE : (!fetchSite || fetchSite === "same-origin");
+    const json = /^application\/json\b/i.test(req.headers["content-type"] || "");
+    if(!sameSite || !json) return send(res, 403, { ok:false, erreur:"Requete refusee (origine ou format)" });
+  }
 
   if(req.method === "GET" && url === "/api/sante") return send(res, 200, { ok:true, stripe:!!STRIPE_KEY });
   if(req.method === "GET" && url === "/api/commandes"){

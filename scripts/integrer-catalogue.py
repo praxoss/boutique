@@ -37,7 +37,11 @@ def extract(url, name, written):
     head, data = url.split(",", 1)
     mime = head[5:].split(";")[0]
     raw = base64.b64decode(data)
+    # le nom vient de l'identifiant de l'article : rien qui sorte de assets/
+    name = re.sub(r"[^A-Za-z0-9_-]+", "-", str(name)).strip("-")[:60] or "image"
     path = "assets/%s-%s%s" % (name, hashlib.sha1(raw).hexdigest()[:8], EXT.get(mime, ".jpg"))
+    if os.path.dirname(os.path.realpath(os.path.join(DEST, path))) != os.path.realpath(ASSETS):
+        raise SystemExit("Nom d'image refuse : " + path)
     if path not in written:
         with open(os.path.join(DEST, path), "wb") as f:
             f.write(raw)

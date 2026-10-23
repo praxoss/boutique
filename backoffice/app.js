@@ -132,7 +132,7 @@
   var paymentState = { stripe:false, webhook:false, sheets:false };
 
   function euro(n){ return n.toFixed(2).replace(".",",") + " €"; }
-  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
   function fmtDate(d){
     var parts = d.split("-");
     var months = ["janv.","fevr.","mars","avr.","mai","juin","juil.","aout","sept.","oct.","nov.","dec."];
@@ -1589,7 +1589,8 @@
   });
   document.getElementById("preCsv").addEventListener("click", function(){
     if(!PREORDERS.length){ toast("Aucune precommande"); return; }
-    var q = function(v){ v = String(v == null ? "" : v); return /[",;\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
+    // guillemets CSV, et apostrophe devant = + - @ pour qu'Excel n'y voie pas une formule
+    var q = function(v){ v = String(v == null ? "" : v); if(/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",;\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; };
     var rows = [["Date","E-mail","Article","Taille","Couleur","Quantite"]].concat(PREORDERS.map(function(x){
       return [x.date.slice(0,16).replace("T"," "), x.email, x.article, x.taille, x.couleur, x.quantite || 1];
     }));
@@ -2497,7 +2498,7 @@
   document.getElementById("sheetSyncBtn").addEventListener("click", function(){
     var btn = this;
     btn.disabled = true; btn.textContent = "Envoi…";
-    fetch("../api/sheet-sync", { method:"POST", credentials:"same-origin" })
+    fetch("../api/sheet-sync", { method:"POST", credentials:"same-origin", headers:{ "Content-Type":"application/json" }, body:"{}" })
       .then(function(r){ return r.json(); })
       .then(function(res){
         toast(res.ok ? res.commandes + " commande(s) envoyee(s) au Sheet" : "Echec : " + (res.erreur || "Google Sheet injoignable"));

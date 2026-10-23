@@ -49,6 +49,12 @@ function doPost(e) {
 }
 
 /* Une commande deja presente est mise a jour, sinon ajoutee. */
+/* Texte commencant par = + - @ : neutralise pour ne pas etre lu comme une
+   formule (le serveur le fait deja ; double securite). */
+function cellule_(v) {
+  return (typeof v === "string" && /^[=+\-@\t\r]/.test(v) && v.charAt(0) !== "'") ? "'" + v : v;
+}
+
 function ecrireCommande_(c) {
   var statut = STATUTS[c.statut] || c.statut;
   var date = c.date ? new Date(c.date) : "";
@@ -60,7 +66,7 @@ function ecrireCommande_(c) {
   }).join(", ");
 
   var feuille = onglet_(ONGLET_COMMANDES, ENTETES_COMMANDES);
-  var ligne = [c.id, date, client.nom || "", client.telephone || "", client.email || "", resume, c.total, statut, payeeLe];
+  var ligne = [c.id, date, cellule_(client.nom || ""), cellule_(client.telephone || ""), cellule_(client.email || ""), cellule_(resume), c.total, statut, payeeLe];
   var rang = rangs_(feuille, c.id)[0];
   if (rang) feuille.getRange(rang, 1, 1, ligne.length).setValues([ligne]);
   else feuille.appendRow(ligne);
@@ -71,7 +77,7 @@ function ecrireCommande_(c) {
     existants.forEach(function (r) { articles.getRange(r, ENTETES_ARTICLES.length).setValue(statut); });
   } else {
     lignes.forEach(function (l) {
-      articles.appendRow([c.id, date, client.nom || "", l.article, l.taille, l.couleur || "", l.quantite, l.prix,
+      articles.appendRow([c.id, date, cellule_(client.nom || ""), cellule_(l.article), cellule_(l.taille), cellule_(l.couleur || ""), l.quantite, l.prix,
         Math.round(l.prix * l.quantite * 100) / 100, statut]);
     });
   }
