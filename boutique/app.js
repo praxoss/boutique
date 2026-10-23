@@ -676,14 +676,17 @@
 
   var buyer = { name:"", phone:"", email:"" };
   try {
-    var savedBuyer = JSON.parse(localStorage.getItem("implacables-buyer") || "null");
+    // coordonnees gardees le temps de l'onglet seulement (ordinateurs partages) ;
+    // on efface celles qu'enregistraient les versions precedentes
+    try { localStorage.removeItem("implacables-buyer"); } catch(e){}
+    var savedBuyer = JSON.parse(sessionStorage.getItem("implacables-buyer") || "null");
     if(savedBuyer && typeof savedBuyer === "object"){
       buyer = { name:savedBuyer.name||"", phone:savedBuyer.phone||"", email:savedBuyer.email||"" };
     }
   } catch(e){}
   function rememberBuyer(b){
     buyer = { name:b.name, phone:b.phone, email:b.email };
-    try { localStorage.setItem("implacables-buyer", JSON.stringify(buyer)); } catch(e){}
+    try { sessionStorage.setItem("implacables-buyer", JSON.stringify(buyer)); } catch(e){}
   }
 
   function cartCount(){ return cart.reduce(function(n,l){ return n + l.qty; }, 0); }
