@@ -1578,23 +1578,64 @@
     }).join("");
   }
 
+  var navIndicator = null;
   function closeMenus(){
+    clearTimeout(navTimer);
     document.querySelectorAll(".main-nav-item.open").forEach(function(li){
       li.classList.remove("open");
       li.querySelector(".main-nav-link").setAttribute("aria-expanded","false");
     });
+    if(navIndicator) navIndicator.style.opacity = "0";
   }
 
   function openMenu(li){
+    clearTimeout(navTimer);
     if(li.classList.contains("open")) return;
+    var nav = document.getElementById("mainNav");
+    var swap = !!nav.querySelector(".main-nav-item.open");
+    // d'une rubrique a l'autre : pas de fondu du panneau, seul son contenu arrive
+    if(swap){ nav.classList.add("nav-swap"); requestAnimationFrame(function(){ requestAnimationFrame(function(){ nav.classList.remove("nav-swap"); }); }); }
     closeMenus();
     li.classList.add("open");
     li.querySelector(".main-nav-link").setAttribute("aria-expanded","true");
+    moveIndicator(li, !swap);
+    if(fxOn() && window.matchMedia("(min-width:861px)").matches){
+      var cols = Array.prototype.slice.call(li.querySelectorAll(".mega-inner > *, .mega-foot"));
+      FX.animate(cols, { opacity:[0, 1], y:[swap ? 4 : 8, 0] }, { duration:0.24, ease:EASE_OUT, delay:FX.stagger(0.035) })
+        .then(function(){ cols.forEach(fxClear); });
+    }
   }
 
+  /* Souligne unique qui glisse sous la rubrique ouverte (ordinateur). */
+  function moveIndicator(li, jump){
+    if(!navIndicator) return;
+    var nav = document.getElementById("mainNav"), link = li.querySelector(".main-nav-link");
+    var n = nav.getBoundingClientRect(), r = link.getBoundingClientRect();
+    var t = "translateX(" + (r.left - n.left + 2).toFixed(1) + "px) scaleX(" + Math.max(1, r.width - 4).toFixed(1) + ")";
+    if(jump || !fxOn()){   // premiere ouverture : il apparait sur place, sans glisser depuis la gauche
+      navIndicator.style.transition = "none";
+      navIndicator.style.transform = t;
+      navIndicator.getBoundingClientRect();
+      navIndicator.style.transition = "";
+    } else navIndicator.style.transform = t;
+    navIndicator.style.opacity = "1";
+  }
+
+  /* Intention au survol : on n'ouvre pas en traversant juste la barre
+     (90 ms), et on ne ferme pas si la souris sort un instant en allant vers
+     le panneau (180 ms). D'une rubrique ouverte a l'autre, c'est immediat. */
+  var navTimer = null;
   function wireMainNav(){
     var nav = document.getElementById("mainNav");
     var hoverable = window.matchMedia("(hover:hover)").matches;
+    if(hoverable){
+      navIndicator = document.createElement("span");
+      navIndicator.className = "nav-indicator";
+      navIndicator.setAttribute("aria-hidden", "true");
+      nav.appendChild(navIndicator);
+      nav.classList.add("has-indicator");
+      nav.addEventListener("mouseenter", function(){ clearTimeout(navTimer); });
+    }
 
     nav.querySelectorAll(".main-nav-item").forEach(function(li){
       var link = li.querySelector(".main-nav-link");
@@ -1609,12 +1650,19 @@
         if(li.classList.contains("open") && !hoverable) closeMenus(); else openMenu(li);
       });
       if(hoverable){
-        li.addEventListener("mouseenter", function(){ openMenu(li); });
+        li.addEventListener("mouseenter", function(){
+          clearTimeout(navTimer);
+          if(nav.querySelector(".main-nav-item.open")) openMenu(li);
+          else navTimer = setTimeout(function(){ openMenu(li); }, 90);
+        });
         link.addEventListener("focus", function(){ openMenu(li); });
       }
     });
 
-    if(hoverable) nav.addEventListener("mouseleave", closeMenus);
+    if(hoverable) nav.addEventListener("mouseleave", function(){
+      clearTimeout(navTimer);
+      navTimer = setTimeout(closeMenus, 180);
+    });
     document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeMenus(); });
     document.addEventListener("click", function(e){ if(!nav.contains(e.target)) closeMenus(); });
 
@@ -1654,9 +1702,39 @@
       } else {
         body = '<p class="mega-empty">'+esc(menu.note||"")+'</p>';
       }
-      return '<details class="drawer-group"><summary>'+esc(menu.label)+'</summary>'+body+'</details>';
+      return '<details class="drawer-group"><summary>'+esc(menu.label)+'</summary><div class="drawer-group-body">'+body+'</div></details>';
     }).join("");
   }
+
+  /* Rubriques du tiroir : elles se deplient et se replient (au lieu de
+     sauter), et en ouvrir une referme celle qui etait ouverte. */
+  function toggleDrawerGroup(d, open){
+    var body = d.querySelector(".drawer-group-body");
+    d._want = open;
+    if(!fxOn() || !body){ d.open = open; return; }
+    if(d._fx){ d._fx.stop(); d._fx = null; }
+    if(open){
+      d.open = true;
+      var h = body.scrollHeight;
+      d._fx = FX.animate(body, { height:["0px", h + "px"], opacity:[0, 1] }, { duration:0.3, ease:EASE_OUT });
+      d._fx.then(function(){ body.style.height = ""; body.style.opacity = ""; d._fx = null; });
+      var items = Array.prototype.slice.call(body.children);
+      FX.animate(items, { opacity:[0, 1], x:[-6, 0] }, { duration:0.26, ease:EASE_OUT, delay:FX.stagger(0.025, { startDelay:0.05 }) })
+        .then(function(){ items.forEach(fxClear); });
+    } else {
+      d._fx = FX.animate(body, { height:[body.offsetHeight + "px", "0px"], opacity:[1, 0] }, { duration:0.22, ease:EASE_OUT });
+      d._fx.then(function(){ d.open = false; body.style.height = ""; body.style.opacity = ""; d._fx = null; });
+    }
+  }
+  document.getElementById("drawerBody").addEventListener("click", function(e){
+    var sum = e.target.closest(".drawer-group > summary");
+    if(!sum) return;
+    e.preventDefault();
+    var d = sum.parentNode;
+    var open = !(d._want != null ? d._want : d.open);   // pendant un repli, un clic rouvre
+    if(open) document.querySelectorAll("#drawerBody .drawer-group[open]").forEach(function(o){ if(o !== d) toggleDrawerGroup(o, false); });
+    toggleDrawerGroup(d, open);
+  });
 
   function lockScroll(on){ document.body.style.overflow = on ? "hidden" : ""; }
 
@@ -1674,6 +1752,11 @@
 
   function openDrawer(){
     closeMenus();
+    if(fxOn()){
+      var rows = Array.prototype.slice.call(navDrawer.querySelectorAll(".drawer-group > summary"));
+      FX.animate(rows, { opacity:[0, 1], x:[-10, 0] }, { duration:0.32, ease:EASE_OUT, delay:FX.stagger(0.03, { startDelay:0.08 }) })
+        .then(function(){ rows.forEach(fxClear); });
+    }
     navDrawer.classList.add("open");
     navDrawer.setAttribute("aria-hidden","false");
     scrim.classList.add("show");

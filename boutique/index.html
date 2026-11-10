@@ -374,6 +374,27 @@
     display:none;
   }
   .main-nav-item.open .mega-panel{ display:block; }
+  /* Ordinateur : le panneau descend en fondu au lieu d'apparaitre d'un coup,
+     et repart en fondu. D'une rubrique a l'autre, il change sans fondu
+     (classe .nav-swap posee le temps du changement). */
+  @media (min-width:861px){
+    .mega-panel{
+      display:block;visibility:hidden;opacity:0;transform:translateY(-6px);pointer-events:none;
+      transition:opacity .14s ease,transform .2s cubic-bezier(.22,1,.36,1),visibility 0s linear .2s;
+    }
+    .main-nav-item.open .mega-panel{
+      visibility:visible;opacity:1;transform:none;pointer-events:auto;
+      transition:opacity .18s ease,transform .26s cubic-bezier(.22,1,.36,1),visibility 0s;
+    }
+    .main-nav.nav-swap .mega-panel{transition:none;}
+    /* souligne qui glisse d'une rubrique a l'autre */
+    .nav-indicator{
+      position:absolute;left:0;bottom:11px;height:1px;width:1px;background:var(--navy);
+      transform-origin:left;opacity:0;pointer-events:none;
+      transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .15s ease;
+    }
+    .main-nav.has-indicator .main-nav-item.open .main-nav-link::after{transform:scaleX(0);}
+  }
   .mega-inner{
     max-width:1280px;margin:0 auto;
     display:flex;
@@ -910,8 +931,10 @@
     content:"";width:7px;height:7px;flex-shrink:0;
     border-right:1px solid var(--sub);border-bottom:1px solid var(--sub);
     transform:rotate(45deg);margin-top:-3px;
+    transition:transform .25s cubic-bezier(.22,1,.36,1),margin-top .25s cubic-bezier(.22,1,.36,1);
   }
   .drawer-group[open] summary::after{transform:rotate(-135deg);margin-top:2px;}
+  .drawer-group-body{overflow:hidden;}
   .drawer-group .mega-link{padding:10px 18px;min-width:0;}
   .drawer-group .mega-empty{padding:0 18px 18px;max-width:none;}
   .drawer-group .mega-all{margin:2px 18px 18px;}
@@ -1267,7 +1290,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="vendor/motion.js?v=14.4.0"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 
 </body>
 </html>
