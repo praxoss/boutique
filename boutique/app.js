@@ -697,7 +697,7 @@
     badge.hidden = n === 0;
     badge.textContent = n;
   }
-  function addToCart(line){
+  function addToCart(line, source){
     var found = cart.filter(function(l){
       return l.id === line.id && l.couleur === line.couleur && l.taille === line.taille;
     })[0];
@@ -706,6 +706,7 @@
     saveCart();
     refreshCartBadge();
     renderCart();
+    fxFlyToCart(source);
     toast(line.article + " (" + line.taille + (line.couleur ? ", " + line.couleur : "") + ") ajouté au panier");
   }
 
@@ -719,6 +720,137 @@
     t.classList.add("show");
     clearTimeout(toast._h);
     toast._h = setTimeout(function(){ t.classList.remove("show"); }, 1800);
+  }
+
+  /* ---------------- animations (Motion, vendor/motion.js) ----------------
+     Rien ne bouge si Motion n'a pas pu se charger ou si le telephone demande
+     de reduire les animations : la page est alors identique, sans effet.
+     On n'anime que transform et opacity (fluide sur mobile) et on rend
+     l'element a son style d'origine a la fin. */
+  var FX = window.Motion || null;
+  var REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var EASE_OUT = [0.22, 1, 0.36, 1];
+  function fxOn(){ return !!FX && !REDUCE.matches; }
+  function fxClear(el){ el.style.transform = ""; el.style.opacity = ""; }
+
+  /* Apparition en cascade : ce qui est a l'ecran tout de suite (30 ms
+     d'ecart), le reste quand il y entre en defilant. */
+  function fxReveal(els, opts){
+    if(!fxOn() || !els || !els.length) return;
+    opts = opts || {};
+    var gap = opts.gap || 0.035, rise = opts.rise == null ? 10 : opts.rise, shown = 0;
+    Array.prototype.forEach.call(els, function(el){
+      var r = el.getBoundingClientRect();
+      var play = function(delay){
+        FX.animate(el, { opacity:[0, 1], y:[rise, 0] }, { duration:0.38, ease:EASE_OUT, delay:delay || 0 })
+          .then(function(){ fxClear(el); });
+      };
+      if(r.top < window.innerHeight && r.bottom > 0){ play(Math.min(shown++, 12) * gap); return; }
+      el.style.opacity = "0";
+      var stop = FX.inView(el, function(){ play(0); stop(); }, { margin:"0px 0px -8% 0px" });
+    });
+  }
+
+  /* Ajout au panier : une miniature de l'article file vers l'icone du
+     panier, puis le compteur rebondit. */
+  function fxFlyToCart(source){
+    var badge = document.getElementById("cartCount"), target = document.getElementById("cartBtn");
+    if(!fxOn() || !source || !target){ return; }
+    var a = source.getBoundingClientRect(), b = target.getBoundingClientRect();
+    if(!a.width || !a.height) return;
+    var ghost = source.cloneNode(true);
+    ghost.removeAttribute("id");
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.className = "fx-ghost";
+    ghost.style.left = a.left + "px"; ghost.style.top = a.top + "px";
+    ghost.style.width = a.width + "px"; ghost.style.height = a.height + "px";
+    if(source.tagName === "svg" || source.tagName === "SVG") ghost.style.color = getComputedStyle(source).color;
+    document.body.appendChild(ghost);
+    var dx = (b.left + b.width / 2) - (a.left + a.width / 2), dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    var s = Math.max(0.06, 28 / Math.max(a.width, a.height));
+    FX.animate(ghost, { x:[0, dx], y:[0, dy], scale:[1, s], opacity:[1, 1, 0.6] }, {
+      duration:0.6,
+      x:{ duration:0.6, ease:[0.4, 0, 0.2, 1] },
+      y:{ duration:0.6, ease:[0.55, 0, 0.9, 0.5] },   // depart a plat puis plongee : une courbe
+      scale:{ duration:0.6, ease:EASE_OUT }
+    }).then(function(){
+      ghost.remove();
+      if(!badge.hidden) FX.animate(badge, { scale:[1, 1.45, 1] }, { duration:0.4, ease:"easeOut" }).then(function(){ badge.style.transform = ""; });
+      FX.animate(target, { y:[0, -3, 0] }, { duration:0.3 }).then(function(){ target.style.transform = ""; });
+    });
+  }
+
+  /* Total qui defile jusqu'a sa nouvelle valeur. */
+  function fxCount(el, from, to, fmt){
+    if(!fxOn() || from === to || from == null){ el.textContent = fmt(to); return; }
+    FX.animate(from, to, { duration:0.45, ease:EASE_OUT, onUpdate:function(v){ el.textContent = fmt(v); } })
+      .then(function(){ el.textContent = fmt(to); });
+  }
+
+  /* Tiroir ou feuille qu'on referme en le faisant glisser au doigt.
+     axis "x" (sign 1 : vers la droite, -1 : vers la gauche) ou "y" (vers le bas). */
+  function swipeToClose(el, axis, sign, close, handle){
+    var start = null, d = 0;
+    el.addEventListener("pointerdown", function(e){
+      if(e.pointerType === "mouse" || !el.classList.contains("open")) return;
+      if(e.target.closest("input,textarea,select,.cart-qty")) return;
+      if(handle && !e.target.closest(handle)) return;
+      start = { x:e.clientX, y:e.clientY, t:Date.now(), drag:false }; d = 0;
+    });
+    el.addEventListener("pointermove", function(e){
+      if(!start) return;
+      var dx = e.clientX - start.x, dy = e.clientY - start.y;
+      var along = axis === "x" ? dx : dy, across = axis === "x" ? dy : dx;
+      if(!start.drag){
+        if(Math.abs(along) < 10) return;
+        if(Math.abs(across) > Math.abs(along) || along * sign < 0){ start = null; return; }   // defilement normal
+        start.drag = true; el.style.transition = "none";
+      }
+      d = Math.max(0, along * sign);
+      el.style.transform = axis === "x" ? "translateX(" + (d * sign) + "px)" : "translateY(" + d + "px)";
+    });
+    function end(){
+      if(!start) return;
+      var drag = start.drag, fast = d / Math.max(1, Date.now() - start.t) > 0.6;
+      start = null;
+      if(!drag) return;
+      el.style.transition = "";
+      var size = axis === "x" ? el.offsetWidth : el.offsetHeight;
+      el.style.transform = "";
+      if(d > size * 0.3 || fast) close();
+    }
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  }
+
+  /* Changement de page : fondu court, et la photo de la carte cliquee se
+     transforme en grande photo de la fiche (View Transitions du navigateur). */
+  var morphFrom = null;
+  function fxNavigate(update){
+    var from = morphFrom; morphFrom = null;
+    if(!fxOn() || !document.startViewTransition){ update(); return; }
+    // la photo de depart doit etre a l'ecran, sinon simple fondu
+    if(from){ var r = from.getBoundingClientRect(); if(!(r.bottom > 0 && r.top < window.innerHeight)) from = null; }
+    if(from) from.style.viewTransitionName = "produit";
+    var ran = false;
+    function run(){
+      if(ran) return; ran = true;
+      if(from) from.style.viewTransitionName = "";
+      update();
+      var big = from && document.querySelector("#view-pdp .gallery-img, #view-pdp .gallery-svg");
+      if(big) big.style.viewTransitionName = "produit";
+    }
+    var vt = document.startViewTransition(run);
+    // une transition sautee (filet ci-dessous, ou clic rapide) n'est pas une erreur
+    vt.ready.catch(function(){}); vt.updateCallbackDone.catch(function(){});
+    // filet : si le navigateur ne lance pas la transition (onglet en arriere-plan...),
+    // la page change quand meme, sans animation
+    setTimeout(function(){ if(!ran){ try { vt.skipTransition(); } catch(e){} run(); } }, 350);
+    vt.finished.finally(function(){
+      if(from) from.style.viewTransitionName = "";
+      var big = document.querySelector("#view-pdp .gallery-img, #view-pdp .gallery-svg");
+      if(big) big.style.viewTransitionName = "";
+    });
   }
 
   /* ---------------- recherche ---------------- */
@@ -847,7 +979,13 @@
   /* Tuiles : ouverture de la fiche produit + achat rapide. Utilise aussi
      bien pour la grille que pour les suggestions en bas de fiche. */
   var pendingSize = null;
-  function openProduct(id){ location.hash = "#/produit/"+id; window.scrollTo(0, 0); }
+  function openProduct(id, media){
+    var go = "#/produit/" + id;
+    if(location.hash === go){ window.scrollTo(0, 0); return; }
+    morphFrom = media && fxOn() && document.startViewTransition ? media : null;
+    if(!morphFrom) window.scrollTo(0, 0);
+    location.hash = go;
+  }
 
   function wireCards(root){
     root.querySelectorAll(".card").forEach(function(card){
@@ -857,9 +995,10 @@
       var openBtn = card.querySelector("[data-quick]");
 
       card.addEventListener("click", function(e){
-        if(e.target.closest("[data-preorder]")){ e.stopPropagation(); openProduct(id); return; }
+        var media = card.querySelector(".card-media > img, .card-media > svg");
+        if(e.target.closest("[data-preorder]")){ e.stopPropagation(); openProduct(id, media); return; }
         if(e.target.closest(".quick") || e.target.closest(".quick-panel")) return;
-        openProduct(id);
+        openProduct(id, media);
       });
       card.addEventListener("keydown", function(e){
         if(e.target !== card) return;
@@ -912,7 +1051,7 @@
           couleur: colorBtn ? colorBtn.getAttribute("data-quick-color") : p.colors[0].n,
           taille: sizeBtn.getAttribute("data-quick-size"),
           prix: p.price
-        });
+        }, card.querySelector(".card-media > img, .card-media > svg"));
         closePanel();
       });
     });
@@ -1087,6 +1226,7 @@
       el.addEventListener("toggle", function(){ openGroups[el.getAttribute("data-group")] = el.open; });
     });
     syncFilterHost(list.length);
+    fxReveal(document.querySelectorAll("#view-plp .product-grid > .card"));
     document.getElementById("sortSelect").addEventListener("change", function(e){ state.sort = e.target.value; renderPLP(); });
   }
 
@@ -1197,9 +1337,21 @@
       root.querySelector(".color-name").textContent = p.colors[i].n;
       if(!hasPhotos) root.querySelector(".gallery-svg").style.color = p.colors[i].h;
     }
-    function showPhoto(i){
+    /* dir : 1 photo suivante, -1 precedente, 0 changement de couleur (fondu seul) */
+    function showPhoto(i, dir){
       if(dots) dots.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
-      root.querySelector(".gallery-img").src = p.photos[i];
+      var img = root.querySelector(".gallery-img"), url = p.photos[i];
+      if(!img || img.getAttribute("src") === url) return;
+      if(!fxOn()){ img.src = url; return; }
+      var token = (showPhoto.n = (showPhoto.n || 0) + 1);
+      var next = new Image(); next.src = url;
+      (next.decode ? next.decode() : Promise.resolve()).catch(function(){}).then(function(){
+        if(token !== showPhoto.n) return;   // une autre photo a ete demandee entre-temps
+        img.src = url;
+        img.style.translate = "";
+        FX.animate(img, { opacity:[0.25, 1], x:[(dir || 0) * 18, 0] }, { duration:0.3, ease:EASE_OUT })
+          .then(function(){ fxClear(img); });
+      });
     }
     function photoOfColor(i){ return hasPhotos && p.colors[i] && p.colors[i].photo ? p.photos.indexOf(p.colors[i].photo) : -1; }
 
@@ -1208,7 +1360,7 @@
         var i = parseInt(btn.getAttribute("data-i"),10);
         selectColor(i);
         var j = photoOfColor(i);
-        if(j > -1) showPhoto(j);
+        if(j > -1) showPhoto(j, 0);
       });
     });
     // on ouvre sur la photo principale ; si elle montre une couleur, c'est celle-ci qu'on selectionne
@@ -1219,11 +1371,14 @@
 
     /* Fleches et balayage : on avance ou recule d'une vue, en boucle, en
        passant par les points (qui changent la photo et la couleur liee). */
+    var stepDir = 0;
     function step(delta){
       if(!dots) return;
       var bs = dots.querySelectorAll("button"), n = bs.length;
       var cur = Array.prototype.findIndex.call(bs, function(b){ return b.getAttribute("aria-current") === "true"; });
+      stepDir = delta;
       bs[((cur < 0 ? 0 : cur) + delta + n) % n].click();
+      stepDir = 0;
     }
     var prevBtn = root.querySelector(".gallery-nav.prev"), nextBtn = root.querySelector(".gallery-nav.next");
     if(prevBtn) prevBtn.addEventListener("click", function(){ step(-1); });
@@ -1234,13 +1389,24 @@
         if(e.pointerType === "mouse" || e.target.closest(".gallery-nav")) return;
         swipe = { x:e.clientX, y:e.clientY };
       });
+      frame.addEventListener("pointermove", function(e){
+        if(!swipe || !fxOn()) return;
+        var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y, img = frame.querySelector(".gallery-img");
+        if(img && Math.abs(dx) > Math.abs(dy)) img.style.translate = (dx * 0.35).toFixed(1) + "px 0";
+      });
       frame.addEventListener("pointerup", function(e){
         if(!swipe) return;
         var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
         swipe = null;
+        var img = frame.querySelector(".gallery-img");
+        if(img) img.style.translate = "";
         if(Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
       });
-      frame.addEventListener("pointercancel", function(){ swipe = null; });
+      frame.addEventListener("pointercancel", function(){
+        swipe = null;
+        var img = frame.querySelector(".gallery-img");
+        if(img) img.style.translate = "";
+      });
     }
 
     root.querySelectorAll("[data-size]").forEach(function(btn){
@@ -1254,9 +1420,10 @@
       dots.querySelectorAll("button").forEach(function(btn){
         btn.addEventListener("click", function(){
           var i = parseInt(btn.getAttribute("data-i"),10);
-          dots.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
+          if(!hasPhotos) dots.querySelectorAll("button").forEach(function(b,bi){ b.setAttribute("aria-current", bi===i); });
           if(hasPhotos){
-            showPhoto(i);
+            var was = Array.prototype.findIndex.call(dots.querySelectorAll("button"), function(b){ return b.getAttribute("aria-current") === "true"; });
+            showPhoto(i, stepDir || (was < 0 ? 0 : (i > was ? 1 : -1)));
             var c = p.colors.findIndex(function(x){ return x.photo && x.photo === p.photos[i]; });
             if(c > -1) selectColor(c);
           } else {
@@ -1303,7 +1470,7 @@
         couleur: st.color.n,
         taille: st.size,
         prix: p.price
-      });
+      }, root.querySelector(".gallery-img, .gallery-svg"));
       var self = this;
       self.textContent = "Ajouté au panier ✓";
       self.setAttribute("data-added","true");
@@ -1831,10 +1998,31 @@
       btn.addEventListener("click", function(){ openProduct(btn.getAttribute("data-goto")); });
     });
     wireProductBlock(home.querySelector(".home-product .pdp-layout"), f);
+
+    fxReveal(home.querySelectorAll(".home-head, .home-product, .cat-tile, .duo-block, .trust-item"), { gap:0.06, rise:16 });
+    fxReveal(home.querySelectorAll(".rail .card, .home-rail .card"), { gap:0.04 });
+    fxHeroParallax(home.querySelector(".hero"));
+  }
+
+  /* Visuel du hero : il defile un peu moins vite que la page (ordinateur
+     seulement). La propriete CSS "translate" ne touche pas au zoom du
+     visuel, pose par "transform". */
+  var stopParallax = null;
+  function fxHeroParallax(hero){
+    if(stopParallax){ stopParallax(); stopParallax = null; }
+    var img = hero && hero.querySelector(".hero-media img");
+    if(!img || !fxOn() || !window.matchMedia("(min-width:861px)").matches) return;
+    stopParallax = FX.scroll(function(progress){
+      img.style.translate = "0 " + (progress * 48).toFixed(1) + "px";
+    }, { target:hero, offset:["start start", "end start"] });
   }
 
   /* ---------------- panier ---------------- */
   var cartDrawer = document.getElementById("cartDrawer");
+  // tiroirs refermables au doigt (le panneau de filtres par son en-tete : sa liste defile)
+  swipeToClose(cartDrawer, "x", 1, closeOverlays);
+  swipeToClose(navDrawer, "x", -1, closeOverlays);
+  swipeToClose(filterSheet, "y", 1, closeOverlays, ".sheet-head");
   var cartBody = document.getElementById("cartBody");
   var cartFoot = document.getElementById("cartFoot");
   var cartForm = document.getElementById("cartForm");
@@ -1880,7 +2068,10 @@
              '</div>';
     }).join("");
     cartFoot.hidden = false;
-    document.getElementById("cartTotal").textContent = euro(cartTotal());
+    var total = cartTotal();
+    // le total defile seulement si le panier est deja a l'ecran (pas a l'ouverture)
+    fxCount(document.getElementById("cartTotal"), document.getElementById("cartDrawer").classList.contains("open") ? renderCart.shown : null, total, euro);
+    renderCart.shown = total;
   }
 
   function openCart(){
@@ -1896,17 +2087,28 @@
     var q = e.target.closest("[data-qty]");
     if(q){
       var line = cart[+q.getAttribute("data-i")];
+      if(line.qty + +q.getAttribute("data-qty") < 1){ dropLine(q.closest(".cart-line"), line); return; }
       line.qty += +q.getAttribute("data-qty");
-      if(line.qty < 1) cart.splice(cart.indexOf(line), 1);
       saveCart(); refreshCartBadge(); renderCart();
       return;
     }
     var d = e.target.closest("[data-drop]");
-    if(d){
-      cart.splice(+d.getAttribute("data-drop"), 1);
-      saveCart(); refreshCartBadge(); renderCart();
-    }
+    if(d) dropLine(d.closest(".cart-line"), cart[+d.getAttribute("data-drop")]);
   });
+  /* Ligne retiree : elle glisse et se replie, puis le panier se redessine. */
+  function dropLine(el, line){
+    var done = function(){
+      var i = cart.indexOf(line);
+      if(i > -1) cart.splice(i, 1);
+      saveCart(); refreshCartBadge(); renderCart();
+    };
+    if(!fxOn() || !el){ done(); return; }
+    el.style.pointerEvents = "none";
+    el.style.overflow = "hidden";
+    FX.animate(el, { opacity:0, x:40 }, { duration:0.18, ease:"easeIn" })
+      .then(function(){ return FX.animate(el, { height:[el.offsetHeight + "px", "0px"], paddingTop:0, paddingBottom:0, marginTop:0, marginBottom:0 }, { duration:0.22, ease:EASE_OUT }); })
+      .then(done, done);
+  }
 
   document.getElementById("cartCheckout").addEventListener("click", function(){
     this.hidden = true;
@@ -2027,7 +2229,10 @@
     } else if(q.length){
       html = '<p class="search-hint">Encore '+(SEARCH_MIN - q.length)+' lettre'+(SEARCH_MIN - q.length > 1 ? "s" : "")+'…</p>';
     }
+    var keyNow = Array.prototype.map.call(searchSuggest.querySelectorAll("[data-goto]"), function(b){ return b.getAttribute("data-goto"); }).join();
     searchSuggest.innerHTML = html;
+    var keyNew = Array.prototype.map.call(searchSuggest.querySelectorAll("[data-goto]"), function(b){ return b.getAttribute("data-goto"); }).join();
+    if(keyNew && keyNew !== keyNow) fxReveal(searchSuggest.querySelectorAll(".search-sug, .search-all"), { gap:0.025, rise:6 });
     searchInput.setAttribute("aria-expanded", searchSuggest.querySelector("[role=option]") ? "true" : "false");
     searchInput.removeAttribute("aria-activedescendant");
   }
@@ -2122,7 +2327,10 @@
   }
 
   document.getElementById("logoBtn").addEventListener("click", function(){ location.hash = "#/"; });
-  window.addEventListener("hashchange", route);
+  window.addEventListener("hashchange", function(){
+    var morph = !!morphFrom;
+    fxNavigate(function(){ route(); if(morph) window.scrollTo(0, 0); });
+  });
   /* Bloc du haut : logo pleine taille uniquement quand la page est tout en
      haut, moitie moins des le premier defilement. La hauteur reelle est
      publiee en variable CSS pour caler les colonnes collantes dessous. */

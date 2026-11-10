@@ -851,7 +851,7 @@
     background:var(--bg);
     z-index:41;
     transform:translateX(-100%);
-    transition:transform .25s ease;
+    transition:transform .42s cubic-bezier(.22,1,.36,1);
     display:flex;flex-direction:column;
     padding-top:env(safe-area-inset-top,0px);
     padding-bottom:env(safe-area-inset-bottom,0px);
@@ -923,7 +923,7 @@
     background:var(--bg);
     z-index:41;
     transform:translateX(100%);
-    transition:transform .25s ease;
+    transition:transform .42s cubic-bezier(.22,1,.36,1);
     display:flex;flex-direction:column;
     padding-top:env(safe-area-inset-top,0px);
     padding-bottom:env(safe-area-inset-bottom,0px);
@@ -1004,7 +1004,7 @@
     max-height:82vh;
     display:flex;flex-direction:column;
     transform:translateY(100%);
-    transition:transform .25s ease;
+    transition:transform .42s cubic-bezier(.22,1,.36,1);
     padding-bottom:env(safe-area-inset-bottom,0px);
   }
   .filter-sheet.open{transform:none;}
@@ -1071,13 +1071,32 @@
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
     background:var(--ink);color:#fff;font-size:13px;font-weight:600;
     padding:12px 20px;border-radius:24px;
-    opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;
+    opacity:0;pointer-events:none;transition:opacity .2s ease,transform .45s cubic-bezier(.34,1.56,.64,1);
     z-index:50;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* Animations (vendor/motion.js, voir app.js « animations ») */
+  /* appui : les boutons de choix s'enfoncent un peu sous le doigt */
+  .chip,.quick-size,.quick-color,.color-thumb,.swatch,.cart-qty button{transition:transform .12s ease;}
+  .chip:active,.quick-size:active,.quick-color:active,.color-thumb:active,.swatch:active,.cart-qty button:active{transform:scale(.93);}
+  /* miniature qui vole vers le panier */
+  .fx-ghost{position:fixed;z-index:70;margin:0;pointer-events:none;object-fit:contain;background:var(--surface);border-radius:6px;box-shadow:0 10px 30px rgba(11,31,61,.18);}
+  /* changement de page : fondu court ; la photo de la carte devient celle de la fiche */
+  ::view-transition-old(root){animation:.18s ease both fx-out;}
+  ::view-transition-new(root){animation:.26s cubic-bezier(.22,1,.36,1) both fx-in;}
+  ::view-transition-group(produit){animation-duration:.42s;animation-timing-function:cubic-bezier(.22,1,.36,1);}
+  ::view-transition-old(produit),::view-transition-new(produit){animation-duration:.42s;object-fit:contain;}
+  .topbar{view-transition-name:topbar;}
+  ::view-transition-group(topbar){animation:none;}
+  ::view-transition-old(topbar){display:none;}
+  ::view-transition-new(topbar){animation:none;}
+  @keyframes fx-out{to{opacity:0;}}
+  @keyframes fx-in{from{opacity:0;transform:translateY(10px);}}
+
   @media (prefers-reduced-motion:reduce){
     *{transition-duration:0.001ms!important;animation-duration:0.001ms!important;}
+    ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important;}
   }
 </style>
 </head>
@@ -1247,7 +1266,8 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="app.js?v=2"></script>
+<script src="vendor/motion.js?v=14.4.0"></script>
+<script src="app.js?v=3"></script>
 
 </body>
 </html>
